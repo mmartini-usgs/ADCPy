@@ -11,10 +11,7 @@ where:
     pd0File      is path of raw PD0 format input file with current ensembles
     cdfFile      is path of a netcdf4 EPIC compliant output file
 
-NOTE:  Transducer height above bottom is hardwired into this code at .4m.
-Need to update code in the future to be a user selected option.  It is also
-hardwired into the Matlab code radialtouvw.m and radial.m
-
+Programmed according to the TRDI Workhorse Commands and Output Data Format document, March 2005
 """
 
 # adapted from Greg Dusek's adcpwaves.py by Marinna Martini, USGS Woods Hole
@@ -24,7 +21,7 @@ import sys, struct
 #import io
 #from netCDF4 import Dataset
 
-print(sys.path)
+#print(sys.path)
 
 def dopd0file(pd0File, cdfFile):
     
@@ -35,7 +32,7 @@ def dopd0file(pd0File, cdfFile):
         
     infile.seek(0)
     
-    # need to read the header from the file before we know what we are reading
+    # need to read the header from the file to know the ensemble size
     Header = readTRDIHeader(infile)
     
     if Header['sourceID'] != b'\x7f':
@@ -44,36 +41,56 @@ def dopd0file(pd0File, cdfFile):
         
     infile.seek(0)
     
-    # read one ensemble as a chunk
-    ensbytes = infile.read(Header['nbytesperens'])
+    # read one ensemble as a chunk to asses what kind of data we have
+    # note the header's number of bytes per ensemble does not include 
+    # the two checksum bytes
+    ensData = readTRDIensemble(infile.read(Header['nbytesperens']+2));
     
-    Header = parseTRDIHeader(ensbytes)
-    print(Header)
-    for i in range(Header['ndatatypes']):
-        # go to each offset and parse depending on what we find
-        offset = Header['offsets'][i]
-        print(offset)
-        raw, val = __parsenext2TRDIbytes(ensbytes, offset)
-        print(raw)
-        #print(val)
-        if raw == b'\x00\x00':
-            print('Fixed Leader')
-            FLeader = parseTRDIFixedLeader(ensbytes, offset)
-            #print(FLeader)
-        elif raw == b'\x80\x00':
-            print('Variable Leader')
-        elif raw == b'\x00\x01':
-            print('Velocity')
-        elif raw == b'\x00\x02':
-            print('Correlation')
-        elif raw == b'\x00\x03':
-            print('Intensity')
-        elif raw == b'\x00\x04':
-            print('%Good')
+    
+    #print(ensData)
     
     infile.close()
     #cdf.close()
     print('processing complete')
+
+def readTRDIensemble(ensbytes):
+    ensData = {}
+    ensError = 'None'
+    ensData['Header'] = parseTRDIHeader(ensbytes)
+    
+    for i in range(ensData['Header']['ndatatypes']):
+        # go to each offset and parse depending on what we find
+        offset = ensData['Header']['offsets'][i]
+        raw, val = __parsenext2TRDIbytes(ensbytes, offset)
+        if raw == b'\x00\x00':
+            #print('Fixed Leader found at %g' % offset)
+            ensData['FLeader'] = parseTRDIFixedLeader(ensbytes, offset)
+            # we need this to decode the other data records
+            ncells = int(ensData['FLeader']['Number of Cells'])
+            nbeams = 4 # the 5th beam has it's own record
+            #print(FLeader)
+        elif raw == b'\x80\x00':
+            #print('Variable Leader found at %g' % offset)
+            ensData['VLeader'] = parseTRDIVariableLeader(ensbytes, offset)
+            #print(VLeader)
+        elif raw == b'\x00\x01':
+            #print('Velocity found at %g' % offset)
+            ensData['VData'] = parseTRDIVelocity(ensbytes, offset, ncells, nbeams)
+        elif raw == b'\x00\x02':
+            #print('Correlation')
+            ensData['CData'] = parseTRDICorrelation(ensbytes, offset, ncells, nbeams)
+        elif raw == b'\x00\x03':
+            #print('Intensity found at %g' % offset)
+            ensData['IData'] = parseTRDIIntensity(ensbytes, offset, ncells, nbeams)
+        elif raw == b'\x00\x04':
+            #print('PGood found at %g' % offset)
+            ensData['GData'] = parseTRDIPercentGood(ensbytes, offset, ncells, nbeams)
+        
+    csum = __computeChecksum(ensbytes)
+    if csum != (ensbytes[-2]+(ensbytes[-1]<<8)):
+        ensError = 'checksum failure'
+    
+    return ensData, ensError
     
 
 def bitstrLE(byte):
@@ -143,9 +160,9 @@ def parseTRDIHeader(bstream):
 
     return HeaderData
     
-    #TODO - break this into a separate file for module-wide use
+#TODO - break this into a separate file for module-wide use
 def parseTRDIFixedLeader(bstream, offset):
-    # bstream is a byes object
+    # bstream is a bytes object that contains an entire ensemble
     # offset is the location in the bytes object of the first byte of this data format
     FLeaderData = {}
     rawBytes, leaderID = __parsenext2TRDIbytes(bstream,offset)
@@ -301,8 +318,175 @@ def parseTRDIFixedLeader(bstream, offset):
     
     return FLeaderData
 
-    
+#TODO - break this into a separate file for module-wide use
+def parseTRDIVariableLeader(bstream, offset):
+    # bstream is a bytes object that contains an entire ensemble
+    # offset is the location in the bytes object of the first byte of this data format
+    VLeaderData = {}
+    rawBytes, leaderID = __parsenext2TRDIbytes(bstream,offset)
+    if leaderID != 128:
+        print("expected variable leader ID, instead found %b",leaderID)
+        return -1
+    rawBytes, VLeaderData['Ensemble Number'] = __parsenext2TRDIbytes(bstream,offset+2)
+    VLeaderData['Year'] = "%g" % bstream[offset+4]
+    VLeaderData['Month'] = "%g" % bstream[offset+5]
+    VLeaderData['Day'] = "%g" % bstream[offset+6]
+    VLeaderData['Hour'] = "%g" % bstream[offset+7]
+    VLeaderData['Minute'] = "%g" % bstream[offset+8]
+    VLeaderData['Second'] = "%g" % bstream[offset+9]
+    VLeaderData['Hundredths'] = "%g" % bstream[offset+10]
+    VLeaderData['Ensemble # MSB'] = "%g" % bstream[offset+11]
 
+    VLeaderData['BIT Result Byte 13'] = bitstrLE(bstream[offset+12])
+    VLeaderData['Demod 1 error bit'] = int(VLeaderData['BIT Result Byte 13'][3])
+    VLeaderData['Demod 0 error bit'] = int(VLeaderData['BIT Result Byte 13'][4])
+    VLeaderData['Timing Card error bit'] = int(VLeaderData['BIT Result Byte 13'][6])
+
+    rawBytes, VLeaderData['Speed of Sound'] = __parsenext2TRDIbytes(bstream,offset+14)
+    rawBytes, VLeaderData['Depth of Transducer'] = __parsenext2TRDIbytes(bstream,offset+16)
+    VLeaderData['Heading, Pitch, Roll units'] = "hundredths of a degree"    
+    rawBytes, VLeaderData['Heading'] = __parsenext2TRDIbytes(bstream,offset+18)
+    rawBytes, VLeaderData['Pitch'] = __parsenext2TRDIbytes(bstream,offset+20)
+    rawBytes, VLeaderData['Roll'] = __parsenext2TRDIbytes(bstream,offset+22)
+    rawBytes, VLeaderData['Salinity'] = __parsenext2TRDIbytes(bstream,offset+24)
+    rawBytes, VLeaderData['Temperature'] = __parsenext2TRDIbytes(bstream,offset+26)
+    VLeaderData['MPT minutes'] = "%g" % bstream[offset+28]
+    VLeaderData['MPT seconds'] = "%g" % bstream[offset+29]
+    VLeaderData['MPT hundredths'] = "%g" % bstream[offset+30]
+    VLeaderData['H/Hdg Std Dev'] = "%g" % bstream[offset+31]
+    VLeaderData['P/Pitch Std Dev'] = "%g" % bstream[offset+32]
+    VLeaderData['R/Roll Std Dev'] = "%g" % bstream[offset+33]
+    VLeaderData['Xmit Current'] = "%g" % bstream[offset+34] # ADC Channel 0
+    VLeaderData['Xmit Voltage'] = "%g" % bstream[offset+35] # ADC Channel 1
+    VLeaderData['Ambient Temp'] = "%g" % bstream[offset+36] #ADC Channel 2
+    VLeaderData['Pressure (+)'] = "%g" % bstream[offset+37] #ADC Channel 3
+    VLeaderData['Pressure (-)'] = "%g" % bstream[offset+38] #ADC Channel 4
+    VLeaderData['Attitude Temp'] = "%g" % bstream[offset+39] #ADC Channel 5
+    VLeaderData['Attitude'] = "%g" % bstream[offset+40] #ADC Channel 6
+    VLeaderData['Contaminatino Sensor'] = "%g" % bstream[offset+41] #ADC Channel 7
+
+    VLeaderData['Error Status Word Low 16 bits LSB'] = bitstrLE(bstream[offset+42])
+    VLeaderData['Bus Error exception'] = int(VLeaderData['Error Status Word Low 16 bits LSB'][7])
+    VLeaderData['Address Error exception'] = int(VLeaderData['Error Status Word Low 16 bits LSB'][6])
+    VLeaderData['Illegal Instruction exception'] = int(VLeaderData['Error Status Word Low 16 bits LSB'][5])
+    VLeaderData['Zero Divide exception'] = int(VLeaderData['Error Status Word Low 16 bits LSB'][4])
+    VLeaderData['Emulator exception'] = int(VLeaderData['Error Status Word Low 16 bits LSB'][3])
+    VLeaderData['Unassigned exception'] = int(VLeaderData['Error Status Word Low 16 bits LSB'][2])
+    VLeaderData['Watchdog restart occurred'] = int(VLeaderData['Error Status Word Low 16 bits LSB'][1])
+    VLeaderData['Battery Saver power'] = int(VLeaderData['Error Status Word Low 16 bits LSB'][0])
+
+    VLeaderData['Error Status Word Low 16 bits MSB'] = bitstrLE(bstream[offset+43])
+    VLeaderData['Pinging'] = int(VLeaderData['Error Status Word Low 16 bits MSB'][7])
+    VLeaderData['Cold Wakeup occurred'] = int(VLeaderData['Error Status Word Low 16 bits MSB'][1])
+    VLeaderData['Unknown Wakeup occurred'] = int(VLeaderData['Error Status Word Low 16 bits MSB'][0])
+
+    VLeaderData['Error Status Word High 16 bits LSB'] = bitstrLE(bstream[offset+44])
+    VLeaderData['Clock Read error occurred'] = int(VLeaderData['Error Status Word High 16 bits LSB'][7])
+    VLeaderData['Unexpected alarm'] = int(VLeaderData['Error Status Word High 16 bits LSB'][6])
+    VLeaderData['Clock jump forward'] = int(VLeaderData['Error Status Word High 16 bits LSB'][5])
+    VLeaderData['Clock jump backward'] = int(VLeaderData['Error Status Word High 16 bits LSB'][4])
+
+    VLeaderData['Error Status Word High 16 bits MSB'] = bitstrLE(bstream[offset+42])
+    VLeaderData['Power Fail (Unrecorded)'] = int(VLeaderData['Error Status Word High 16 bits MSB'][4])
+    VLeaderData['Spurious level 4 intr (DSP)'] = int(VLeaderData['Error Status Word High 16 bits MSB'][3])
+    VLeaderData['Spurious level 5 intr (UART)'] = int(VLeaderData['Error Status Word High 16 bits MSB'][2])
+    VLeaderData['Spurious level 6 intr (CLOCK)'] = int(VLeaderData['Error Status Word High 16 bits MSB'][1])
+    VLeaderData['Level 7 interrupt occurred'] = int(VLeaderData['Error Status Word High 16 bits MSB'][0])
+
+    # pressure of the water at the transducer head relative to one atmosphere (sea level)
+    #VLeaderData['Pressure word byte 1'] = bitstrLE(bstream[offset+48])
+    #VLeaderData['Pressure word byte 2'] = bitstrLE(bstream[offset+49])
+    #VLeaderData['Pressure word byte 3'] = bitstrLE(bstream[offset+50])
+    #VLeaderData['Pressure word byte 4'] = bitstrLE(bstream[offset+51])
+    VLeaderData['Pressure, deca-pascals'] = bstream[offset+48]+(bstream[offset+49]<<8)+(bstream[offset+50]<<16)+(bstream[offset+51]<<24)
+    VLeaderData['Pressure variance, deca-pascals'] = bstream[offset+52]+(bstream[offset+53]<<8)+(bstream[offset+54]<<16)+(bstream[offset+55]<<24)
+
+    VLeaderData['RTC Century'] = "%g" % bstream[offset+57]
+    VLeaderData['RTC Year'] = "%g" % bstream[offset+58]
+    VLeaderData['RTC Month'] = "%g" % bstream[offset+59]
+    VLeaderData['RTC Day'] = "%g" % bstream[offset+60]
+    VLeaderData['RTC Hour'] = "%g" % bstream[offset+61]
+    VLeaderData['RTC Minute'] = "%g" % bstream[offset+62]
+    VLeaderData['RTC Second'] = "%g" % bstream[offset+63]
+    VLeaderData['RTC Hundredths'] = "%g" % bstream[offset+64]
+    
+    return VLeaderData
+
+def parseTRDIVelocity(bstream, offset, ncells, nbeams):
+    # each velocity value is stored as a two byte, twos complement integer 
+    # [-32768 to 32767] with the LSB sent first.  Units are mm/s.
+    # A value of -32768 = 0x8000 is a bad velocity value
+    # this will create a cell x beam matrix
+    # where VelocityData[:][0] will get all the cells for beam 1
+    VelocityData = [[0 for x in range(ncells)] for y in range(nbeams)] 
+    if bstream[offset+1] != 1:
+        print("expected velocity ID, instead found %g",bstream[offset+1])
+        return -1
+        
+    ibyte = 2
+    for ibeam in range(nbeams):
+        for icell in range(ncells):
+            VelocityData[ibeam][icell] = struct.unpack('<h',bstream[offset+ibyte:offset+ibyte+2])
+            ibyte = ibyte+2            
+            
+    return VelocityData    
+
+def parseTRDICorrelation(bstream, offset, ncells, nbeams):
+    CorrelationData = [[0 for x in range(ncells)] for y in range(nbeams)] 
+    if bstream[offset+1] != 2:
+        print("expected correlation ID, instead found %g",bstream[offset+1])
+        return -1
+        
+    ibyte = 2
+    for ibeam in range(nbeams):
+        for icell in range(ncells):
+            #CorrelationData[ibeam][icell] = struct.unpack('<h',bstream[offset+ibyte:offset+ibyte+2])
+            CorrelationData[ibeam][icell] = bstream[offset+ibyte]
+            ibyte = ibyte+1            
+            
+    return CorrelationData    
+    
+def parseTRDIIntensity(bstream, offset, ncells, nbeams):
+    IntensityData = [[0 for x in range(ncells)] for y in range(nbeams)] 
+    if bstream[offset+1] != 3:
+        print("expected intensity ID, instead found %g",bstream[offset+1])
+        return -1
+        
+    ibyte = 2
+    for ibeam in range(nbeams):
+        for icell in range(ncells):
+            #CorrelationData[ibeam][icell] = struct.unpack('<h',bstream[offset+ibyte:offset+ibyte+2])
+            IntensityData[ibeam][icell] = bstream[offset+ibyte]
+            ibyte = ibyte+1            
+            
+    return IntensityData    
+
+def parseTRDIPercentGood(bstream, offset, ncells, nbeams):
+    PercentGoodData = [[0 for x in range(ncells)] for y in range(nbeams)] 
+    if bstream[offset+1] != 4:
+        print("expected intensity ID, instead found %g",bstream[offset+1])
+        return -1
+        
+    ibyte = 2
+    for ibeam in range(nbeams):
+        for icell in range(ncells):
+            #CorrelationData[ibeam][icell] = struct.unpack('<h',bstream[offset+ibyte:offset+ibyte+2])
+            PercentGoodData[ibeam][icell] = bstream[offset+ibyte]
+            ibyte = ibyte+1            
+            
+    return PercentGoodData    
+    
+    # factored for readability
+def __computeChecksum(ensemble):
+    """Compute a checksum from header, length, and ensemble"""
+    cs = 0    
+    for byte in range(len(ensemble)-2):
+        # since the for loop returns an int to byte, use as-is in python 3x
+        #value = struct.unpack('B', byte)[0]
+        #cs += value
+        cs += ensemble[byte]
+    return cs & 0xffff
+    
 def __main():
     
     try:
