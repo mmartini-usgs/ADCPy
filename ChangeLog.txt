@@ -1,0 +1,1 @@
+1/25/2017 Got a completed version of a program that reads old workhorse data, currents only, pretty well.  Need to make some decisions about what units to use - convert or leave as found in the TRDI format
