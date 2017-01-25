@@ -962,6 +962,11 @@ def ajd(dto):
 def __main():
     
     print('%s running on python %s' % (sys.argv[0], sys.version))
+	
+    if len(sys.argv) < 2:
+        print("%s useage:" % sys.argv[0])
+        print("TRDIpd0tonetcdf infilename outfilename (startingensemble endingensemble)" )
+        sys.exit(1)
     
     try:
         infileName = sys.argv[1]
@@ -975,13 +980,14 @@ def __main():
         print('error - output file name missing')
         sys.exit(1)
         
+    print('Converting %s to %s' % (infileName, outfileName))
+
     try:
         goodens = [int(sys.argv[3]), int(sys.argv[4])]
     except:
+        print('No starting or ending ensembles specfied, processing entire file')
         goodens = [0,np.inf]
         
-    print('Converting %s to %s' % (infileName, outfileName))
-
     dopd0file(infileName, outfileName, goodens)
     
 if __name__ == "__main__":
