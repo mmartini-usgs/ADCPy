@@ -1,0 +1,3 @@
+Known issues:
+Pitch and Roll are coming out incorrectly.
+V Series data and headers not output yet
