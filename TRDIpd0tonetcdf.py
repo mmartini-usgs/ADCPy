@@ -14,6 +14,8 @@ where:
 Programmed according to the TRDI Workhorse Commands and Output Data Format document, March 2005
 """
 
+# 1/25/2017 MM got this running on old Workhorse ADCP data
+
 import sys, struct
 import numpy as np 
 from netCDF4 import Dataset
@@ -42,6 +44,7 @@ def dopd0file(pd0File, cdfFile, goodens):
     # number of bytes per ensemble in the header does not include the checksum
     ensLen = Header['nbytesperens']+2
     print('ensemble length = %g' % ensLen)
+    print(Header)
     # it is faster to define the netCDF file with a known length
     # for this we need to estimate how many ensembles we will be reading
     # for some reason, sys.getsizeof(infile) does not report the true length 
@@ -77,16 +80,16 @@ def dopd0file(pd0File, cdfFile, goodens):
     verbose = 0
 
     while len(ens) > 0:
-        #print('ensemble %d length %g, file position %g' % (ensCount, len(ens), infile.tell()))
+        #print('-- ensemble %d length %g, file position %g' % (ensCount, len(ens), infile.tell()))
+        #print(ensData['Header'])        
         ensData, ensError = parseTRDIensemble(ens, verbose)
         
         if (ensError == 'None') & (ensCount >= goodens[0]):
             # write to netCDF
             if cdfIdx == 0:
-                print('first ensembles read at %s and TRDI #%d' % (              
+                print('--- first ensembles read at %s and TRDI #%d' % (              
                     ensData['VLeader']['timestr'], ensData['VLeader']['Ensemble_Number']))
                 
-            # TODO add VLeaderData['Ensemble_#_MSB'] 
             varobj = cdf.variables['Rec']
             try:
                 varobj[cdfIdx] = ensData['VLeader']['Ensemble_Number']
@@ -95,6 +98,7 @@ def dopd0file(pd0File, cdfFile, goodens):
                 print(cdfIdx)
                 print((goodens[1]-goodens[0]-1))
                 cdf.close()
+                infile.close()
                 sys.exit(1)  
 
             # time calculations done when vleader is read
@@ -169,6 +173,12 @@ def dopd0file(pd0File, cdfFile, goodens):
 
             cdfIdx += 1
             
+        elif ensError == 'no ID':
+            print('Stopping because ID tracking lost')
+            infile.close()
+            cdf.close()
+            sys.exit(1)
+            
         ensCount += 1
         
         if ensCount > maxens:
@@ -186,6 +196,18 @@ def dopd0file(pd0File, cdfFile, goodens):
             print('stopping at requested ensemble %d' % goodens[1])
             break
         
+        # note that ensemble lengths can change in the middle of the file!
+        bookmark = infile.tell() #beginning of next ensemble
+        # need to read the header from the file to know the ensemble size
+        Header = readTRDIHeader(infile)
+        if Header['sourceID'] != b'\x7f':
+            print('non-currents ensemble found at %d' % bookmark)
+        
+        if ensLen != Header['nbytesperens']+2:
+            ensLen = Header['nbytesperens']+2 # update to what we have
+        
+        # go back to where this ensemble started before we checked the header
+        infile.seek(bookmark)
         ens = infile.read(ensLen)
         
     else:
@@ -200,6 +222,114 @@ def dopd0file(pd0File, cdfFile, goodens):
     cdf.close()
     
     print('%d ensembles read, %d records written' % (ensCount, cdfIdx))
+    
+    
+def matrixTranspose( matrix ):
+    if not matrix: return []
+    return [ [ row[ i ] for row in matrix ] for i in range( len( matrix[ 0 ] ) ) ]
+
+# write a dictionary to netCDF attributes
+def writeDict2atts(cdfobj, d):
+    
+    i = 0;
+    # first, convert as many of the values in d to numbers as we can
+    for key in iter(d):
+        if type(d[key]) == str:
+            try:
+                d[key] = float(d[key])
+            except ValueError:
+                # we really don't need to print here, 
+                # but python insists we do something
+                #print('   can\'t convert %s to float' % key)
+                i += 1
+
+    for key in iter(d):
+        newkey = "TRDI_" + key
+        try:
+            cdfobj.setncattr(newkey,d[key])
+        except:
+            print('can\'t set %s attribute' % key)
+    
+    # return the dictionary it's numerized values 
+    return d
+    
+
+def parseTRDIensemble(ensbytes, verbose):
+    ensData = {}
+    ensError = 'None'
+    ensData['Header'] = parseTRDIHeader(ensbytes)
+    
+    for i in range(ensData['Header']['ndatatypes']):
+        # go to each offset and parse depending on what we find
+        offset = ensData['Header']['offsets'][i]
+        raw, val = __parsenext2TRDIbytes(ensbytes, offset)
+        if raw == b'\x00\x00':
+            if verbose: print('Fixed Leader found at %g' % offset)
+            ensData['FLeader'] = parseTRDIFixedLeader(ensbytes, offset)
+            # we need this to decode the other data records
+            ncells = int(ensData['FLeader']['Number_of_Cells'])
+            nbeams = 4 # the 5th beam has it's own record
+            #print(FLeader)
+        elif raw == b'\x80\x00':
+            if verbose: print('Variable Leader found at %g' % offset)
+            ensData['VLeader'] = parseTRDIVariableLeader(ensbytes, offset)
+            #print(VLeader)
+        elif raw == b'\x00\x01':
+            if verbose: print('Velocity found at %g' % offset)
+            ensData['VData'] = parseTRDIVelocity(ensbytes, offset, ncells, nbeams)
+        elif raw == b'\x00\x02':
+            if verbose: print('Correlation found at %g' % offset)
+            ensData['CData'] = parseTRDICorrelation(ensbytes, offset, ncells, nbeams)
+        elif raw == b'\x00\x03':
+            if verbose: print('Intensity found at %g' % offset)
+            ensData['IData'] = parseTRDIIntensity(ensbytes, offset, ncells, nbeams)
+        elif raw == b'\x00\x04':
+            if verbose: print('PGood found at %g' % offset)
+            ensData['GData'] = parseTRDIPercentGood(ensbytes, offset, ncells, nbeams)
+        elif raw == b'\x00\x05':
+            if verbose: print('Status profile found at %g' % offset)
+        elif raw == b'\x00\x06':
+            if verbose: print('BT found at %g' % offset)
+        elif raw == b'\x00\x07':
+            # this not defined in TRDI docs
+            donothing()
+        elif raw == b'\x00\x08':
+            if verbose: print('MicroCAT data found at %g' % offset)
+        elif raw == b'\x00\x32':
+            if verbose: print('Instrument transformation found at %g' % offset)
+        elif raw == b'\x00\x70':
+            if verbose: print('V Series sytem config found at %g' % offset)
+        elif raw == b'\x01\x70':
+            if verbose: print('V Series ping setup found at %g' % offset)
+        elif raw == b'\x02\x70':
+            if verbose: print('V Series ADC Data found at %g' % offset)
+        elif raw == b'\x03\x70':
+            if verbose: print('V Series System Configuration Data found at %g' % offset)
+        elif raw == b'\x01\x0f':
+            if verbose: print('Vertical Beam Leader Data found at %g' % offset)
+        elif raw == b'\x00\x0a':
+            if verbose: print('Vertical Beam Velocity Data found at %g' % offset)
+        elif raw == b'\x00\x0b':
+            if verbose: print('Vertical Beam Correlation Data found at %g' % offset)
+        elif raw == b'\x00\x0c':
+            if verbose: print('Vertical Beam Amplitude Data found at %g' % offset)
+        elif raw == b'\x00\x0d':
+            if verbose: print('Vertical Beam Percent Good Data found at %g' % offset)
+        elif raw == b'\x40\x70':
+            if verbose: print('V Series Event Log Data found at %g' % offset)
+        elif raw == b'\x0b\x00':
+            if verbose: print('Wavesmon 4 Wave Parameters found at %g' % offset)
+        elif raw == b'\x0c\x00':
+            if verbose: print('Wavesmon 4 Sea and Swell found at %g' % offset)
+        else:
+            print('ID %s unrecognized at %g' % (raw, offset))
+            ensError = 'no ID'
+        
+    csum = __computeChecksum(ensbytes)
+    if csum != (ensbytes[-2]+(ensbytes[-1]<<8)):
+        ensError = 'checksum failure'
+        
+    return ensData, ensError
     
 def setupCdf(fname, ensData, gens):
     
@@ -363,105 +493,12 @@ def setupCdf(fname, ensData, gens):
     varobj.valid_range = [0, 2**31]
 
     return cdf
-    
-def matrixTranspose( matrix ):
-    if not matrix: return []
-    return [ [ row[ i ] for row in matrix ] for i in range( len( matrix[ 0 ] ) ) ]
 
-# write a dictionary to netCDF attributes
-def writeDict2atts(cdfobj, d):
-    
-    i = 0;
-    # first, convert as many of the values in d to numbers as we can
-    for key in iter(d):
-        if type(d[key]) == str:
-            try:
-                d[key] = float(d[key])
-            except ValueError:
-                # we really don't need to print here, 
-                # but python insists we do something
-                #print('   can\'t convert %s to float' % key)
-                i += 1
-
-    for key in iter(d):
-        newkey = "TRDI_" + key
-        try:
-            cdfobj.setncattr(newkey,d[key])
-        except:
-            print('can\'t set %s attribute' % key)
-    
-    # return the dictionary it's numerized values 
-    return d
-    
-
-def parseTRDIensemble(ensbytes, verbose):
-    ensData = {}
-    ensError = 'None'
-    ensData['Header'] = parseTRDIHeader(ensbytes)
-    
-    for i in range(ensData['Header']['ndatatypes']):
-        # go to each offset and parse depending on what we find
-        offset = ensData['Header']['offsets'][i]
-        raw, val = __parsenext2TRDIbytes(ensbytes, offset)
-        if raw == b'\x00\x00':
-            if verbose: print('Fixed Leader found at %g' % offset)
-            ensData['FLeader'] = parseTRDIFixedLeader(ensbytes, offset)
-            # we need this to decode the other data records
-            ncells = int(ensData['FLeader']['Number_of_Cells'])
-            nbeams = 4 # the 5th beam has it's own record
-            #print(FLeader)
-        elif raw == b'\x80\x00':
-            if verbose: print('Variable Leader found at %g' % offset)
-            ensData['VLeader'] = parseTRDIVariableLeader(ensbytes, offset)
-            #print(VLeader)
-        elif raw == b'\x00\x01':
-            if verbose: print('Velocity found at %g' % offset)
-            ensData['VData'] = parseTRDIVelocity(ensbytes, offset, ncells, nbeams)
-        elif raw == b'\x00\x02':
-            if verbose: print('Correlation found at %g' % offset)
-            ensData['CData'] = parseTRDICorrelation(ensbytes, offset, ncells, nbeams)
-        elif raw == b'\x00\x03':
-            if verbose: print('Intensity found at %g' % offset)
-            ensData['IData'] = parseTRDIIntensity(ensbytes, offset, ncells, nbeams)
-        elif raw == b'\x00\x04':
-            if verbose: print('PGood found at %g' % offset)
-            ensData['GData'] = parseTRDIPercentGood(ensbytes, offset, ncells, nbeams)
-        elif raw == b'\x00\x32':
-            print('Instrument transformation found at %g' % offset)
-        elif raw == b'\x00\x70':
-            print('V Series sytem config found at %g' % offset)
-        elif raw == b'\x01\x70':
-            print('V Series ping setup found at %g' % offset)
-        elif raw == b'\x02\x70':
-            print('V Series ADC Data found at %g' % offset)
-        elif raw == b'\x03\x70':
-            print('V Series Features Header Data found at %g' % offset)
-        elif raw == b'\x01\x0f':
-            print('Vertical Beam Leader Data found at %g' % offset)
-        elif raw == b'\x00\x0a':
-            print('Vertical Beam Velocity Data found at %g' % offset)
-        elif raw == b'\x00\x0b':
-            print('Vertical Beam Correlation Data found at %g' % offset)
-        elif raw == b'\x00\x0c':
-            print('Vertical Beam Amplitude Data found at %g' % offset)
-        elif raw == b'\x00\x0d':
-            print('Vertical Beam Percent Good Data found at %g' % offset)
-        elif raw == b'\x40\x70':
-            print('V Series Event Log Data found at %g' % offset)
-        elif raw == b'\x0b\x00':
-            print('Wavesmon 4 Wave Parameters found at %g' % offset)
-        elif raw == b'\x0c\x00':
-            print('Wavesmon 4 Sea and Swell found at %g' % offset)
-        else:
-            print('no known ID found')
-            ensError = 'no ID'
-        
-    csum = __computeChecksum(ensbytes)
-    if csum != (ensbytes[-2]+(ensbytes[-1]<<8)):
-        ensError = 'checksum failure'
-        
-    return ensData, ensError
-    
+def donothing():
+    # this function is for placeholders where pylint is whining about
+    # missing indented blocks
+    i = 0
+    return i
 
 def bitstrLE(byte):
     bits = ""
