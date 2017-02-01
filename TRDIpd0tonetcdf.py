@@ -102,10 +102,11 @@ def dopd0file(pd0File, cdfFile, goodens):
                 varobj = cdf.variables[varname]
                 varobj[cdfIdx,:] = ensData['IData'][i,:]
 
-            for i in range(nslantbeams):
-                varname = "PGd%d" % (i+1)
-                varobj = cdf.variables[varname]
-                varobj[cdfIdx,:] = ensData['GData'][i,:]
+            if ('GData' in ensData):
+                for i in range(nslantbeams):
+                    varname = "PGd%d" % (i+1)
+                    varobj = cdf.variables[varname]
+                    varobj[cdfIdx,:] = ensData['GData'][i,:]
 
             varobj = cdf.variables['Hdg']
             varobj[cdfIdx] = ensData['VLeader']['Heading']
@@ -156,8 +157,9 @@ def dopd0file(pd0File, cdfFile, goodens):
                     varobj[cdfIdx,:] = ensData['VBeamCData']
                     varobj = cdf.variables['AGC5']
                     varobj[cdfIdx,:] = ensData['VBeamIData']
-                    varobj = cdf.variables['PGd5']
-                    varobj[cdfIdx,:] = ensData['VBeamGData']
+                    if ('VBeamGData' in ensData):
+                        varobj = cdf.variables['PGd5']
+                        varobj[cdfIdx,:] = ensData['VBeamGData']
                     
             if ('WaveParams' in ensData):
                 # we can get away with this because the key names and var names are the same
@@ -413,13 +415,14 @@ def setupCdf(fname, ensData, gens):
         varobj.long_name = "Echo Intensity (AGC) Beam %d" % (i+1)
         varobj.valid_range = [0, 255]
 
-    for i in range(4):
-        varname = "PGd%d" % (i+1)
-        varobj = cdf.createVariable(varname,'int',('time','depth'),fill_value=-32768)
-        varobj.units = "counts"
-        varobj.long_name = "Percent Good Beam %d" % (i+1)
-        varobj.epic_code = 1241+i
-        varobj.valid_range = [0, 100]
+    if ('GData' in ensData):
+        for i in range(4):
+            varname = "PGd%d" % (i+1)
+            varobj = cdf.createVariable(varname,'int',('time','depth'),fill_value=-32768)
+            varobj.units = "counts"
+            varobj.long_name = "Percent Good Beam %d" % (i+1)
+            varobj.epic_code = 1241+i
+            varobj.valid_range = [0, 100]
 
     varobj = cdf.createVariable('Hdg','float',('time'),fill_value=1E35)
     varobj.units = "hundredths of degrees"
@@ -511,10 +514,10 @@ def setupCdf(fname, ensData, gens):
     varobj.valid_range = [0, 2**31]
     
     if 'VPingSetup' in ensData:
-        writeDict2atts(cdf, ensData['VPingSetup'], "TRDI_VBeam")
+        writeDict2atts(cdf, ensData['VPingSetup'], "TRDI_VBeam_")
 
     if 'VBeamLeader' in ensData:
-        writeDict2atts(cdf, ensData['VBeamLeader'], "TRDI_VBeam")
+        writeDict2atts(cdf, ensData['VBeamLeader'], "TRDI_VBeam_")
 
     if ('VBeamVData' in ensData):
         if ensData['VBeamLeader']['Vertical_Depth_Cells'] == ensData['FLeader']['Number_of_Cells']:
@@ -530,10 +533,13 @@ def setupCdf(fname, ensData, gens):
             varobj.units = "counts"
             varobj.long_name = "Echo Intensity (AGC) Beam 5"
             varobj.valid_range = [0, 255]
-            varobj = cdf.createVariable("PGd5",'int',('time','depth'),fill_value=-32768)
-            varobj.units = "counts"
-            varobj.long_name = "Percent Good Beam 5"
-            varobj.valid_range = [0, 100]
+            if ('VBeamGData' in ensData):
+                varobj = cdf.createVariable("PGd5",'int',('time','depth'),fill_value=-32768)
+                varobj.units = "counts"
+                varobj.long_name = "Percent Good Beam 5"
+                varobj.valid_range = [0, 100]
+            else:
+                cdf.TRDI_VBeam_note1 = 'Vertical beam data found without Percent Good'
         else:
             print('Vertical beam data found with different number of cells.')
             cdf.TRDI_VBeam_note = 'Vertical beam data found with different number of cells. Vertical beam data not exported to netCDF'
@@ -1395,7 +1401,8 @@ def analyzepd0file(pd0File):
                         print(key1,':',value1, file=out)
                 else:
                     print(key,':',value, file=out)
-            out.close()           
+            out.close()
+            sys.exit()
     
     return maxens, ensLen, ensData
 
