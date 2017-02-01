@@ -1,4 +1,11 @@
 Known issues:
-Pitch and Roll are coming out incorrectly.
-V Series data and headers not output yet
-Accommodate ensemble number rollover
+
+Need to flexibly define the netCDF file variables according to the type of file encountered:
+	- workhorse data, straight from the instrument
+	- workhorse data, exported as pd0 from Velocity
+	- sentinel V data exported as pd0 from Velocity (e.g. with 5th beam)
+	
+Need to Compute depths of cells and add depth as an ordinate variables
+
+Would like to restructure as a module that can be loaded instead of one long script full of defs, was having trouble doing this and using Spyder at the same time - unresolved spyder path issues.
+

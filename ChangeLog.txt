@@ -1,2 +1,4 @@
+2/1/2017 Added ability to parse Velocity output data, 5 beam
+1/30/2017 Fixed tilts, was reading unsigned, rather than signed shorts
 1/26/2017 Can now read through, though not yet output, data exported by Velocity with the new V series output, though somethign causes the program to exit ungracefully
 1/25/2017 Got a completed version of a program that reads old workhorse data, currents only, pretty well.  Need to make some decisions about what units to use - convert or leave as found in the TRDI format
