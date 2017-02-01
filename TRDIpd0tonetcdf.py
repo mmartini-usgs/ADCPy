@@ -148,6 +148,29 @@ def dopd0file(pd0File, cdfFile, goodens):
             varobj = cdf.variables['PressVar']
             varobj[cdfIdx] = ensData['VLeader']['Pressure_variance_deca-pascals']
 
+            if ('VBeamVData' in ensData):
+                if ensData['VBeamLeader']['Vertical_Depth_Cells'] == ensData['FLeader']['Number_of_Cells']:
+                    varobj = cdf.variables['vel5']
+                    varobj[cdfIdx,:] = ensData['VBeamVData']
+                    varobj = cdf.variables['cor5']
+                    varobj[cdfIdx,:] = ensData['VBeamCData']
+                    varobj = cdf.variables['AGC5']
+                    varobj[cdfIdx,:] = ensData['VBeamIData']
+                    varobj = cdf.variables['PGd5']
+                    varobj[cdfIdx,:] = ensData['VBeamGData']
+                    
+            if ('WaveParams' in ensData):
+                # we can get away with this because the key names and var names are the same
+                for key, value in ensData['WaveParams']:
+                    varobj = cdf.variables[key]
+                    varobj[cdfIdx] = ensData['WaveParams'][key]
+    
+            if ('WaveSeaSwell' in ensData):
+                # we can get away with this because the key names and var names are the same
+                for key, value in ensData['WaveSeaSwell']:
+                    varobj = cdf.variables[key]
+                    varobj[cdfIdx] = ensData['WaveSeaSwell'][key]
+
             cdfIdx += 1
             
         elif ensError == 'no ID':
@@ -206,7 +229,7 @@ def matrixTranspose( matrix ):
     return [ [ row[ i ] for row in matrix ] for i in range( len( matrix[ 0 ] ) ) ]
 
 # write a dictionary to netCDF attributes
-def writeDict2atts(cdfobj, d):
+def writeDict2atts(cdfobj, d, tag):
     
     i = 0;
     # first, convert as many of the values in d to numbers as we can
@@ -221,7 +244,7 @@ def writeDict2atts(cdfobj, d):
                 i += 1
 
     for key in iter(d):
-        newkey = "TRDI_" + key
+        newkey = tag + key
         try:
             cdfobj.setncattr(newkey,d[key])
         except:
@@ -310,8 +333,10 @@ def parseTRDIensemble(ensbytes, verbose):
             if verbose: print('V Series Event Log Data found at %g' % offset)
         elif val == 11: # raw == b'\x0b\x00':
             if verbose: print('Wavesmon 4 Wave Parameters found at %g' % offset)
+            ensData['WaveParams'] = parseTRDIWaveParameters(ensbytes, offset)
         elif val == 12: #raw == b'\x0c\x00':
             if verbose: print('Wavesmon 4 Sea and Swell found at %g' % offset)
+            ensData['WaveSeaSwell'] = parseTRDIWaveSeaSwell(ensbytes, offset)
         else:
             print('ID %d unrecognized at %g' % (val, offset))
             ensError = 'no ID'
@@ -333,14 +358,14 @@ def setupCdf(fname, ensData, gens):
     
     # dimensions, in EPIC order
     cdf.createDimension('time',nens)
-    cdf.createDimension('depth',int(ensData['FLeader']['Number_of_Cells']))
+    cdf.createDimension('depth',ensData['FLeader']['Number_of_Cells'])
     cdf.createDimension('lat',1)
     cdf.createDimension('lon',1)
     
     # write global attributes
     cdf.history = "translated to netCDF by adcpcurrents2cdf.py"
     
-    writeDict2atts(cdf, ensData['FLeader'])
+    writeDict2atts(cdf, ensData['FLeader'], "TRDI_")
     
     varobj = cdf.createVariable('time','int',('time'))
     varobj.units = "True Julian Day"
@@ -366,7 +391,7 @@ def setupCdf(fname, ensData, gens):
     
     for i in range(4):
         varname = "vel%d" % (i+1)
-        varobj = cdf.createVariable(varname,'float',('time','depth'),fill_value=-32768)
+        varobj = cdf.createVariable(varname,'float',('time','depth'),fill_value=1E35)
         varobj.units = "mm s-1"
         varobj.long_name = "Beam %d velocity (mm s-1)" % (i+1)
         varobj.epic_code = 1280+i
@@ -374,7 +399,7 @@ def setupCdf(fname, ensData, gens):
     
     for i in range(4):
         varname = "cor%d" % (i+1)
-        varobj = cdf.createVariable(varname,'float',('time','depth'),fill_value=-32768)
+        varobj = cdf.createVariable(varname,'int',('time','depth'),fill_value=-32768)
         varobj.units = "counts"
         varobj.long_name = "Beam %d correlation" % (i+1)
         varobj.epic_code = 1294+i
@@ -382,7 +407,7 @@ def setupCdf(fname, ensData, gens):
 
     for i in range(4):
         varname = "AGC%d" % (i+1)
-        varobj = cdf.createVariable(varname,'float',('time','depth'),fill_value=-32768)
+        varobj = cdf.createVariable(varname,'int',('time','depth'),fill_value=-32768)
         varobj.units = "counts"
         varobj.epic_code = 1221+i
         varobj.long_name = "Echo Intensity (AGC) Beam %d" % (i+1)
@@ -390,7 +415,7 @@ def setupCdf(fname, ensData, gens):
 
     for i in range(4):
         varname = "PGd%d" % (i+1)
-        varobj = cdf.createVariable(varname,'float',('time','depth'),fill_value=-32768)
+        varobj = cdf.createVariable(varname,'int',('time','depth'),fill_value=-32768)
         varobj.units = "counts"
         varobj.long_name = "Percent Good Beam %d" % (i+1)
         varobj.epic_code = 1241+i
@@ -484,10 +509,119 @@ def setupCdf(fname, ensData, gens):
     varobj.units = "deca-pascals"
     varobj.long_name = "ADCP Transducer Pressure Variance"
     varobj.valid_range = [0, 2**31]
-   
+    
+    if 'VPingSetup' in ensData:
+        writeDict2atts(cdf, ensData['VPingSetup'], "TRDI_VBeam")
+
+    if 'VBeamLeader' in ensData:
+        writeDict2atts(cdf, ensData['VBeamLeader'], "TRDI_VBeam")
+
+    if ('VBeamVData' in ensData):
+        if ensData['VBeamLeader']['Vertical_Depth_Cells'] == ensData['FLeader']['Number_of_Cells']:
+            varobj = cdf.createVariable("vel5",'float',('time','depth'),fill_value=1E35)
+            varobj.units = "mm s-1"
+            varobj.long_name = "Beam 5 velocity (mm s-1)"
+            varobj.valid_range = [-32767, 32767]
+            varobj = cdf.createVariable("cor5",'int',('time','depth'),fill_value=-32768)
+            varobj.units = "counts"
+            varobj.long_name = "Beam 5 correlation"
+            varobj.valid_range = [0, 255]
+            varobj = cdf.createVariable("AGC5",'int',('time','depth'),fill_value=-32768)
+            varobj.units = "counts"
+            varobj.long_name = "Echo Intensity (AGC) Beam 5"
+            varobj.valid_range = [0, 255]
+            varobj = cdf.createVariable("PGd5",'int',('time','depth'),fill_value=-32768)
+            varobj.units = "counts"
+            varobj.long_name = "Percent Good Beam 5"
+            varobj.valid_range = [0, 100]
+        else:
+            print('Vertical beam data found with different number of cells.')
+            cdf.TRDI_VBeam_note = 'Vertical beam data found with different number of cells. Vertical beam data not exported to netCDF'
+            print('Vertical beam data not exported to netCDF')
+
+    if ('WaveParams' in ensData):
+        # no units given for any of these in the TRDI docs
+        varobj = cdf.createVariable("Hs",'float',('time'),fill_value=1E35)
+        varobj.units = "m"
+        varobj.long_name = "Significant Wave Height (m)"
+        varobj = cdf.createVariable("Tp",'float',('time'),fill_value=1E35)
+        varobj.units = "s"
+        varobj.long_name = "Peak Wave Period (s)"
+        varobj = cdf.createVariable("Dp",'float',('time'),fill_value=1E35)
+        varobj.units = "Deg."
+        varobj.long_name = "Peak Wave Direction (Deg.)"
+        varobj.valid_range = [0, 360]
+        varobj = cdf.createVariable("Dm",'float',('time'),fill_value=1E35)
+        varobj.units = "Deg."
+        varobj.long_name = "Mea Peak Wave Direction (Deg.)"
+        varobj.valid_range = [0, 360]
+        varobj = cdf.createVariable("SHmax",'float',('time'),fill_value=1E35)
+        varobj.units = "m"
+        varobj.long_name = "Maximum Wave Height (m)"
+        varobj.note = "from zero crossing anaylsis of surface track time series"
+        varobj = cdf.createVariable("SH13",'float',('time'),fill_value=1E35)
+        varobj.units = "m"
+        varobj.long_name = "Significant Wave Height of the largest 1/3 of the waves (m)"
+        varobj.note = "in the field from zero crossing anaylsis of surface track time series"
+        varobj = cdf.createVariable("SH10",'float',('time'),fill_value=1E35)
+        varobj.units = "m"
+        varobj.long_name = "Significant Wave Height of the largest 1/10 of the waves (m)"
+        varobj.note = "in the field from zero crossing anaylsis of surface track time series"
+        varobj = cdf.createVariable("STmax",'float',('time'),fill_value=1E35)
+        varobj.units = "s"
+        varobj.long_name = "Maximum Peak Wave Period (s)"
+        varobj.note = "from zero crossing anaylsis of surface track time series"
+        varobj = cdf.createVariable("ST13",'float',('time'),fill_value=1E35)
+        varobj.units = "s"
+        varobj.long_name = "Period associated with the peak wave height of the largest 1/3 of the waves (s)"
+        varobj.note = "in the field from zero crossing anaylsis of surface track time series"
+        varobj = cdf.createVariable("ST10",'float',('time'),fill_value=1E35)
+        varobj.units = "s"
+        varobj.long_name = "Period associated with the peak wave height of the largest 1/10 of the waves (s)"
+        varobj.note = "in the field from zero crossing anaylsis of surface track time series"
+        varobj = cdf.createVariable("T01",'float',('time'),fill_value=1E35)
+        varobj.units = " " 
+        varobj = cdf.createVariable("Tz",'float',('time'),fill_value=1E35)
+        varobj.units = " "
+        varobj = cdf.createVariable("Tinv1",'float',('time'),fill_value=1E35)
+        varobj.units = " "
+        varobj = cdf.createVariable("S0",'float',('time'),fill_value=1E35)
+        varobj.units = " "
+        varobj = cdf.createVariable("Source",'float',('time'),fill_value=1E35)
+        varobj.units = " "
+
+    if ('WaveSeaSwell' in ensData):
+        # no units given for any of these in the TRDI docs
+        varobj = cdf.createVariable("HsSea",'float',('time'),fill_value=1E35)
+        varobj.units = "m"
+        varobj.long_name = "Significant Wave Height (m)"
+        varobj.note = "in the sea region of the power spectrum"
+        varobj = cdf.createVariable("HsSwell",'float',('time'),fill_value=1E35)
+        varobj.units = "m"
+        varobj.long_name = "Significant Wave Height (m)"
+        varobj.note = "in the swell region of the power spectrum"
+        varobj = cdf.createVariable("TpSea",'float',('time'),fill_value=1E35)
+        varobj.units = "s"
+        varobj.long_name = "Peak Wave Period (s)"
+        varobj.note = "in the sea region of the power spectrum"
+        varobj = cdf.createVariable("TpSea",'float',('time'),fill_value=1E35)
+        varobj.units = "s"
+        varobj.long_name = "Peak Wave Period (s)"
+        varobj.note = "in the swell region of the power spectrum"
+        varobj = cdf.createVariable("DpSea",'float',('time'),fill_value=1E35)
+        varobj.units = "Deg."
+        varobj.long_name = "Peak Wave Direction (Deg.)"
+        varobj.note = "in the sea region of the power spectrum"
+        varobj = cdf.createVariable("DpSwell",'float',('time'),fill_value=1E35)
+        varobj.units = "Deg."
+        varobj.long_name = "Peak Wave Direction (Deg.)"
+        varobj.note = "in the swell region of the power spectrum"
+        varobj = cdf.createVariable("SeaSwellPeriod",'float',('time'),fill_value=1E35)
+        varobj.units = "s"
+        varobj.long_name = "Transition Period between Sea and Swell (s)"     
+        
     # TODO add bottom track
     # TODO add wave statistics
-    # TODO add 5th beam
 
     return cdf
 
@@ -1052,7 +1186,50 @@ def parseTRDIVEventLog(bstream, offset):
     # TODO read the fault codes and output to a text file
         
     return VEventLogData
+
+def parseTRDIWaveParmeters(bstream, offset):
+    # bstream is a bytes object that contains an entire ensemble
+    # offset is the location in the bytes object of the first byte of this data format
+    data = {}
+    leaderID = struct.unpack('<H',bstream[offset:offset+2])[0]
+    if leaderID != 11: #\x00\x0b stored little endian
+        print("expected Wave Parameters ID, instead found %g" % leaderID)
+        return -1
+    data['Hs'] = struct.unpack('<H',bstream[offset+2:offset+4])[0]
+    data['Tp'] = struct.unpack('<H',bstream[offset+4:offset+6])[0]
+    data['Dp'] = struct.unpack('<H',bstream[offset+6:offset+8])[0]
+    data['Dm'] = struct.unpack('<H',bstream[offset+16:offset+18])[0]
+    data['SHmax'] = struct.unpack('<H',bstream[offset+30:offset+32])[0]
+    data['SH13'] = struct.unpack('<H',bstream[offset+32:offset+34])[0]
+    data['SH10'] = struct.unpack('<H',bstream[offset+34:offset+36])[0]
+    data['STmax'] = struct.unpack('<H',bstream[offset+36:offset+38])[0]
+    data['ST13'] = struct.unpack('<H',bstream[offset+38:offset+40])[0]
+    data['ST10'] = struct.unpack('<H',bstream[offset+40:offset+42])[0]
+    data['T01'] = struct.unpack('<H',bstream[offset+42:offset+44])[0]
+    data['Tz'] = struct.unpack('<H',bstream[offset+44:offset+46])[0]
+    data['Tinv1'] = struct.unpack('<H',bstream[offset+46:offset+48])[0]
+    data['S0'] = struct.unpack('<H',bstream[offset+48:offset+50])[0]
+    data['Source'] = bstream[offset+52]
+
+    return data
      
+def parseTRDIWaveSeaSwell(bstream, offset):
+    # bstream is a bytes object that contains an entire ensemble
+    # offset is the location in the bytes object of the first byte of this data format
+    data = {}
+    leaderID = struct.unpack('<H',bstream[offset:offset+2])[0]
+    if leaderID != 12: #\x00\x0c stored little endian
+        print("expected Wave Sea and Swell ID, instead found %g" % leaderID)
+        return -1
+    data['HsSea'] = struct.unpack('<H',bstream[offset+2:offset+4])[0]
+    data['HsSwell'] = struct.unpack('<H',bstream[offset+4:offset+6])[0]
+    data['TpSea'] = struct.unpack('<H',bstream[offset+6:offset+8])[0]
+    data['TpSwell'] = struct.unpack('<H',bstream[offset+8:offset+10])[0]
+    data['DpSea'] = struct.unpack('<H',bstream[offset+10:offset+12])[0]
+    data['DpSwell'] = struct.unpack('<H',bstream[offset+12:offset+14])[0]
+    data['Sea_Swell_Period'] = struct.unpack('<H',bstream[offset+44:offset+46])[0]
+
+    return data
     
 # factored for readability
 def __computeChecksum(ensemble):
@@ -1195,13 +1372,30 @@ def analyzepd0file(pd0File):
     infile.seek(0,2)
     nbytesinfile = infile.tell()
     maxens = nbytesinfile/ensLen
-    print('estimating %g ensembles in file' % maxens)
+    print('estimating %g ensembles in file using a %d ensemble size' % (maxens, ensLen))
         
     infile.close()
     
     print(ensData['Header'])
     print('ensemble length = %g' % ensLen)
     print('estimating %g ensembles in file' % maxens)
+    
+    # diagnostic dump of ensemble structure
+    if 0:
+        outfile = 'FirstEnsemble.txt'
+        print('dumping first ensemble data to %s' % outfile)
+        # will print out two layers of nested dictionary
+        with open(outfile,'a') as out:
+            print('data found in file ',pd0File, file=out)
+            for key, value in sorted(ensData.items()):
+                vtype = type(ensData[key])
+                if vtype == dict:
+                    print(key,':', file=out)
+                    for key1, value1 in sorted(ensData[key].items()):
+                        print(key1,':',value1, file=out)
+                else:
+                    print(key,':',value, file=out)
+            out.close()           
     
     return maxens, ensLen, ensData
 
