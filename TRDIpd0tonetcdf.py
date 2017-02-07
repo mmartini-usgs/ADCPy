@@ -72,7 +72,7 @@ def dopd0file(pd0File, cdfFile, goodens):
                 print('--- first ensembles read at %s and TRDI #%d' % (              
                     ensData['VLeader']['timestr'], ensData['VLeader']['Ensemble_Number']))
                 
-            varobj = cdf.variables['Rec']
+            varobj = cdf.variables['rec']
             try:
                 varobj[cdfIdx] = ensData['VLeader']['Ensemble_Number']
             except:
@@ -88,8 +88,8 @@ def dopd0file(pd0File, cdfFile, goodens):
             # time calculations done when vleader is read
             varobj = cdf.variables['time']
             varobj[cdfIdx] = ensData['VLeader']['time']
-            #varobj = cdf.variables['time2']
-            #varobj[cdfIdx] = ensData['VLeader']['time2']
+            varobj = cdf.variables['time2']
+            varobj[cdfIdx] = ensData['VLeader']['time2']
             
             varobj = cdf.variables['sv']
             varobj[cdfIdx] = ensData['VLeader']['Speed_of_Sound']
@@ -365,7 +365,13 @@ def parseTRDIensemble(ensbytes, verbose):
     
 def setupCdf(fname, ensData, gens):
     
-    # TODO - detect wave, vertical beam and BT data
+    # TODO - detect BT data
+    
+    # note that 
+    # f4 = 4 byte, 32 bit float
+    maxfloat = 3.402823*10**38;
+    intfill = -32768
+    floatfill = 1E35
     
     nens = gens[1]-gens[0]-1
     print('creating netCDF file %s with %d records' % (fname, nens))
@@ -384,31 +390,32 @@ def setupCdf(fname, ensData, gens):
     writeDict2atts(cdf, ensData['FLeader'], "TRDI_")
     
     #varobj = cdf.createVariable('rec','int',('time'))
-    varobj = cdf.createVariable('time','double',('rec'))
+    varobj = cdf.createVariable('time','int',('rec'))
     varobj.units = "True Julian Day"
-    #varobj.epic_code = 624
-    #varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-    #varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    varobj.epic_code = 624
+    varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
     
-    #varobj = cdf.createVariable('time2','int',('time'))
-    #varobj.units = "msec since 0:00 GMT"
-    #varobj.epic_code = 624
-    #varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-    #varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    varobj = cdf.createVariable('time2','int',('rec'))
+    varobj.units = "msec since 0:00 GMT"
+    varobj.epic_code = 624
+    varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
 
-    varobj = cdf.createVariable('Rec','int',('rec'),fill_value=-32768)
+    varobj = cdf.createVariable('rec','u4',('rec'),fill_value=intfill)
     varobj.units = "count"
     varobj.long_name = "Ensemble Number"
-    varobj.valid_range = [0, 2**15]
+    # the ensemble number is a two byte LSB and a one byte MSB (for the rollover)
+    varobj.valid_range = [0, 2**23]
 
-    varobj = cdf.createVariable('sv','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('sv','f4',('rec'),fill_value=floatfill)
     varobj.units = "m s-1"
     varobj.long_name = "sound velocity (m s-1)"
     varobj.valid_range = [1400, 1600]
     
     for i in range(4):
         varname = "vel%d" % (i+1)
-        varobj = cdf.createVariable(varname,'float',('rec','depth'),fill_value=1E35)
+        varobj = cdf.createVariable(varname,'f4',('rec','depth'),fill_value=floatfill)
         varobj.units = "mm s-1"
         varobj.long_name = "Beam %d velocity (mm s-1)" % (i+1)
         varobj.epic_code = 1280+i
@@ -416,7 +423,7 @@ def setupCdf(fname, ensData, gens):
     
     for i in range(4):
         varname = "cor%d" % (i+1)
-        varobj = cdf.createVariable(varname,'int',('rec','depth'),fill_value=-32768)
+        varobj = cdf.createVariable(varname,'u2',('rec','depth'),fill_value=intfill)
         varobj.units = "counts"
         varobj.long_name = "Beam %d correlation" % (i+1)
         varobj.epic_code = 1294+i
@@ -424,7 +431,7 @@ def setupCdf(fname, ensData, gens):
 
     for i in range(4):
         varname = "AGC%d" % (i+1)
-        varobj = cdf.createVariable(varname,'int',('rec','depth'),fill_value=-32768)
+        varobj = cdf.createVariable(varname,'u2',('rec','depth'),fill_value=intfill)
         varobj.units = "counts"
         varobj.epic_code = 1221+i
         varobj.long_name = "Echo Intensity (AGC) Beam %d" % (i+1)
@@ -433,13 +440,13 @@ def setupCdf(fname, ensData, gens):
     if ('GData' in ensData):
         for i in range(4):
             varname = "PGd%d" % (i+1)
-            varobj = cdf.createVariable(varname,'int',('rec','depth'),fill_value=-32768)
+            varobj = cdf.createVariable(varname,'u2',('rec','depth'),fill_value=intfill)
             varobj.units = "counts"
             varobj.long_name = "Percent Good Beam %d" % (i+1)
             varobj.epic_code = 1241+i
             varobj.valid_range = [0, 100]
 
-    varobj = cdf.createVariable('Hdg','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('Hdg','f4',('rec'),fill_value=floatfill)
     varobj.units = "hundredths of degrees"
     varobj.long_name = "INST Heading"
     varobj.epic_code = 1215
@@ -451,79 +458,79 @@ def setupCdf(fname, ensData, gens):
     else:
         varobj.NOTE_9 = "a heading bias was applied by EB during deployment or by wavesmon"
     
-    varobj = cdf.createVariable('Ptch','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('Ptch','f4',('rec'),fill_value=floatfill)
     varobj.units = "hundredths of degrees"
     varobj.long_name = "INST Pitch"
     varobj.epic_code = 1216
     varobj.valid_range = [-18000, 18000] # physical limit, not sensor limit
     
-    varobj = cdf.createVariable('Roll','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('Roll','f4',('rec'),fill_value=floatfill)
     varobj.units = "hundredths of degrees"
     varobj.long_name = "INST Roll"
     varobj.epic_code = 1217
     varobj.valid_range = [-18000, 18000] # physical limit, not sensor limit
 
-    varobj = cdf.createVariable('HdgSTD','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('HdgSTD','f4',('rec'),fill_value=floatfill)
     varobj.units = "degrees"
     varobj.long_name = "Heading Standard Deviation"
 
-    varobj = cdf.createVariable('PtchSTD','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('PtchSTD','f4',('rec'),fill_value=floatfill)
     varobj.units = "tenths of degrees"
     varobj.long_name = "Pitch Standard Deviation"
 
-    varobj = cdf.createVariable('RollSTD','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('RollSTD','f4',('rec'),fill_value=floatfill)
     varobj.units = "tenths of degrees"
     varobj.long_name = "Roll Standard Deviation"
 
-    varobj = cdf.createVariable('Tx','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('Tx','f4',('rec'),fill_value=floatfill)
     varobj.units = "hundredths of degrees"
     varobj.long_name = "ADCP Transducer Temperature"
     varobj.epic_code = 3017
     varobj.valid_range = [-500, 4000]    
 
-    varobj = cdf.createVariable('S','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('S','f4',('rec'),fill_value=floatfill)
     varobj.units = "PPT"
     varobj.long_name = "SALINITY (PPT)"
     varobj.epic_code = 40
     varobj.valid_range = [0, 40]    
 
-    varobj = cdf.createVariable('xmitc','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('xmitc','f4',('rec'),fill_value=floatfill)
     varobj.units = "amps"
     varobj.long_name = "transmit current"
 
-    varobj = cdf.createVariable('xmitv','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('xmitv','f4',('rec'),fill_value=floatfill)
     varobj.units = "volts"
     varobj.long_name = "transmit voltage"
 
-    varobj = cdf.createVariable('dac','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('dac','i2',('rec'),fill_value=intfill)
     varobj.units = "counts"
     varobj.long_name = "DAC output"
 
-    varobj = cdf.createVariable('VDD3','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('VDD3','i2',('rec'),fill_value=intfill)
     varobj.units = "volts"
     varobj.long_name = "battery voltage 3"
 
-    varobj = cdf.createVariable('VDD1','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('VDD1','i2',('rec'),fill_value=intfill)
     varobj.units = "volts"
     varobj.long_name = "battery voltage 1"
 
-    varobj = cdf.createVariable('VDC','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('VDC','i2',('rec'),fill_value=intfill)
     varobj.units = "volts"
     varobj.long_name = "VDC"
 
     for i in range(4):
         varname = "EWD%d" % (i+1)
-        varobj = cdf.createVariable(varname,'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable(varname,'u2',('rec'),fill_value=intfill)
         varobj.units = "binary flag"
         varobj.long_name = "Error Status Word %d" % (i+1)
 
-    varobj = cdf.createVariable('Pressure','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('Pressure','f4',('rec'),fill_value=floatfill)
     varobj.units = "deca-pascals"
     varobj.long_name = "ADCP Transducer Pressure"
     varobj.epic_code = 4
-    varobj.valid_range = [0, 2**31]
+    varobj.valid_range = [0, maxfloat]
 
-    varobj = cdf.createVariable('PressVar','float',('rec'),fill_value=1E35)
+    varobj = cdf.createVariable('PressVar','f4',('rec'),fill_value=floatfill)
     varobj.units = "deca-pascals"
     varobj.long_name = "ADCP Transducer Pressure Variance"
     varobj.valid_range = [0, 2**31]
@@ -536,20 +543,20 @@ def setupCdf(fname, ensData, gens):
 
     if ('VBeamVData' in ensData):
         if ensData['VBeamLeader']['Vertical_Depth_Cells'] == ensData['FLeader']['Number_of_Cells']:
-            varobj = cdf.createVariable("vel5",'float',('rec','depth'),fill_value=1E35)
+            varobj = cdf.createVariable("vel5",'f4',('rec','depth'),fill_value=floatfill)
             varobj.units = "mm s-1"
             varobj.long_name = "Beam 5 velocity (mm s-1)"
             varobj.valid_range = [-32767, 32767]
-            varobj = cdf.createVariable("cor5",'int',('rec','depth'),fill_value=-32768)
+            varobj = cdf.createVariable("cor5",'u2',('rec','depth'),fill_value=intfill)
             varobj.units = "counts"
             varobj.long_name = "Beam 5 correlation"
             varobj.valid_range = [0, 255]
-            varobj = cdf.createVariable("AGC5",'int',('rec','depth'),fill_value=-32768)
+            varobj = cdf.createVariable("AGC5",'u2',('rec','depth'),fill_value=intfill)
             varobj.units = "counts"
             varobj.long_name = "Echo Intensity (AGC) Beam 5"
             varobj.valid_range = [0, 255]
             if ('VBeamGData' in ensData):
-                varobj = cdf.createVariable("PGd5",'int',('rec','depth'),fill_value=-32768)
+                varobj = cdf.createVariable("PGd5",'u2',('rec','depth'),fill_value=intfill)
                 varobj.units = "counts"
                 varobj.long_name = "Percent Good Beam 5"
                 varobj.valid_range = [0, 100]
@@ -562,82 +569,82 @@ def setupCdf(fname, ensData, gens):
 
     if ('WaveParams' in ensData):
         # no units given for any of these in the TRDI docs
-        varobj = cdf.createVariable("Hs",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("Hs",'f4',('rec'),fill_value=floatfill)
         varobj.units = "m"
         varobj.long_name = "Significant Wave Height (m)"
-        varobj = cdf.createVariable("Tp",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("Tp",'f4',('rec'),fill_value=floatfill)
         varobj.units = "s"
         varobj.long_name = "Peak Wave Period (s)"
-        varobj = cdf.createVariable("Dp",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("Dp",'f4',('rec'),fill_value=floatfill)
         varobj.units = "Deg."
         varobj.long_name = "Peak Wave Direction (Deg.)"
         varobj.valid_range = [0, 360]
-        varobj = cdf.createVariable("Dm",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("Dm",'f4',('rec'),fill_value=floatfill)
         varobj.units = "Deg."
         varobj.long_name = "Mea Peak Wave Direction (Deg.)"
         varobj.valid_range = [0, 360]
-        varobj = cdf.createVariable("SHmax",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("SHmax",'f4',('rec'),fill_value=floatfill)
         varobj.units = "m"
         varobj.long_name = "Maximum Wave Height (m)"
         varobj.note = "from zero crossing anaylsis of surface track time series"
-        varobj = cdf.createVariable("SH13",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("SH13",'f4',('rec'),fill_value=floatfill)
         varobj.units = "m"
         varobj.long_name = "Significant Wave Height of the largest 1/3 of the waves (m)"
         varobj.note = "in the field from zero crossing anaylsis of surface track time series"
-        varobj = cdf.createVariable("SH10",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("SH10",'f4',('rec'),fill_value=floatfill)
         varobj.units = "m"
         varobj.long_name = "Significant Wave Height of the largest 1/10 of the waves (m)"
         varobj.note = "in the field from zero crossing anaylsis of surface track time series"
-        varobj = cdf.createVariable("STmax",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("STmax",'f4',('rec'),fill_value=floatfill)
         varobj.units = "s"
         varobj.long_name = "Maximum Peak Wave Period (s)"
         varobj.note = "from zero crossing anaylsis of surface track time series"
-        varobj = cdf.createVariable("ST13",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("ST13",'f4',('rec'),fill_value=floatfill)
         varobj.units = "s"
         varobj.long_name = "Period associated with the peak wave height of the largest 1/3 of the waves (s)"
         varobj.note = "in the field from zero crossing anaylsis of surface track time series"
-        varobj = cdf.createVariable("ST10",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("ST10",'f4',('rec'),fill_value=floatfill)
         varobj.units = "s"
         varobj.long_name = "Period associated with the peak wave height of the largest 1/10 of the waves (s)"
         varobj.note = "in the field from zero crossing anaylsis of surface track time series"
-        varobj = cdf.createVariable("T01",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("T01",'f4',('rec'),fill_value=floatfill)
         varobj.units = " " 
-        varobj = cdf.createVariable("Tz",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("Tz",'f4',('rec'),fill_value=floatfill)
         varobj.units = " "
-        varobj = cdf.createVariable("Tinv1",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("Tinv1",'f4',('rec'),fill_value=floatfill)
         varobj.units = " "
-        varobj = cdf.createVariable("S0",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("S0",'f4',('rec'),fill_value=floatfill)
         varobj.units = " "
-        varobj = cdf.createVariable("Source",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("Source",'f4',('rec'),fill_value=floatfill)
         varobj.units = " "
 
     if ('WaveSeaSwell' in ensData):
         # no units given for any of these in the TRDI docs
-        varobj = cdf.createVariable("HsSea",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("HsSea",'f4',('rec'),fill_value=floatfill)
         varobj.units = "m"
         varobj.long_name = "Significant Wave Height (m)"
         varobj.note = "in the sea region of the power spectrum"
-        varobj = cdf.createVariable("HsSwell",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("HsSwell",'f4',('rec'),fill_value=floatfill)
         varobj.units = "m"
         varobj.long_name = "Significant Wave Height (m)"
         varobj.note = "in the swell region of the power spectrum"
-        varobj = cdf.createVariable("TpSea",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("TpSea",'f4',('rec'),fill_value=floatfill)
         varobj.units = "s"
         varobj.long_name = "Peak Wave Period (s)"
         varobj.note = "in the sea region of the power spectrum"
-        varobj = cdf.createVariable("TpSea",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("TpSea",'f4',('rec'),fill_value=floatfill)
         varobj.units = "s"
         varobj.long_name = "Peak Wave Period (s)"
         varobj.note = "in the swell region of the power spectrum"
-        varobj = cdf.createVariable("DpSea",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("DpSea",'f4',('rec'),fill_value=floatfill)
         varobj.units = "Deg."
         varobj.long_name = "Peak Wave Direction (Deg.)"
         varobj.note = "in the sea region of the power spectrum"
-        varobj = cdf.createVariable("DpSwell",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("DpSwell",'f4',('rec'),fill_value=floatfill)
         varobj.units = "Deg."
         varobj.long_name = "Peak Wave Direction (Deg.)"
         varobj.note = "in the swell region of the power spectrum"
-        varobj = cdf.createVariable("SeaSwellPeriod",'float',('rec'),fill_value=1E35)
+        varobj = cdf.createVariable("SeaSwellPeriod",'f4',('rec'),fill_value=floatfill)
         varobj.units = "s"
         varobj.long_name = "Transition Period between Sea and Swell (s)"     
         
@@ -900,11 +907,12 @@ def parseTRDIVariableLeader(bstream, offset):
     VLeaderData['dtobj'] = dt.datetime(VLeaderData['Year'], VLeaderData['Month'],
         VLeaderData['Day'], VLeaderData['Hour'], VLeaderData['Minute'],
         VLeaderData['Second'], VLeaderData['Hundredths']*1000)
-    jd = ajd(VLeaderData['dtobj'])
-    VLeaderData['julian day'] = jd
-    #VLeaderData['time'] = int(math.floor(jd))
-    VLeaderData['time'] = jd
-    #VLeaderData['time2'] = int((jd - math.floor(jd))*(24*3600*1000))
+    jddt = ajd(VLeaderData['dtobj'])
+    VLeaderData['julian_day_from_ajd'] = jddt
+    VLeaderData['julian_day_from_julian'] = jddt
+    VLeaderData['time'] = int(math.floor(jd))
+    #VLeaderData['time'] = jd1
+    VLeaderData['time2'] = int((jd - math.floor(jd))*(24*3600*1000))
         
     VLeaderData['BIT_Result_Byte_13'] = bitstrLE(bstream[offset+12])
     VLeaderData['Demod_1_error_bit'] = int(VLeaderData['BIT_Result_Byte_13'][3])
@@ -1209,7 +1217,7 @@ def parseTRDIVEventLog(bstream, offset):
         
     return VEventLogData
 
-def parseTRDIWaveParmeters(bstream, offset):
+def parseTRDIWaveParameters(bstream, offset):
     # bstream is a bytes object that contains an entire ensemble
     # offset is the location in the bytes object of the first byte of this data format
     data = {}
@@ -1270,9 +1278,10 @@ def __computeChecksum(ensemble):
 # I don't know what the Italy is.
 # TODO - check this, or replace with better solution
 def julian(year,month,day,hour,mn,sec,hund):
-    # from RPS' julian.m and hms2h.m
-    s = sec+hund/100
-    h=hour+(mn+s/60)/60
+    # from julian.m and hms2h.m
+    # conver hours, minutes and seconds to decimal hours
+    decimalsec = sec+hund/100
+    decimalhrs = hour+mn/60+decimalsec/3600
     mo=month+9
     yr=year-1
     
@@ -1283,12 +1292,13 @@ def julian(year,month,day,hour,mn,sec,hund):
     c = math.floor(yr/100)
     yr = yr - c*100
     d = day
-    j = math.floor((146097*c)/4)+math.floor((1461*yr)/4)+math.floor((153*mo +2)/5)+d+1721119
+    j = math.floor((146097*c)/4)+math.floor((1461*yr)/4)+ \
+        math.floor((153*mo +2)/5)+d+1721119
 
     # If you want julian days to start and end at noon, 
     # replace the following line with:
-    # j=j+(h-12)/24;
-    j=j+h/24
+    # j=j+(decimalhrss-12)/24;
+    j=j+decimalhrs/24
     
     return j
     

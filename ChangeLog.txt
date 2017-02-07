@@ -1,3 +1,4 @@
+2/7/2017 Still having issues getting time right.  Went back to time and time2 output with rec as the longest dimension.  Worked with very large (>3mil enembles, 6 GB netcdf file size) files.
 2/2/2017 Change longest dimension to 'Rec' rather than time.  Some ADCP records do not have unique time values.  Remove time2.  Make time a julian day.
 2/1/2017 Added ability to parse Velocity output data, 5 beam
 1/30/2017 Fixed tilts, was reading unsigned, rather than signed shorts

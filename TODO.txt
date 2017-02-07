@@ -13,6 +13,6 @@ There may be a case where there is only wave data in a Velocity output file.  TH
 
 Learn how to implment and output log file.
 
-Handle the problem that time values may not be unique when data are converted to EPIC.  For now, using ensemble number as the record dimension.
+Handle the problem that time values may not be unique when data are converted to EPIC.  For now, using ensemble number as the record dimension.  Probably need to include, to the millisecond or microsecond, inter-ping delay information to get a unique time stamp for each ensemble, or, ignore all that and simply average and work on that data.
 
-Reduce file size by forcing smaller variables.  Cor, Int and PGd can all be ushort.  Most ofthe rest can be float (16, not 32 bit).  Right now, they get written as double.
+Need process to average very large data sets 6 GB files).  Have determined that nco is not appropriate, exploring xarray.

@@ -11,3 +11,5 @@ http://docs.python-guide.org/en/latest/writing/structure/
 Note that the project is in process, I am pushing incomplete code here to make sure it is backed up.
 
 TRDIpd0tonetcdf.py does not output EPIC because time2 is not used
+
+I am still having trouble with time, specifically conversion to julian and saving it to netCDF with enough precision.
