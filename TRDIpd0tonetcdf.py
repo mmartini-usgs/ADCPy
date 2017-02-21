@@ -17,6 +17,11 @@ where:
 As a module:
 import TRDIpd0tonetcdf as pd0
 
+Notes:
+    time and time2, the EPIC convention for netCDF, is not used here so that
+    the resulting very large files generated can be reduced using existing 
+    python too ls such as xarrays
+
 Programmed according to the TRDI Workhorse Commands and Output Data Format document, March 2005
 """
 
@@ -76,21 +81,20 @@ def dopd0file(pd0File, cdfFile, goodens):
             try:
                 varobj[cdfIdx] = ensData['VLeader']['Ensemble_Number']
             except:
-                #print(ensData['VLeader']['Ensemble_Number'])
-                #print(cdfIdx)
-                #print((goodens[1]-goodens[0]-1))
                 # here we have reached the end of the netCDF file
                 cdf.close()
                 infile.close()
-                #sys.exit()
                 return
 
             # time calculations done when vleader is read
             varobj = cdf.variables['time']
-            varobj[cdfIdx] = ensData['VLeader']['time']
-            varobj = cdf.variables['time2']
-            varobj[cdfIdx] = ensData['VLeader']['time2']
-            
+            varobj[cdfIdx] = ensData['VLeader']['julian_day_from_julian']
+            # diagnostic
+            if (goodens[1]-goodens[0]-1)<100:
+                print('%d %15.8f %s' % (ensData['VLeader']['Ensemble_Number'], 
+                                        ensData['VLeader']['julian_day_from_julian'],
+                                        ensData['VLeader']['timestr']))
+    
             varobj = cdf.variables['sv']
             varobj[cdfIdx] = ensData['VLeader']['Speed_of_Sound']
 
@@ -389,24 +393,30 @@ def setupCdf(fname, ensData, gens):
     
     writeDict2atts(cdf, ensData['FLeader'], "TRDI_")
     
-    #varobj = cdf.createVariable('rec','int',('time'))
-    varobj = cdf.createVariable('time','int',('rec'))
-    varobj.units = "True Julian Day"
-    varobj.epic_code = 624
-    varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-    
-    varobj = cdf.createVariable('time2','int',('rec'))
-    varobj.units = "msec since 0:00 GMT"
-    varobj.epic_code = 624
-    varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-
     varobj = cdf.createVariable('rec','u4',('rec'),fill_value=intfill)
     varobj.units = "count"
     varobj.long_name = "Ensemble Number"
     # the ensemble number is a two byte LSB and a one byte MSB (for the rollover)
     varobj.valid_range = [0, 2**23]
+
+    # this is a CF convention, and if f8, 64 bit is not used, time is clipped
+    # for ADCP fast sampled, single ping data, need millisecond resolution
+    varobj = cdf.createVariable('time','f8',('rec'))
+    varobj.units = "milliseconds since 1986-5-23 00:00:00.0 0:00"
+    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+
+    # we are not using these EPIC definitions yet.  They are here for reference
+    #varobj = cdf.createVariable('rec','int',('time'))
+    #varobj = cdf.createVariable('time','int',('rec'))
+    #varobj.units = "True Julian Day"
+    #varobj.epic_code = 624
+    #varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+    #varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    #varobj = cdf.createVariable('time2','int',('rec'))
+    #varobj.units = "msec since 0:00 GMT"
+    #varobj.epic_code = 624
+    #varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+    #varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
 
     varobj = cdf.createVariable('sv','f4',('rec'),fill_value=floatfill)
     varobj.units = "m s-1"
@@ -649,7 +659,6 @@ def setupCdf(fname, ensData, gens):
         varobj.long_name = "Transition Period between Sea and Swell (s)"     
         
     # TODO add bottom track
-    # TODO add wave statistics
 
     return cdf
 
@@ -679,7 +688,6 @@ def bitstrBE(byte): # make a bit string from big endian byte
             bits+="0"
     return bits
 
-#TODO - break this into a separate file for module-wide use
 # read header directly from a file pointer
 def readTRDIHeader(infile):
     HeaderData = {}
@@ -712,7 +720,6 @@ def parseTRDIHeader(bstream):
 
     return HeaderData
     
-#TODO - break this into a separate file for module-wide use
 def parseTRDIFixedLeader(bstream, offset):
     # bstream is a bytes object that contains an entire ensemble
     # offset is the location in the bytes object of the first byte of this data format
@@ -870,7 +877,6 @@ def parseTRDIFixedLeader(bstream, offset):
     
     return FLeaderData
 
-#TODO - break this into a separate file for module-wide use
 def parseTRDIVariableLeader(bstream, offset):
     # bstream is a bytes object that contains an entire ensemble
     # offset is the location in the bytes object of the first byte of this data format
@@ -908,11 +914,11 @@ def parseTRDIVariableLeader(bstream, offset):
         VLeaderData['Day'], VLeaderData['Hour'], VLeaderData['Minute'],
         VLeaderData['Second'], VLeaderData['Hundredths']*1000)
     jddt = ajd(VLeaderData['dtobj'])
-    VLeaderData['julian_day_from_ajd'] = jddt
-    VLeaderData['julian_day_from_julian'] = jddt
-    VLeaderData['time'] = int(math.floor(jd))
-    #VLeaderData['time'] = jd1
-    VLeaderData['time2'] = int((jd - math.floor(jd))*(24*3600*1000))
+    VLeaderData['julian_day_from_as_datetime_object'] = jddt
+    VLeaderData['julian_day_from_julian'] = jd
+    #VLeaderData['time'] = int(math.floor(jd))
+    VLeaderData['time'] = jd
+    #VLeaderData['time2'] = int((jd - math.floor(jd))*(24*3600*1000))
         
     VLeaderData['BIT_Result_Byte_13'] = bitstrLE(bstream[offset+12])
     VLeaderData['Demod_1_error_bit'] = int(VLeaderData['BIT_Result_Byte_13'][3])
@@ -1261,22 +1267,16 @@ def parseTRDIWaveSeaSwell(bstream, offset):
 
     return data
     
-# factored for readability
 def __computeChecksum(ensemble):
     """Compute a checksum from header, length, and ensemble"""
     cs = 0    
     for byte in range(len(ensemble)-2):
-        # since the for loop returns an int to byte, use as-is in python 3x
-        #value = struct.unpack('B', byte)[0]
-        #cs += value
         cs += ensemble[byte]
     return cs & 0xffff
     
 # these date conversion functions came from
 # http://stackoverflow.com/questions/31142181/calculating-julian-date-in-python/41769526#41769526
 # AND OLD rps matlab code
-# I don't know what the Italy is.
-# TODO - check this, or replace with better solution
 def julian(year,month,day,hour,mn,sec,hund):
     # from julian.m and hms2h.m
     # conver hours, minutes and seconds to decimal hours
@@ -1301,11 +1301,9 @@ def julian(year,month,day,hour,mn,sec,hund):
     j=j+decimalhrs/24
     
     return j
-    
+
 def jdn(dto):
-    """
-    Given datetime object returns Julian Day Number
-    """
+    # Given datetime object returns Julian Day Number
     year = dto.year
     month = dto.month
     day = dto.day
@@ -1319,23 +1317,16 @@ def jdn(dto):
     reform = 2 - fr_y + math.floor(fr_y / 4)
     jjs = day + (
         math.floor(365.25 * (year + 4716)) + math.floor(30.6001 * (month + 1)) + reform - 1524)
-    # Waht is this?
-    #if jjs < ITALY:
-    #    jjs -= reform
 
     return jjs
-    # end jdn
 
 def ajd(dto):
-    """
-    Given datetime object returns Astronomical Julian Day.
-    Day is from midnight 00:00:00+00:00 with day fractional
-    value added.
-    """
+    #Given datetime object returns Astronomical Julian Day.
+    #Day is from midnight 00:00:00+00:00 with day fractional
+    #value added.
     jdd = jdn(dto)
     day_fraction = dto.hour / 24.0 + dto.minute / 1440.0 + dto.second / 86400.0
     return jdd + day_fraction - 0.5
-    # end ajd
     
 def analyzepd0file(pd0File):
     # determine the input file size
@@ -1416,6 +1407,7 @@ def analyzepd0file(pd0File):
 
     
 def __main():
+# TODO add - and -- types of command line arguments
     print('%s running on python %s' % (sys.argv[0], sys.version))
 	
     if len(sys.argv) < 2:

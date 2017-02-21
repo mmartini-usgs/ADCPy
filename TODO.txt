@@ -5,14 +5,10 @@ Need to Compute depths of cells and add depth as an ordinate variables.
 
 Handle bottom track data.
 
-Would like to restructure as a module that can be loaded instead of one long script full of defs, was having trouble doing this and using Spyder at the same time - unresolved spyder path issues.
-
 It is possible for the 5th beam of a V to have a different number of cells.  This is trapped, but not dealt with, in the code.  In this case 5th beam data will nto be output.
 
 There may be a case where there is only wave data in a Velocity output file.  THe program will probably not handle this well.
 
 Learn how to implment and output log file.
-
-Handle the problem that time values may not be unique when data are converted to EPIC.  For now, using ensemble number as the record dimension.  Probably need to include, to the millisecond or microsecond, inter-ping delay information to get a unique time stamp for each ensemble, or, ignore all that and simply average and work on that data.
 
 Need process to average very large data sets 6 GB files).  Have determined that nco is not appropriate, exploring xarray.
