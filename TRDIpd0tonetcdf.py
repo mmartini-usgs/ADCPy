@@ -1412,7 +1412,7 @@ def __main():
 	
     if len(sys.argv) < 2:
         print("%s useage:" % sys.argv[0])
-        print("TRDIpd0tonetcdf infilename outfilename (startingensemble endingensemble)" )
+        print("TRDIpd0tonetcdf infilename outfilename [startingensemble endingensemble]" )
         sys.exit(1)
     
     try:
@@ -1432,7 +1432,7 @@ def __main():
     try:
         goodens = [int(sys.argv[3]), int(sys.argv[4])]
     except:
-        print('No starting or ending ensembles specfied, processing entire file')
+        print('No starting and ending ensembles specfied, processing entire file')
         goodens = [0,np.inf]
     
     print('Start file conversion at ',dt.datetime.now())
