@@ -9,3 +9,8 @@ I used this guide to set up this project:
 http://docs.python-guide.org/en/latest/writing/structure/
 
 Use at  your own risk - this is a work in progress and a python learning project.
+
+Note that a 2 GB, single ping Workhorse file will take 
+
+you will want this installation of python:
+https://github.com/ioos/notebooks_demos/wiki/Installing-Conda-Python-with-the-IOOS-environment

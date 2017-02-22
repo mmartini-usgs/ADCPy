@@ -33,10 +33,15 @@ from netCDF4 import Dataset
 import datetime as dt
 
 def dopd0file(pd0File, cdfFile, goodens):
+
+	# TODO figure out a better way to handle this situation
+	# need this check in case this function is used as a stand alone function
     
-    maxens, ensLen, ensData = analyzepd0file(pd0File)
+    maxens, ensLen, ensData, dataStartPosn = analyzepd0file(pd0File)
     
     infile = open(pd0File, 'rb')
+    
+    infile.seek(dataStartPosn)
     
     if goodens[1] == np.inf:
         goodens[1] = maxens
@@ -1333,14 +1338,24 @@ def analyzepd0file(pd0File):
     # read some ensembles, make an estimate of the number of ensembles within
     infile = open(pd0File, 'rb')
     
-    while (infile.read(1) != b'\x7f') & (infile.read(1) != b'\x7f'):
+    flag = 1;
+    while flag==1:
+        b1 = infile.read(1)
+        if ( b1 == b'\x7f'):
+            b2 = infile.read(1)
+            if (b2 == b'\x7f'):
+                flag=0;
         idx = infile.tell()
-        if idx < 3000:
+        #print('%d %s' % (idx, b1))
+        if idx > 3000:
             print('Desired TRDI 7f7f ID not found within 3 kB from beginning of the file')
             infile.close()
             sys.exit(1)
-        
-    infile.seek(0)
+    
+    startofdata = idx-2    
+    if startofdata != 0:
+        print('data starts %d bytes into the file' % startofdata)
+    infile.seek(startofdata)
     
     # need to read the header from the file to know the ensemble size
     Header = readTRDIHeader(infile)
@@ -1363,7 +1378,7 @@ def analyzepd0file(pd0File):
     # entire file
     # rewind and read this several ensembles because further in the ensemble
     # length can change on files output from Velocity
-    infile.seek(0)
+    infile.seek(startofdata)
     
     nens2check = 5
     nbytesperens = [0 for i in range(nens2check)]
@@ -1403,7 +1418,7 @@ def analyzepd0file(pd0File):
     print('ensemble length = %g' % ensLen)
     print('estimating %g ensembles in file' % maxens)
     
-    return maxens, ensLen, ensData
+    return maxens, ensLen, ensData, startofdata
 
     
 def __main():
