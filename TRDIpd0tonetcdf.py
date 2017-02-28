@@ -49,6 +49,9 @@ def dopd0file(pd0File, cdfFile, goodens):
     # we are good to go, get the output file ready
     print('Setting up netCDF file %s' % cdfFile)
     cdf = setupCdf(cdfFile, ensData, goodens)
+    # we want to save the time stamp from this ensemble since it is the
+    # time from which all other times in the file will be relative to
+    t0 = ensData['VLeader']['dtobj']
 
     cdfIdx = 0
     ensCount = 0
@@ -93,7 +96,11 @@ def dopd0file(pd0File, cdfFile, goodens):
 
             # time calculations done when vleader is read
             varobj = cdf.variables['time']
-            varobj[cdfIdx] = ensData['VLeader']['julian_day_from_julian']
+            #varobj[cdfIdx] = ensData['VLeader']['julian_day_from_julian']
+            elapsed = ensData['VLeader']['dtobj']-t0 # timedelta
+            elapsed_sec = elapsed.total_seconds()
+            varobj[cdfIdx] = elapsed_sec
+            
             # diagnostic
             if (goodens[1]-goodens[0]-1)<100:
                 print('%d %15.8f %s' % (ensData['VLeader']['Ensemble_Number'], 
@@ -404,12 +411,18 @@ def setupCdf(fname, ensData, gens):
     # the ensemble number is a two byte LSB and a one byte MSB (for the rollover)
     varobj.valid_range = [0, 2**23]
 
-    # this is a CF convention, and if f8, 64 bit is not used, time is clipped
+    # if f8, 64 bit is not used, time is clipped
     # for ADCP fast sampled, single ping data, need millisecond resolution
     varobj = cdf.createVariable('time','f8',('rec'))
-    varobj.units = "milliseconds since 1986-5-23 00:00:00.0 0:00"
-    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-
+    #varobj.units = "milliseconds since 1968-5-23 00:00:00.0 0:00" # UTC is understood
+    #varobj.units = "days since 1968-5-23 00:00:00.0 0:00"
+    #varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    # for cf convention, always assume UTC for now, and use the UNIX Epoch as the reference
+    varobj.units = "seconds since %d-%d-%d %d:%d:%f 0:00" % (ensData['VLeader']['Year'],
+        ensData['VLeader']['Month'],ensData['VLeader']['Day'],ensData['VLeader']['Hour'],
+        ensData['VLeader']['Minute'],ensData['VLeader']['Second']+
+        ensData['VLeader']['Hundredths']/100)
+    
     # we are not using these EPIC definitions yet.  They are here for reference
     #varobj = cdf.createVariable('rec','int',('time'))
     #varobj = cdf.createVariable('time','int',('rec'))
@@ -1394,7 +1407,9 @@ def analyzepd0file(pd0File):
             print('error - problem reading the first ensemble')
             infile.close()
             sys.exit(1)
-            
+        
+        if i == 0:
+            firstEnsData = ensData
         print('ensemble %d has %d bytes and %d datatypes' % (ensData['VLeader']['Ensemble_Number'], 
             ensData['Header']['nbytesperens'],ensData['Header']['ndatatypes']))
         nbytesperens[i] = ensData['Header']['nbytesperens']+2
@@ -1418,8 +1433,8 @@ def analyzepd0file(pd0File):
     print('ensemble length = %g' % ensLen)
     print('estimating %g ensembles in file' % maxens)
     
-    return maxens, ensLen, ensData, startofdata
-
+    #return maxens, ensLen, ensData, startofdata
+    return maxens, ensLen, firstEnsData, startofdata
     
 def __main():
 # TODO add - and -- types of command line arguments
