@@ -1,5 +1,7 @@
 2/28/2017 Needed time expressed as CF convention that xarray could understand.  Did this by expressing as seconds since the first timestamp in the file.
-		Saving this version of the code before re-writing for another xarray requirement, that time be the index.
+		Saving a version of the code before re-writing for another xarray requirement, that time be the index.
+		Saving another version to include BT data and with time successfully written as an ordinate dimension.
+		Now with time as an index, xarray can do its time magic and resample can be used.
 2/21/2017 Got time figured out.  Using time as a variable, ensemble as the record variable.  Had to define the time variable in netCDF as f8 (64 bit floating point) to get teh necessary resolution for milliseconds in a day.
 2/7/2017 Still having issues getting time right.  Went back to time and time2 output with rec as the longest dimension.  Worked with very large (>3mil enembles, 6 GB netcdf file size) files.
 2/2/2017 Change longest dimension to 'Rec' rather than time.  Some ADCP records do not have unique time values.  Remove time2.  Make time a julian day.
