@@ -1,4 +1,4 @@
-Where did all this come from?  I did not write it all myself...
+Where did all this come from?  I did not conceive it all myself... inspiration came from:
 
 pd0.py, adcpwaves.py were inspiration and learning for me, written by
 Gregory P Dusek <gdusek@email.unc.edu> - original prototype
