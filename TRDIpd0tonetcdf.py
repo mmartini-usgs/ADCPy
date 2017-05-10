@@ -172,6 +172,55 @@ def dopd0file(pd0File, cdfFile, goodens):
             varobj = cdf.variables['PressVar']
             varobj[cdfIdx] = ensData['VLeader']['Pressure_variance_deca-pascals']
 
+            # add bottom track data write to cdf here
+            if ('BTData' in ensData):
+                if ensData['BTData']['Mode'] == 0:
+                    varobj = cdf.variables['BTRmin']
+                    varobj[cdfIdx] = ensData['BTData']['Ref_Layer_Min']
+                    varobj = cdf.variables['BTRnear']
+                    varobj[cdfIdx] = ensData['BTData']['Ref_Layer_Near']
+                    varobj = cdf.variables['BTRfar']
+                    varobj[cdfIdx] = ensData['BTData']['Ref_Layer_Far']
+
+                varnames = ('BTWe','BTWu','BTWv','BTWd')
+                for i in range(nslantbeams):
+                    varname = "BTR%d" % (i+1)
+                    varobj = cdf.variables[varname]
+                    varobj[cdfIdx] = ensData['BTData']['BT_Range'][i]
+                    if ensData['FLeader']['Coord_Transform'] == 'EARTH':
+                        varobj = cdf.variables[varnames[i]]
+                    else:
+                        varname = "BTV%d" % (i+1)
+                        varobj = cdf.variables[varname]
+                    
+                    varobj[cdfIdx] = ensData['BTData']['BT_Vel'][i]
+                    varname = "BTc%d" % (i+1)
+                    varobj = cdf.variables[varname]
+                    varobj[cdfIdx] = ensData['BTData']['BT_Corr'][i]
+                    varname = "BTe%d" % (i+1)
+                    varobj = cdf.variables[varname]
+                    varobj[cdfIdx] = ensData['BTData']['BT_Amp'][i]
+                    varname = "BTp%d" % (i+1)
+                    varobj = cdf.variables[varname]
+                    varobj[cdfIdx] = ensData['BTData']['BT_PGd'][i]
+                    varname = "BTRSSI%d" % (i+1)
+                    varobj = cdf.variables[varname]
+                    varobj[cdfIdx] = ensData['BTData']['RSSI_Amp'][i]
+                    
+                    if ensData['BTData']['Mode'] == 0:
+                        varobj[cdfIdx] = ensData['BTData']['Ref_Layer_Vel'][i]
+                        varname = "BTRc%d" % (i+1)
+                        varobj = cdf.variables[varname]
+                        varobj[cdfIdx] = ensData['BTData']['Ref_Layer_Corr'][i]
+                        varname = "BTRi%d" % (i+1)
+                        varobj = cdf.variables[varname]
+                        varobj[cdfIdx] = ensData['BTData']['Ref_Layer_Amp'][i]
+                        varname = "BTRp%d" % (i+1)
+                        varobj = cdf.variables[varname]
+                        varobj[cdfIdx] = ensData['BTData']['Ref_Layer_PGd'][i]
+                        
+
+
             if ('VBeamVData' in ensData):
                 if ensData['VBeamLeader']['Vertical_Depth_Cells'] == ensData['FLeader']['Number_of_Cells']:
                     varobj = cdf.variables['vel5']
@@ -563,6 +612,119 @@ def setupCdf(fname, ensData, gens):
     varobj.units = "deca-pascals"
     varobj.long_name = "ADCP Transducer Pressure Variance"
     varobj.valid_range = [0, 2**31]
+    
+    # TODO test this BT stuff with bottom track datas
+    if 'BTData' in ensData: 
+        # write globals attributable to BT setup
+        cdf.setncattr('TRDI_BT_pings_per_ensemble',ensData['BTData']['Pings_per_ensemble'])
+        cdf.setncattr('TRDI_BT_reacquire_delay',ensData['BTData']['delay_before_reacquire'])
+        cdf.setncattr('TRDI_BT_min_corr_mag',ensData['BTData']['Corr_Mag_Min'])
+        cdf.setncattr('TRDI_BT_min_eval_mag',ensData['BTData']['Eval_Amp_Min'])
+        cdf.setncattr('TRDI_BT_min_percent_good',ensData['BTData']['PGd_Minimum'])
+        cdf.setncattr('TRDI_BT_mode',ensData['BTData']['Mode'])
+        cdf.setncattr('TRDI_BT_max_err_vel',ensData['BTData']['Err_Vel_Max'])
+        #cdf.setncattr('TRDI_BT_max_tracking_depth',ensData['BTData'][''])
+        #cdf.setncattr('TRDI_BT_shallow_water_gain',ensData['BTData'][''])
+
+        for i in range(4):
+            varname = "BTR%d" % (i+1)
+            # TODO need to find a 64 bit unsigned integer - or double - designation here
+            varobj = cdf.createVariable(varname,'f4',('time'),fill_value=floatfill)
+            varobj.units = "cm"
+            varobj.long_name = "BT Range %d" % (i+1)
+            varobj.valid_range = [0, 65536*16777215]
+
+        for i in range(4):
+            varnames = ('BTWe','BTWu','BTWv','BTWd')
+            longnames = ('BT Error Velocity','BT Eastward Velocity','BT Northward Velocity','BT Vertical Velocity')
+            if ensData['FLeader']['Coord_Transform'] == 'EARTH':
+                # TODO need to find u2 signed integer, 16 or 32 bit equivalent for this variable's declaration
+                varobj = cdf.createVariable(varnames[i+1],'u2',('time'),fill_value=intfill)
+                varobj.units = "mm s-1"
+                varobj.long_name = "%s, mm s-1" % longnames[i+1]
+                varobj.valid_range = [-32768, 32767]
+                
+            else:
+                # TODO need to find u2 signed integer, 16 or 32 bit equivalent for this variable's declaration
+                varname = "BTV%d" % (i+1)
+                varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
+                varobj.units = "mm s-1"
+                varobj.long_name = "BT velocity, mm s-1 %d" % (i+1)
+                varobj.valid_range = [-32768, 32767]
+                
+        for i in range(4):
+            varname = "BTc%d" % (i+1)
+            varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
+            varobj.units = "counts"
+            varobj.long_name = "BT correlation %d" % (i+1)
+            varobj.valid_range = [0, 255]
+                
+        for i in range(4):
+            varname = "BTe%d" % (i+1)
+            varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
+            varobj.units = "counts"
+            varobj.long_name = "BT evaluation amplitude %d" % (i+1)
+            varobj.valid_range = [0, 255]
+            
+        for i in range(4):
+            varname = "BTp%d" % (i+1)
+            varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
+            varobj.units = "percent"
+            varobj.long_name = "BT percent good %d" % (i+1)
+            varobj.valid_range = [0, 100]
+
+        for i in range(4):
+            varname = "BTRSSI%d" % (i+1)
+            varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
+            varobj.units = "counts"
+            varobj.long_name = "BT Receiver Signal Strength Indicator %d" % (i+1)
+            varobj.valid_range = [0, 255]
+
+        if ensData['BTData']['Mode'] == 0: # water reference layer was used
+            varobj = cdf.createVariable('BTRmin','f4',('time'),fill_value=floatfill)
+            varobj.units = 'dm'
+            varobj.long_name = "BT Ref. min"
+            varobj.valid_range = [0,999]
+            varobj = cdf.createVariable('BTRnear','f4',('time'),fill_value=floatfill)
+            varobj.units = 'dm'
+            varobj.long_name = "BT Ref. near"
+            varobj.valid_range = [0,9999]
+            varobj = cdf.createVariable('BTRfar','f4',('time'),fill_value=floatfill)
+            varobj.units = 'dm'
+            varobj.long_name = "BT Ref. far"
+            varobj.valid_range = [0,9999]
+                
+            for i in range(4):
+                # TODO need to find u2 signed integer, 16 or 32 bit equivalent for this variable's declaration
+                varname = "BTRv%d" % (i+1)
+                varobj = cdf.createVariable(varname,'f4',('time'),fill_value=floatfill)
+                varobj.units = "mm s-1"
+                varobj.long_name = "BT Ref. velocity, mm s-1 %d" % (i+1)
+                varobj.valid_range = [-32768, 32767]
+
+            for i in range(4):
+                varname = "BTRc%d" % (i+1)
+                varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
+                varobj.units = "counts"
+                varobj.long_name = "BT Ref. correlation %d" % (i+1)
+                varobj.valid_range = [0, 255]
+                    
+            for i in range(4):
+                varname = "BTRi%d" % (i+1)
+                varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
+                varobj.units = "counts"
+                varobj.long_name = "BT Ref. intensity %d" % (i+1)
+                varobj.valid_range = [0, 255]
+                
+            for i in range(4):
+                varname = "BTRp%d" % (i+1)
+                varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
+                varobj.units = "percent"
+                varobj.long_name = "BT Ref. percent good %d" % (i+1)
+                varobj.epic_code = 1269+i
+                varobj.valid_range = [0, 100]
+        
+        
     
     if 'VPingSetup' in ensData:
         writeDict2atts(cdf, ensData['VPingSetup'], "TRDI_VBeam_")
@@ -1301,10 +1463,10 @@ def parseTRDIBottomTrack(bstream, offset, nbeams):
     data['PGd_Minimum'] = bstream[offset+8]
     data['Mode'] = bstream[offset+9]
     data['Err_Vel_Max'] = struct.unpack('<H',bstream[offset+10:offset+12])[0]
-    data['BT_range_LSB'] = np.ones((nbeams),dtype=int) * -32768
+    data['BT_Range_LSB'] = np.ones((nbeams),dtype=int) * -32768
     ibyte = 16
     for ibeam in range(nbeams):
-        data['BT_range_LSB'][ibeam] = struct.unpack('<h',bstream[offset+ibyte:offset+ibyte+2])[0]
+        data['BT_Range_LSB'][ibeam] = struct.unpack('<h',bstream[offset+ibyte:offset+ibyte+2])[0]
         ibyte = ibyte+2
     # the meaning and direction depends on the coordinate system used
     data['BT_Vel'] = np.ones((nbeams),dtype=float) * 1e35
@@ -1364,7 +1526,7 @@ def parseTRDIBottomTrack(bstream, offset, nbeams):
         ibyte = ibyte+1
     data['BT_Range'] = np.ones((nbeams),dtype=int) * -32768    
     for ibeam in range(nbeams):
-        data['BT_Range'] = data['BT_Range_LSB'][ibeam]+(data['BT_Range_MSB'][ibeam]<<16)
+        data['BT_Range'][ibeam] = data['BT_Range_LSB'][ibeam]+(data['BT_Range_MSB'][ibeam]<<16)
 
     return data
     

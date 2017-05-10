@@ -1,3 +1,4 @@
+5/9/2017 Put in code to handle bottom track ping data, have not yet tested on real data
 2/28/2017 Needed time expressed as CF convention that xarray could understand.  Did this by expressing as seconds since the first timestamp in the file.
 		Saving a version of the code before re-writing for another xarray requirement, that time be the index.
 		Saving another version to include BT data and with time successfully written as an ordinate dimension.
