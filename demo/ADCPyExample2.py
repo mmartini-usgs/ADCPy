@@ -32,5 +32,6 @@ print('----')
 print('Start file conversion at', dt.datetime.now())
 # when using this module this way, the start and end ensembles are required.
 # use Inf to indicate all ensembles.
-pd0.dopd0file(pd0File,cdfFile, [0,np.inf])
+#pd0.dopd0file(pd0File,cdfFile, [0,np.inf])
+pd0.dopd0file(pd0File,cdfFile, [0,2000])
 print('Finished file conversion at', dt.datetime.now())

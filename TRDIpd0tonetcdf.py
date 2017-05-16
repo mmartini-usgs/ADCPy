@@ -430,9 +430,7 @@ def parseTRDIensemble(ensbytes, verbose):
     return ensData, ensError
     
 def setupCdf(fname, ensData, gens):
-    
-    # TODO - detect BT data
-    
+     
     # note that 
     # f4 = 4 byte, 32 bit float
     maxfloat = 3.402823*10**38;

@@ -10,3 +10,5 @@ There may be a case where there is only wave data in a Velocity output file.  Th
 Learn how to impliment and output a log file.
 
 Time values that are not unique are still being output for very fast sampled time series or where there are bottom track pings or other combined sampling.  This needs to be sorted out, possibly by implmenting groups.
+
+With some data sets, when time is written to netCDF, there are invalid values.  This seems to happen if Inf is used as the last ensemble to read, with the intent to read the whole file.  In these cases it is best to use an explicit ensemble count. 
