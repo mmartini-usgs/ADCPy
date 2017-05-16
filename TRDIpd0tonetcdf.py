@@ -611,7 +611,6 @@ def setupCdf(fname, ensData, gens):
     varobj.long_name = "ADCP Transducer Pressure Variance"
     varobj.valid_range = [0, 2**31]
     
-    # TODO test this BT stuff with bottom track datas
     if 'BTData' in ensData: 
         # write globals attributable to BT setup
         cdf.setncattr('TRDI_BT_pings_per_ensemble',ensData['BTData']['Pings_per_ensemble'])
@@ -626,8 +625,7 @@ def setupCdf(fname, ensData, gens):
 
         for i in range(4):
             varname = "BTR%d" % (i+1)
-            # TODO need to find a 64 bit unsigned integer - or double - designation here
-            varobj = cdf.createVariable(varname,'f4',('time'),fill_value=floatfill)
+            varobj = cdf.createVariable(varname,'u8',('time'),fill_value=intfill)
             varobj.units = "cm"
             varobj.long_name = "BT Range %d" % (i+1)
             varobj.valid_range = [0, 65536*16777215]
@@ -636,16 +634,14 @@ def setupCdf(fname, ensData, gens):
             varnames = ('BTWe','BTWu','BTWv','BTWd')
             longnames = ('BT Error Velocity','BT Eastward Velocity','BT Northward Velocity','BT Vertical Velocity')
             if ensData['FLeader']['Coord_Transform'] == 'EARTH':
-                # TODO need to find u2 signed integer, 16 or 32 bit equivalent for this variable's declaration
-                varobj = cdf.createVariable(varnames[i+1],'u2',('time'),fill_value=intfill)
+                varobj = cdf.createVariable(varnames[i+1],'i2',('time'),fill_value=intfill)
                 varobj.units = "mm s-1"
                 varobj.long_name = "%s, mm s-1" % longnames[i+1]
                 varobj.valid_range = [-32768, 32767]
                 
             else:
-                # TODO need to find u2 signed integer, 16 or 32 bit equivalent for this variable's declaration
                 varname = "BTV%d" % (i+1)
-                varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
+                varobj = cdf.createVariable(varname,'i2',('time'),fill_value=intfill)
                 varobj.units = "mm s-1"
                 varobj.long_name = "BT velocity, mm s-1 %d" % (i+1)
                 varobj.valid_range = [-32768, 32767]
@@ -693,9 +689,8 @@ def setupCdf(fname, ensData, gens):
             varobj.valid_range = [0,9999]
                 
             for i in range(4):
-                # TODO need to find u2 signed integer, 16 or 32 bit equivalent for this variable's declaration
                 varname = "BTRv%d" % (i+1)
-                varobj = cdf.createVariable(varname,'f4',('time'),fill_value=floatfill)
+                varobj = cdf.createVariable(varname,'i2',('time'),fill_value=intfill)
                 varobj.units = "mm s-1"
                 varobj.long_name = "BT Ref. velocity, mm s-1 %d" % (i+1)
                 varobj.valid_range = [-32768, 32767]
@@ -837,8 +832,6 @@ def setupCdf(fname, ensData, gens):
         varobj.units = "s"
         varobj.long_name = "Transition Period between Sea and Swell (s)"     
         
-    # TODO add bottom track
-
     return cdf
 
 def donothing():
