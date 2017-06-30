@@ -85,7 +85,7 @@ def dopd0file(pd0File, cdfFile, goodens):
                 print('--- first ensembles read at %s and TRDI #%d' % (              
                     ensData['VLeader']['timestr'], ensData['VLeader']['Ensemble_Number']))
                 
-            varobj = cdf.variables['rec']
+            varobj = cdf.variables['Rec']
             try:
                 varobj[cdfIdx] = ensData['VLeader']['Ensemble_Number']
             except:
@@ -131,6 +131,8 @@ def dopd0file(pd0File, cdfFile, goodens):
                     varobj = cdf.variables[varname]
                     varobj[cdfIdx,:] = ensData['GData'][i,:]
 
+            varobj = cdf.variables['Rec']
+            varobj[cdfIdx] = ensData['VLeader']['Ensemble_Number']
             varobj = cdf.variables['Hdg']
             varobj[cdfIdx] = ensData['VLeader']['Heading']
             varobj = cdf.variables['Ptch']
@@ -449,11 +451,11 @@ def setupCdf(fname, ensData, gens):
     cdf.createDimension('lon',1)
     
     # write global attributes
-    cdf.history = "translated to netCDF by adcpcurrents2cdf.py"
+    cdf.history = "translated to netCDF by TRDIpd0tonetcdf.py"
     
     writeDict2atts(cdf, ensData['FLeader'], "TRDI_")
     
-    varobj = cdf.createVariable('rec','u4',('time'),fill_value=intfill)
+    varobj = cdf.createVariable('Rec','u4',('time'),fill_value=intfill)
     varobj.units = "count"
     varobj.long_name = "Ensemble Number"
     # the ensemble number is a two byte LSB and a one byte MSB (for the rollover)
@@ -472,13 +474,13 @@ def setupCdf(fname, ensData, gens):
         ensData['VLeader']['Hundredths']/100)
     
     # we are not using these EPIC definitions yet.  They are here for reference
-    #varobj = cdf.createVariable('rec','int',('time'))
-    #varobj = cdf.createVariable('time','int',('rec'))
+    #varobj = cdf.createVariable('Rec','int',('time'))
+    #varobj = cdf.createVariable('time','int',('Rec'))
     #varobj.units = "True Julian Day"
     #varobj.epic_code = 624
     #varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
     #varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-    #varobj = cdf.createVariable('time2','int',('rec'))
+    #varobj = cdf.createVariable('time2','int',('Rec'))
     #varobj.units = "msec since 0:00 GMT"
     #varobj.epic_code = 624
     #varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
@@ -922,8 +924,10 @@ def parseTRDIFixedLeader(bstream, offset):
         FLeaderData['Orientation'] = 'Down-facing beams'
         
     FLeaderData['System_Configuration_MSB'] = bitstrLE(bstream[offset+5])
-    FLeaderData['Beam_Angle'] = int(FLeaderData['System_Configuration_MSB'][6:8],2)
-    Angles = (15,20,30,0)  
+    FLeaderData['Beam_Angle'] = int(FLeaderData['System_Configuration_MSB'][5:8],2)
+    # the angles 15, 20, and 30 are used by the Workhorse
+    # the angle 25 is used by the Sentinel V, and so far, is always 25
+    Angles = (15,20,30,0,0,0,0,25)  
     FLeaderData['Beam_Angle'] = Angles[FLeaderData['Beam_Angle']]
     FLeaderData['Beam_Configuration'] = int(FLeaderData['System_Configuration_MSB'][0:4],2)
     if FLeaderData['Beam_Configuration'] == 4:
@@ -1082,9 +1086,10 @@ def parseTRDIVariableLeader(bstream, offset):
     jd = julian(VLeaderData['Year'],VLeaderData['Month'],VLeaderData['Day'],
                 VLeaderData['Hour'],VLeaderData['Minute'],VLeaderData['Second'],
                 VLeaderData['Hundredths'])        
+    # why multiplying hundredths by 10000? because datetime wants microseconds
     VLeaderData['dtobj'] = dt.datetime(VLeaderData['Year'], VLeaderData['Month'],
         VLeaderData['Day'], VLeaderData['Hour'], VLeaderData['Minute'],
-        VLeaderData['Second'], VLeaderData['Hundredths']*1000)
+        VLeaderData['Second'], VLeaderData['Hundredths']*100000)
     jddt = ajd(VLeaderData['dtobj'])
     VLeaderData['julian_day_from_as_datetime_object'] = jddt
     VLeaderData['julian_day_from_julian'] = jd
