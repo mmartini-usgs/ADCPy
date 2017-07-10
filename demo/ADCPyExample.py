@@ -14,6 +14,7 @@ import numpy as np
 
 pd0File = 'currentsV.pd0'
 cdfFile = 'currentsV.cdf'
+serialnum = "99999"
 
 maxens, ensLen, ensData, startOfData = pd0.analyzepd0file(pd0File)
 # will print out two layers of nested dictionary
@@ -31,5 +32,5 @@ print('----')
 print('Start file conversion at', dt.datetime.now())
 # when using this module this way, the start and end ensembles are required.
 # use Inf to indicate all ensembles.
-pd0.dopd0file(pd0File,cdfFile, [0,np.inf])
+pd0.dopd0file(pd0File,cdfFile, [0,np.inf], serialnum)
 print('Finished file conversion at', dt.datetime.now())

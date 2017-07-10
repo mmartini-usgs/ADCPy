@@ -32,7 +32,7 @@ import numpy as np
 from netCDF4 import Dataset
 import datetime as dt
 
-def dopd0file(pd0File, cdfFile, goodens):
+def dopd0file(pd0File, cdfFile, goodens, serialnum):
 
 	# TODO figure out a better way to handle this situation
 	# need this check in case this function is used as a stand alone function
@@ -48,7 +48,7 @@ def dopd0file(pd0File, cdfFile, goodens):
            
     # we are good to go, get the output file ready
     print('Setting up netCDF file %s' % cdfFile)
-    cdf = setupCdf(cdfFile, ensData, goodens)
+    cdf = setupCdf(cdfFile, ensData, goodens, serialnum)
     # we want to save the time stamp from this ensemble since it is the
     # time from which all other times in the file will be relative to
     t0 = ensData['VLeader']['dtobj']
@@ -431,7 +431,7 @@ def parseTRDIensemble(ensbytes, verbose):
         
     return ensData, ensError
     
-def setupCdf(fname, ensData, gens):
+def setupCdf(fname, ensData, gens, serialnum):
      
     # note that 
     # f4 = 4 byte, 32 bit float
@@ -452,6 +452,8 @@ def setupCdf(fname, ensData, gens):
     
     # write global attributes
     cdf.history = "translated to netCDF by TRDIpd0tonetcdf.py"
+    cdf.sensor_type = "TRDI"
+    cdf.serial_number = serialnum
     
     writeDict2atts(cdf, ensData['FLeader'], "TRDI_")
     
@@ -1086,10 +1088,9 @@ def parseTRDIVariableLeader(bstream, offset):
     jd = julian(VLeaderData['Year'],VLeaderData['Month'],VLeaderData['Day'],
                 VLeaderData['Hour'],VLeaderData['Minute'],VLeaderData['Second'],
                 VLeaderData['Hundredths'])        
-    # why multiplying hundredths by 10000? because datetime wants microseconds
     VLeaderData['dtobj'] = dt.datetime(VLeaderData['Year'], VLeaderData['Month'],
         VLeaderData['Day'], VLeaderData['Hour'], VLeaderData['Minute'],
-        VLeaderData['Second'], VLeaderData['Hundredths']*100000)
+        VLeaderData['Second'], VLeaderData['Hundredths']*1000)
     jddt = ajd(VLeaderData['dtobj'])
     VLeaderData['julian_day_from_as_datetime_object'] = jddt
     VLeaderData['julian_day_from_julian'] = jd
@@ -1705,9 +1706,15 @@ def __main():
     except:
         print('No starting and ending ensembles specfied, processing entire file')
         goodens = [0,np.inf]
+        
+    try:
+        serialnum = sys.argv[5]
+    except:
+        print('No serial number provided')
+        serialnum = "unknown"           
     
     print('Start file conversion at ',dt.datetime.now())
-    dopd0file(infileName, outfileName, goodens)
+    dopd0file(infileName, outfileName, goodens, serialnum)
     
     print('Finished file conversion at ',dt.datetime.now())
 
