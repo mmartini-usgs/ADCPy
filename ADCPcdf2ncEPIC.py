@@ -243,7 +243,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
             pitch = rawcdf.variables['Ptch'][idx] /100
             roll = rawcdf.variables['Roll'][idx] /100
             Mi2e = cal_earth_rotmatrix(heading,pitch,roll,declination)
-            for beam in range(nbeams):
+            for beam in range(nbeams): 
                 vbeam[beam,:] = rawcdf.variables[rawvarnames[beam]][idx,:] /10             
             vinst = Tb2i*vbeam
             vearth = Mi2e*vinst[0:3,:]
