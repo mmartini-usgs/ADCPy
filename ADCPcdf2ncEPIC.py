@@ -19,14 +19,13 @@ Created on Tue May 16 13:33:31 2017
 
 @author: mmartini
 """
-import sys, math
+import sys
 import numpy as np 
 #import netCDF4 as nc4
 from netCDF4 import Dataset
 import netCDF4 as netcdf
 import datetime as dt
 from datetime import datetime
-import xarray as xr
 
 def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     
@@ -36,20 +35,37 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         print('No starting and ending ensembles specfied, processing entire file')
     if 'orientation' not in settings.keys():
         settings['orientation'] = "UP"
+        settings['orientation_note'] = "assumed by program"
         print('No orientation specfied, assuming up-looking')
+    else:
+        settings['orientation_note'] = "user provided orientation"        
     if 'transducer_offset_from_bottom' not in settings.keys():
         settings['transducer_offset_from_bottom'] = 0
         print('No transducer_offset_from_bottom, assuming 0')
+    if 'transformation' not in settings.keys():
+        settings['transformation'] = "EARTH"
 
     rawcdf = Dataset(cdfFile, mode='r',format='NETCDF4')
-    rawvars = rawcdf.variables.keys()
+    rawvars = []
+    for key in rawcdf.variables.keys(): rawvars.append(key)
       
     # this function will operate on the files using the netCDF package
     nc = setupEPICnc(ncFile, rawcdf, attFile, settings)
     
+    nbeams = nc.number_of_slant_beams #what if this isn't 4?
+    nbins = len(rawcdf.dimensions['depth'])
+    nens = len(rawcdf.dimensions['time'])
+    ncvars = []
+    for key in nc.variables.keys(): ncvars.append(key)
+
     # start and end indices
     s = settings['good_ensembles'][0]
-    e = settings['good_ensembles'][1]
+    if settings['good_ensembles'][1] == np.inf:
+        e = nens
+    else:
+        e = settings['good_ensembles'][1]
+    print('Converting from index %d to %d of %s' % (s,e,cdfFile))
+
     # many variables do not need processing and can just be copied to the
     # new EPIC convention
     
@@ -65,12 +81,19 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     
     for key in varlist:
         varobj = nc.variables[varlist[key]]
-        varobj[:] = rawcdf.variables[key][s:e]/100 # hundredths deg. to deg.  
+        varobj[:] = rawcdf.variables[key][s:e]/100 # hundredths deg. to deg. 
+        
+    # nc.magnetic_variation_applied
+    # nc.magnetic_variation_applied_note = "as stated by user, not provided by Veloity processing"
+    # nc.magnetic_variation_at_site
+        
+    # TODO correct heading to True and store that instead
     
-    # TODO - detect conversion by units depending on isntrument type
-    # in this case, decapascals to dbar = /1000
-    convconst = 1000
-    nc['P_1'][:] = rawcdf.variables['Pressure'][s:e]/convconst
+    if 'Pressure' in rawvars:
+        # TODO - detect conversion by units depending on isntrument type
+        # in this case, decapascals to dbar = /1000
+        convconst = 1000
+        nc['P_1'][:] = rawcdf.variables['Pressure'][s:e]/convconst
     
     if 'cor5' in rawvars:
         nc['corvert'][:] = rawcdf.variables['cor5'][s:e,:]
@@ -97,22 +120,32 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     # compute depth, make a guess we want to average all depths recorded 
     # deeper than user supplied water depth
     # idx is returned as a tuple, the first of which is the actual index values
-    idx = np.where(nc['P_1'] > nc.WATER_DEPTH/2)
-    # now for the mean of only on bottom pressure measurements
-    pmean = nc['P_1'][idx[0]].mean()
-    print('Site WATER_DEPTH given is %f' % nc.WATER_DEPTH)
-    print('Calculated mean water level from P_1 is %f m' % pmean)
-    print('Updating site WATER_DEPTH to %f m' % pmean)
-    nc.WATER_DEPTH = pmean+nc.transducer_offset_from_bottom
-    nc.WATER_DEPTH_source = "water depth = MSL from pressure sensor"
-    nc.nominal_sensor_depth = pmean-settings['transducer_offset_from_bottom']
-    nc.nominal_sensor_depth_note = "inst_depth = (water_depth - inst_height); nominal depth below surface, meters"
-    varnames = ['P_1','bindist','depth']
+
+    if 'Pressure' in rawvars:
+        idx = np.where(nc['P_1'] > nc.WATER_DEPTH/2)
+        # now for the mean of only on bottom pressure measurements
+        pmean = nc['P_1'][idx[0]].mean()
+        print('Site WATER_DEPTH given is %f' % nc.WATER_DEPTH)
+        print('Calculated mean water level from P_1 is %f m' % pmean)
+        print('Updating site WATER_DEPTH to %f m' % pmean)
+        nc.WATER_DEPTH = pmean+nc.transducer_offset_from_bottom
+        nc.WATER_DEPTH_source = "water depth = MSL from pressure sensor"
+        nc.nominal_sensor_depth = pmean-settings['transducer_offset_from_bottom']
+        nc.nominal_sensor_depth_note = "inst_depth = (water_depth - inst_height); nominal depth below surface, meters"
+        varnames = ['P_1','bindist','depth']
+        # WATER_DEPTH_datum is not used in this circumstance.
+    else:
+        print('Site WATER_DEPTH given is %f' % nc.WATER_DEPTH)
+        print('No pressure data available, so no adjustment to water depth made')
+        nc.nominal_sensor_depth = nc.WATER_DEPTH-settings['transducer_offset_from_bottom']
+        nc.nominal_sensor_depth_note = "inst_depth = (water_depth - inst_height); nominal depth below surface, meters"
+        varnames = ['bindist','depth']
+        # WATER_DEPTH_datum is not used in this circumstance.
+
     for varname in varnames:
         nc[varname].WATER_DEPTH = nc.WATER_DEPTH
         nc[varname].WATER_DEPTH_source = nc.WATER_DEPTH_source
         nc[varname].transducer_offset_from_bottom = nc.transducer_offset_from_bottom
-    # WATER_DEPTH_datum is not used in this circumstance.
     
     # update depth variable for location of bins based on newly computed WATER_DEPTH
     if "UP" in nc.orientation:
@@ -122,9 +155,6 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     
     nc['depth'][:] = depths        
     
-    # note we are using gregorian here because for extremely large files,
-    # we do not want datetime or netcdf4's use of datetime to load a million
-    # ensembles here in the interest of one time value
     nc.start_time = '%s' % netcdf.num2date(nc['time'][0],nc['time'].units)
     nc.stop_time = '%s' % netcdf.num2date(nc['time'][-1],nc['time'].units)
     
@@ -161,7 +191,70 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         rawcdf.variables['AGC3'][s:e,:]+rawcdf.variables['AGC4'][s:e,:]) / 4
     #varobj = nc.variables['cor']
     nc['AGC_1202'][:,:,0,0] = agc[:,:]
-
+    
+    print('converting %d ensembles from beam to earth %s' % (len(nc['time']), dt.datetime.now()))
+    
+    if rawcdf.TRDI_Beam_Pattern == "Convex":
+        convex = True
+    else:
+        convex = False
+    
+    # set up containers to operate on
+    vbeam =  np.asmatrix(np.ones([nbeams,nbins], dtype=float, order='C')*np.NAN)
+    vinst =  np.asmatrix(np.ones([nbeams,nbins], dtype=float, order='C')*np.NAN)
+    #vxyz =  np.asmatrix(np.ones([3,nbins], dtype=float, order='C')*np.NAN)
+    #vearth =  np.asmatrix(np.ones([nbeams,nbins], dtype=float, order='C')*np.NAN)
+    vels = np.ones(nbins,dtype=float, order='C')*np.NAN
+    
+    
+    # TODO replace this with xarray methodology when we understand how to write
+    # xarray to netcdf
+        
+    # this beam arrangement is for TRDI Workhorse and V
+    rawvarnames = ["vel1", "vel2", "vel3", "vel4"]
+    ncidx = 0
+    if settings['transformation'].upper() == "BEAM":
+        ncvarnames = ["Beam1", "Beam2", "Beam3", "Beam4"]        
+        for idx in range(s,e):
+            for beam in range(nbeams):
+                nc[ncvarnames[beam]][ncidx,:,0,0] = \
+                    rawcdf.variables[rawvarnames[beam]][idx,:] /10
+            ncidx = ncidx +1
+    elif settings['transformation'].upper() == "INST":
+        ncvarnames = ["X","Y","Z","Error"]            
+        # get the beam to instrument rotation matrix
+        Tb2i = calc_beam_rotmatrix(rawcdf.TRDI_Beam_Angle, convex)
+        for idx in range(s,e):
+            for beam in range(nbeams):
+                vbeam[beam,:] = rawcdf.variables[rawvarnames[beam]][idx,:] /10
+                vinst = Tb2i*vbeam
+                #vels = np.array(vinst[beam,:])
+                nc[ncvarnames[beam]][ncidx,:,0,0] = np.array(vinst[beam,:])
+            ncidx = ncidx +1
+    else:
+        ncvarnames = ["u_1205","v_1206","w_1204","Werr_1201"]
+        # get the beam to instrument rotation matrix
+        Tb2i = calc_beam_rotmatrix(rawcdf.TRDI_Beam_Angle, convex)
+        declination = nc.magnetic_variation_at_site
+        nc.magnetic_variation_applied = declination
+        for idx in range(s,e):
+            heading = rawcdf.variables['Hdg'][idx] /100
+            heading = heading + declination
+            pitch = rawcdf.variables['Ptch'][idx] /100
+            roll = rawcdf.variables['Roll'][idx] /100
+            Mi2e = cal_earth_rotmatrix(heading,pitch,roll,declination)
+            for beam in range(nbeams):
+                vbeam[beam,:] = rawcdf.variables[rawvarnames[beam]][idx,:] /10             
+            vinst = Tb2i*vbeam
+            vearth = Mi2e*vinst[0:3,:]
+            for beam in range(nbeams):
+                if beam < 3:
+                    vels = np.array(vearth[beam,:])
+                else:
+                    vels = np.array(vinst[beam,:])
+                nc[ncvarnames[beam]][ncidx,:,0,0] = vels                    
+            ncidx = ncidx +1
+            
     # TODO minima and maxima here - or as a separate operation using xarray
     # in fact - using xarray will allow practice in xarray operations and 
     # writing to_netcdf output on existing netcdf files
@@ -172,7 +265,24 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     nc.close()
    
     return
-    
+
+""" this transformation matrix is from the R.D. Instruments Coordinate 
+    Transformation booklet.  It presumes the beams are in the same position as
+    RDI Workhorse ADCP beams, where, when looking down on the transducers:
+        Beam 3 is in the direction of the compass' zero reference
+        Beam 1 is to the right
+        Beam 2 is to the left
+        Beam 4 is opposite beam 3
+        Pitch is about the beam 2-1 axis and is positive when beam 3 is raised
+        Roll is about the beam 3-4 axis and is positive when beam 2 is raised
+        Heading increases when beam 3 is rotated towards beam 1
+    Nortek Signature differs in these ways:
+        TRDI beam 3 = Nortek beam 1
+        TRDI beam 1 = Nortek beam 2
+        TRDI beam 4 = Nortek beam 3
+        TRDI beam 2 = Nortek beam 4
+        Heading, pitch and roll behave the same as TRDI
+"""
 # this code thanks to https://github.com/lkilcher/dolfyn  rotate.py
 def calc_beam_rotmatrix(theta=20, convex=True, degrees=True):
     """Calculate the rotation matrix from beam coordinates to
@@ -195,25 +305,25 @@ def calc_beam_rotmatrix(theta=20, convex=True, degrees=True):
     a = 1 / (2. * np.sin(theta))
     b = 1 / (4. * np.cos(theta))
     d = a / (2. ** 0.5)
-    return np.array([[c * a, -c * a, 0, 0],
+    return np.asmatrix(np.array([[c * a, -c * a, 0, 0],
                      [0, 0, -c * a, c * a],
                      [b, b, b, b],
-                     [d, d, -d, -d]])
+                     [d, d, -d, -d]]))
 
-# some of this code thanks to https://github.com/lkilcher/dolfyn rotate.py
-def beam2inst(beamvel):
-    rotmat = calc_beam_rotmatrix(beam_angle, orientation,
-                                 beam_pattern == 'convex')
-                                 
-    if orientation == "down":
-        # Can't use transpose because rotation is not between
-        # orthogonal coordinate systems
-        rotmat = np.linalg.inv(rotmat)
-
-    instvel = np.einsum('ij,jkl->ikl', rotmat, adcpo['vel'])
+# as per the R.D. Instruments Coordinate Transformation booklet                     
+def cal_earth_rotmatrix(heading=0,pitch=0,roll=0,declination=0):
+    # for declination, West is negative
+    # heading, pitch and roll are in degrees
+    ch = np.cos(heading)
+    sh = np.sin(heading)
+    cp = np.cos(pitch)
+    sp = np.sin(pitch)
+    cr = np.cos(roll)
+    sr = np.sin(roll)
     
-    return instvel
-    
+    return np.asmatrix(np.array([[(ch*cr+sh*sp*sr), (sh*cp), (ch*sr-sh*sp*cr)],
+                                [(-sh*cr+ch*sp*sr), (ch*cp), (-sh*sr-ch*sp*cr)],
+                                [(-cp*sr), sp, (cp*cr)]]))
 
 def setupEPICnc(fname, rawcdf, attfile, settings):
      
@@ -256,17 +366,21 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     # these get returned as a dictionary
     gatts = read_globalatts(attfile)
     
-    gattnames = []
-    for key in gatts.keys(): gattnames.append(key)
-    
-    if 'WATER_DEPTH' not in gattnames:
+    if 'WATER_DEPTH' not in gatts.keys():
         gatts['WATER_DEPTH'] = 0 # nothing from user
         print('No WATER_DEPTH found, check depths of bins and WATER_DEPTH!')
     gatts['orientation'] = settings['orientation'].upper()
     
-    if 'serial_number' not in rawgatts:
+    if 'serial_number' not in gatts.keys():
         gatts['serial_number'] = "unknown"
     
+    if 'magnetic_variation' not in gatts.keys():
+        gatts['magnetic_variation_at_site'] = 0
+        print('No magnetic_variation, assuming magnetic_variation_at_site = 0')
+    else:
+        gatts['magnetic_variation_at_site'] = gatts['magnetic_variation']
+        gatts.pop('magnetic_variation')
+
     writeDict2atts(cdf, gatts, "")
     
     # more standard attributes
@@ -289,19 +403,22 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         cdf.blanking_distance = rawcdf.TRDI_Blank_after_Transmit_cm/100
         cdf.transform = rawcdf.TRDI_Coord_Transform
         cdf.beam_angle = rawcdf.TRDI_Beam_Angle
-        # cdf.magnetic_variation_applied
-        # cdf.magnetic_variation_applied_note = "as stated by user, not provided by Veloity processing"
+        cdf.number_of_slant_beams = rawcdf.TRDI_Number_of_Beams
     
     # attributes requiring user input
-    # TODO create a way to get this information from the user
-    # hardwired for now
-    cdf.transducer_offset_from_bottom = 0
-    cdf.orientation = "UP" #rawcdf.TRDI_Orientation # need translation to UP from "Up-facing beams"
-    cdf.orientation_note = "hardwired by programmer"
-    cdf.depth_note = "uplooking bin depths = WATER_DEPTH-transducer_offset_from_bottom-bindist"
-    cdf.initial_instrument_height = 0
+    cdf.transducer_offset_from_bottom = settings['transducer_offset_from_bottom']
+    cdf.initial_instrument_height = settings['transducer_offset_from_bottom']
+    # TODO check on orientation, using user input for now
+    #rawcdf.TRDI_Orientation 
+    # need translation to UP from "Up-facing beams"
+    cdf.orientation = settings['orientation'].upper()
+    cdf.orientation_note = settings['orientation_note']
+    if settings['orientation'].upper() == 'UP':
+        cdf.depth_note = "uplooking bin depths = WATER_DEPTH-transducer_offset_from_bottom-bindist"
+    else:
+        cdf.depth_note = "downlooking bin depths = WATER_DEPTH-transducer_offset_from_bottom+bindist"
     cdf.serial_number = rawcdf.serial_number
-    cdf.magnetic_variation_at_site = 0
+    
       
     varobj = cdf.createVariable('Rec','u4',('time'),fill_value=intfill)
     varobj.units = "count"
@@ -356,7 +473,6 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     varobj.datum = "NAD83"
     varobj[:] = float(gatts['longitude'])    
     
-    # TODO need to figure out when this depth information gets put in
     varobj = cdf.createVariable('bindist','f4',('depth'),fill_value=floatfill)
     # note name is one of the netcdf4 reserved attributes, use setncattr
     varobj.setncattr('name', "bindist")
@@ -418,15 +534,16 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     varobj.epic_code = 1211
     varobj.valid_range = rawvarobj.valid_range/100   
 
-    rawvarobj = rawcdf.variables['Pressure']
-    varobj = cdf.createVariable('P_1','f4',('time','lat','lon'),fill_value=floatfill)
-    varobj.units = "dbar"
-    # note name is one of the netcdf4 reserved attributes, use setncattr
-    varobj.setncattr('name', "P")
-    varobj.long_name = "PRESSURE (DB)"
-    varobj.generic_name = "depth"
-    varobj.epic_code = 1
-    varobj.valid_range = [0, maxfloat]
+    if 'Pressure' in rawvars:
+        rawvarobj = rawcdf.variables['Pressure']
+        varobj = cdf.createVariable('P_1','f4',('time','lat','lon'),fill_value=floatfill)
+        varobj.units = "dbar"
+        # note name is one of the netcdf4 reserved attributes, use setncattr
+        varobj.setncattr('name', "P")
+        varobj.long_name = "PRESSURE (DB)"
+        varobj.generic_name = "depth"
+        varobj.epic_code = 1
+        varobj.valid_range = [0, maxfloat]
     
     varobj = cdf.createVariable('Or','B',('time','lat','lon'),fill_value=intfill)
     varobj.units = "boolean"
@@ -496,6 +613,24 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
             varobj = cdf.variables[varname]
             varobj.serial_number = cdf.serial_number
 
+    if settings['transformation'].upper() == "BEAM":
+        varnames = ["Beam1", "Beam2", "Beam3", "Beam4"]
+        codes = [0,0,0,0]
+    elif settings['transformation'].upper() == "INST":
+        varnames = ["X","Y","Z","Error"]            
+        codes = [0,0,0,0]
+    else:
+        varnames = ["u_1205","v_1206","w_1204","Werr_1201"]
+        codes = [1205, 1206, 1204, 1201]
+        
+    for i in range(4):
+        varname = varnames[i]
+        varobj = cdf.createVariable(varname,'f4',('time','depth','lat','lon'),fill_value=floatfill)
+        varobj.units = "cm s-1"
+        varobj.long_name = "%s velocity (cm s-1)" % varnames[i]
+        varobj.epic_code = codes[i]
+        varobj.valid_range = [-1e35, 1e35]
+
     # TODO do we do bottom track data here?  Later?  Or as a separate thing?
 
     add_VAR_DESC(cdf)
@@ -504,19 +639,6 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     
     return cdf
 
-"""
-
-    
-    for i in range(4):
-        varname = "vel%d" % (i+1)
-        varobj = cdf.createVariable(varname,'f4',('time','depth'),fill_value=floatfill)
-        varobj.units = "mm s-1"
-        varobj.long_name = "Beam %d velocity (mm s-1)" % (i+1)
-        varobj.epic_code = 1280+i
-        varobj.valid_range = [-32767, 32767]
-    
-
-"""
 
 def add_VAR_DESC(cdf):
     # cdf is an netcdf file object (e.g. pointer to open netcdf file)
@@ -536,44 +658,6 @@ def add_VAR_DESC(cdf):
     
     return
     
-# this code taken in part from RPS' gregorian.m, hundredths of sec added
-def gregorian(jd):
-    
-    # jd is a julian decimal day
-    #print("jd = %f" % jd)
-    #secs = (jd % 1)*24*3600
-    msecs = (jd % 1)*24*3600*1000
-    j = math.floor(jd)-1721119
-    i = (4*j)-1
-    y = math.floor(i/146097)
-    j = i - 146097*y
-    i = math.floor(j/4)
-    i = 4*i +3
-    j = math.floor(i/1461)
-    d = math.floor(((i - 1461*j) +4)/4)
-    i = 5*d -3
-    m = math.floor(i/153)
-    d = math.floor(((i - 153*m) +5)/5)
-    y = y*100 +j
-    mo=m-9
-    yr=y+1
-    if m<10:
-        mo = m+3
-        yr = y
-    
-    hr = msecs/(3600*1000)
-    hour = math.floor(msecs/(3600*1000))
-    mn = (hr - hour)*60
-    minu = math.floor(mn)
-    sc = (mn - minu)*60
-    sec = math.floor(sc)
-    hund = (sc-sec)*100
-    
-    g = {}
-    g['ymdhmsh'] = [yr, mo, d, hour, minu, sec, hund]
-    # why multiplying hundredths by 10000? because datetime wants microseconds
-    g['dtobj'] = dt.datetime(yr, mo, d, hour, minu, sec, math.floor(hund*10000))
-    return g
     
 def read_globalatts(fname):        
     # read_globalatts: read in file of metadata for a tripod or mooring
@@ -670,6 +754,8 @@ def __main():
         print('error - settings missing - need dictionary of:')
         print('settings[\'trim_pressure_below\'] = 10000 # deca-pascals for TRDI ADCPs')
         print('settings[\'good_ensembles\'] = [0, np.inf] # use np.inf for all ensembles or omit')
+        print('settings[\'transducer_offset_from_bottom\'] = 1 # m')
+        print('settings[\'transformation\'] = "EARTH" # | BEAM | INST')
         sys.exit(1)
 
     # TODO - fix these so they are looking int he correct path

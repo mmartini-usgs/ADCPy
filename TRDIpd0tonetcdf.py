@@ -169,10 +169,12 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum):
             varobj[cdfIdx] = int(ensData['VLeader']['Error_Status_Word_High_16_bits_LSB'])
             varobj = cdf.variables['EWD4']
             varobj[cdfIdx] = int(ensData['VLeader']['Error_Status_Word_High_16_bits_MSB'])
-            varobj = cdf.variables['Pressure']
-            varobj[cdfIdx] = ensData['VLeader']['Pressure_deca-pascals']
-            varobj = cdf.variables['PressVar']
-            varobj[cdfIdx] = ensData['VLeader']['Pressure_variance_deca-pascals']
+            
+            if ensData['FLeader']['Depth_sensor_available'] == 'Yes':
+                varobj = cdf.variables['Pressure']
+                varobj[cdfIdx] = ensData['VLeader']['Pressure_deca-pascals']
+                varobj = cdf.variables['PressVar']
+                varobj[cdfIdx] = ensData['VLeader']['Pressure_variance_deca-pascals']
 
             # add bottom track data write to cdf here
             if ('BTData' in ensData):
@@ -604,16 +606,17 @@ def setupCdf(fname, ensData, gens, serialnum):
         varobj.units = "binary flag"
         varobj.long_name = "Error Status Word %d" % (i+1)
 
-    varobj = cdf.createVariable('Pressure','f4',('time'),fill_value=floatfill)
-    varobj.units = "deca-pascals"
-    varobj.long_name = "ADCP Transducer Pressure"
-    varobj.epic_code = 4
-    varobj.valid_range = [0, maxfloat]
-
-    varobj = cdf.createVariable('PressVar','f4',('time'),fill_value=floatfill)
-    varobj.units = "deca-pascals"
-    varobj.long_name = "ADCP Transducer Pressure Variance"
-    varobj.valid_range = [0, 2**31]
+    if  ensData['FLeader']['Depth_sensor_available'] == 'Yes':
+        varobj = cdf.createVariable('Pressure','f4',('time'),fill_value=floatfill)
+        varobj.units = "deca-pascals"
+        varobj.long_name = "ADCP Transducer Pressure"
+        varobj.epic_code = 4
+        varobj.valid_range = [0, maxfloat]
+    
+        varobj = cdf.createVariable('PressVar','f4',('time'),fill_value=floatfill)
+        varobj.units = "deca-pascals"
+        varobj.long_name = "ADCP Transducer Pressure Variance"
+        varobj.valid_range = [0, 2**31]
     
     if 'BTData' in ensData: 
         # write globals attributable to BT setup
