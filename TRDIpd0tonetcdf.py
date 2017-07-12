@@ -532,10 +532,10 @@ def setupCdf(fname, ensData, gens, serialnum):
     varobj.units = "hundredths of degrees"
     varobj.long_name = "INST Heading"
     varobj.epic_code = 1215
-    varobj.heading_alignment = ensData['FLeader']['Heading_Alignment_Hundredths_of_Deg.']
-    varobj.heading_bias = ensData['FLeader']['Heading_Bias_Hundredths_of_Deg.']
+    varobj.heading_alignment = ensData['FLeader']['Heading_Alignment_Hundredths_of_Deg']
+    varobj.heading_bias = ensData['FLeader']['Heading_Bias_Hundredths_of_Deg']
     varobj.valid_range = [0, 36000]
-    if ensData['FLeader']['Heading_Bias_Hundredths_of_Deg.'] == 0:
+    if ensData['FLeader']['Heading_Bias_Hundredths_of_Deg'] == 0:
         varobj.NOTE_9 = "no heading bias was applied by EB during deployment or by wavesmon"
     else:
         varobj.NOTE_9 = "a heading bias was applied by EB during deployment or by wavesmon"
@@ -976,8 +976,8 @@ def parseTRDIFixedLeader(bstream, offset):
     else:
         FLeaderData['Bin_Mapping_Used'] = 'No'
         
-    FLeaderData['Heading_Alignment_Hundredths_of_Deg.'] = struct.unpack('<h',bstream[offset+26:offset+28])[0]
-    FLeaderData['Heading_Bias_Hundredths_of_Deg.'] = struct.unpack('<h',bstream[offset+28:offset+30])[0]
+    FLeaderData['Heading_Alignment_Hundredths_of_Deg'] = struct.unpack('<h',bstream[offset+26:offset+28])[0]
+    FLeaderData['Heading_Bias_Hundredths_of_Deg'] = struct.unpack('<h',bstream[offset+28:offset+30])[0]
     
     FLeaderData['Sensor_Source_Byte'] = bitstrLE(bstream[offset+30])
     if FLeaderData['Sensor_Source_Byte'][1] == '1':
@@ -1093,7 +1093,8 @@ def parseTRDIVariableLeader(bstream, offset):
                 VLeaderData['Hundredths'])        
     VLeaderData['dtobj'] = dt.datetime(VLeaderData['Year'], VLeaderData['Month'],
         VLeaderData['Day'], VLeaderData['Hour'], VLeaderData['Minute'],
-        VLeaderData['Second'], VLeaderData['Hundredths']*1000)
+        VLeaderData['Second'], VLeaderData['Hundredths']*10000)
+    # centiseconds * 10000 = microseconds
     jddt = ajd(VLeaderData['dtobj'])
     VLeaderData['julian_day_from_as_datetime_object'] = jddt
     VLeaderData['julian_day_from_julian'] = jd

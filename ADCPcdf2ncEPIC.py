@@ -58,6 +58,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     ncvars = []
     for key in nc.variables.keys(): ncvars.append(key)
 
+    declination = nc.magnetic_variation_at_site
+
     # start and end indices
     s = settings['good_ensembles'][0]
     if settings['good_ensembles'][1] == np.inf:
@@ -76,18 +78,25 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         varobj = nc.variables[varlist[key]]
         varobj[:] = rawcdf.variables[key][s:e]  
     
-    varlist = {'Hdg':'Hdg_1215','Ptch':'Ptch_1216','Roll':'Roll_1217',
+    varlist = {'Ptch':'Ptch_1216','Roll':'Roll_1217',
                'Tx':'Tx_1211'}
     
     for key in varlist:
         varobj = nc.variables[varlist[key]]
         varobj[:] = rawcdf.variables[key][s:e]/100 # hundredths deg. to deg. 
-        
-    # nc.magnetic_variation_applied
-    # nc.magnetic_variation_applied_note = "as stated by user, not provided by Veloity processing"
-    # nc.magnetic_variation_at_site
-        
-    # TODO correct heading to True and store that instead
+              
+    # TODO will need an isntrument dependent methodology to check for any
+    # previous adjustments to heading prior to this correction.
+    # for instance, with TRDI instruments, Velocity or the EB command
+    # might have applied a correction.  If EB is set, then that value was 
+    # applied to the raw data seen by TRDIpd0tonetcdf.py
+    nc.magnetic_variation_applied = declination
+    nc.magnetic_variation_applied_note = "as provided by user"
+    heading = rawcdf.variables['Hdg'][s:e]/100 + declination
+    # TODO - what happens for very large files?
+    heading[heading >= 360] = heading[heading >= 360] - 360
+    heading[heading < 0] = heading[heading < 0] + 360
+    nc['Hdg_1215'][:] = heading
     
     if 'Pressure' in rawvars:
         # TODO - detect conversion by units depending on isntrument type
@@ -209,6 +218,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     
     # TODO replace this with xarray methodology when we understand how to write
     # xarray to netcdf
+    
+    # TODO add depth bin scaling
         
     # this beam arrangement is for TRDI Workhorse and V
     rawvarnames = ["vel1", "vel2", "vel3", "vel4"]
@@ -235,17 +246,22 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         ncvarnames = ["u_1205","v_1206","w_1204","Werr_1201"]
         # get the beam to instrument rotation matrix
         Tb2i = calc_beam_rotmatrix(rawcdf.TRDI_Beam_Angle, convex)
-        declination = nc.magnetic_variation_at_site
         nc.magnetic_variation_applied = declination
         for idx in range(s,e):
-            heading = rawcdf.variables['Hdg'][idx] /100
-            heading = heading + declination
-            pitch = rawcdf.variables['Ptch'][idx] /100
-            roll = rawcdf.variables['Roll'][idx] /100
-            Mi2e = cal_earth_rotmatrix(heading,pitch,roll,declination)
+            # first put in instrument coordinates.
             for beam in range(nbeams): 
                 vbeam[beam,:] = rawcdf.variables[rawvarnames[beam]][idx,:] /10             
-            vinst = Tb2i*vbeam
+            vinst = Tb2i*vbeam # [[x,y,z,err],[1-n bins]]
+            heading = nc.variables['Hdg_1215'][idx]
+            pitch = nc.variables['Ptch_1216'][idx]
+            roll = nc.variables['Roll_1217'][idx]
+            if nc.orientation == "DOWN":
+                roll = -roll
+            else:
+                # we need to rotate about the y axis
+                vinst[0,:] = vinst[0,:]*(-1) # x velocity
+                vinst[3,:] = vinst[3,:]*(-1) # z velocity                
+            Mi2e = cal_earth_rotmatrix(heading,pitch,roll,declination)
             vearth = Mi2e*vinst[0:3,:]
             for beam in range(nbeams):
                 if beam < 3:
@@ -404,6 +420,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         cdf.transform = rawcdf.TRDI_Coord_Transform
         cdf.beam_angle = rawcdf.TRDI_Beam_Angle
         cdf.number_of_slant_beams = rawcdf.TRDI_Number_of_Beams
+        cdf.heading_bias_applied_EB = rawcdf.TRDI_Heading_Bias_Hundredths_of_Deg
     
     # attributes requiring user input
     cdf.transducer_offset_from_bottom = settings['transducer_offset_from_bottom']
