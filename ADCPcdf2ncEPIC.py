@@ -495,7 +495,7 @@ def inst2earth(adcpo, reverse=False, fixed_orientation=False, force=False):
     r = adcpo['roll_deg'] * deg2rad
     p = np.arctan(np.tan(adcpo['pitch_deg'] * deg2rad) * np.cos(r))
     h = adcpo['heading_deg'] * deg2rad
-    if adcpo['config']['orientation'] == 'up': 
+    if adcpo['config']['orientation'].lower() == 'up': 
         r += np.pi
     ch = np.cos(h)
     sh = np.sin(h)
