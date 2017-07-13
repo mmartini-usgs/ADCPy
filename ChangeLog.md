@@ -1,3 +1,4 @@
+7/13/2017 Got rotations for uplooking ADCP to agree with known good methods we use in MATLAB.
 6/30/2017 Caught that I was 10 sec off in my hundredths to microsecond conversion when manupulating time
 5/9/2017 Put in code to handle bottom track ping data, have not yet tested on real data
 2/28/2017 Needed time expressed as CF convention that xarray could understand.  Did this by expressing as seconds since the first timestamp in the file.

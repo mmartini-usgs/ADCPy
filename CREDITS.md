@@ -1,5 +1,8 @@
 Where did all this come from?  I did not conceive it all myself... inspiration came from:
 
+rotation techniques from TRDI and https://github.com/lkilcher/dolfyn
+(though I still need to learn how to use einsum correctly)
+
 pd0.py, adcpwaves.py were inspiration and learning for me, written by
 Gregory P Dusek <gdusek@email.unc.edu> - original prototype
 Sara M Haines <sara_haines@unc.edu> - project management
