@@ -1,3 +1,4 @@
+7/27/2017 Changed time to time and time2 for EPIC compliance and backward compatibility with USGS CMG MATLAB tools.  Added cf_time for forward compatibility with CF tools.  Both versions of time can be interpreted by ncbrowse.  Panoply only knows cf_time but looks for these data in the time variable, so for now, these files cannot be opened by panoply.
 7/13/2017 Got rotations for uplooking ADCP to agree with known good methods we use in MATLAB.
 6/30/2017 Caught that I was 10 sec off in my hundredths to microsecond conversion when manupulating time
 5/9/2017 Put in code to handle bottom track ping data, have not yet tested on real data

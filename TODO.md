@@ -2,8 +2,6 @@ Known issues:
 
 This code will likely run very slowly.  Need to restructure to make use of xarray.  Need to do matrix transformations with numpy.einsum
 
-Need to review metadata for conformance with EPIC and USGS CMG data proactice.
-
 It is possible for the 5th beam of a V to have a different number of cells.  This is trapped, but not dealt with, in the code.  In this case 5th beam data will nto be output.
 
 There may be a case where there is only wave data in a Velocity output file.  The program will probably not handle this well.
