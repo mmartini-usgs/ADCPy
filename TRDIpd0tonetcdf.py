@@ -95,11 +95,15 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum):
                 return
 
             # time calculations done when vleader is read
-            varobj = cdf.variables['time']
+            varobj = cdf.variables['cf_time']
             #varobj[cdfIdx] = ensData['VLeader']['julian_day_from_julian']
             elapsed = ensData['VLeader']['dtobj']-t0 # timedelta
             elapsed_sec = elapsed.total_seconds()
             varobj[cdfIdx] = elapsed_sec
+            varobj = cdf.variables['time']
+            varobj[cdfIdx] = ensData['VLeader']['EPIC_time']
+            varobj = cdf.variables['time2']
+            varobj[cdfIdx] = ensData['VLeader']['EPIC_time2']
             
             # diagnostic
             if (goodens[1]-goodens[0]-1)<100:
@@ -121,7 +125,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum):
                 varobj[cdfIdx,:] = ensData['CData'][i,:]
 
             for i in range(nslantbeams):
-                varname = "AGC%d" % (i+1)
+                varname = "att%d" % (i+1)
                 varobj = cdf.variables[varname]
                 varobj[cdfIdx,:] = ensData['IData'][i,:]
 
@@ -231,7 +235,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum):
                     varobj[cdfIdx,:] = ensData['VBeamVData']
                     varobj = cdf.variables['cor5']
                     varobj[cdfIdx,:] = ensData['VBeamCData']
-                    varobj = cdf.variables['AGC5']
+                    varobj = cdf.variables['att5']
                     varobj[cdfIdx,:] = ensData['VBeamIData']
                     if ('VBeamGData' in ensData):
                         varobj = cdf.variables['PGd5']
@@ -465,30 +469,29 @@ def setupCdf(fname, ensData, gens, serialnum):
     # the ensemble number is a two byte LSB and a one byte MSB (for the rollover)
     varobj.valid_range = [0, 2**23]
 
+    # we include cf_time for cf compliance and use by python packages like xarray
     # if f8, 64 bit is not used, time is clipped
     # for ADCP fast sampled, single ping data, need millisecond resolution
-    varobj = cdf.createVariable('time','f8',('time'))
-    #varobj.units = "milliseconds since 1968-5-23 00:00:00.0 0:00" # UTC is understood
-    #varobj.units = "days since 1968-5-23 00:00:00.0 0:00"
-    #varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    varobj = cdf.createVariable('cf_time','f8',('time'))
     # for cf convention, always assume UTC for now, and use the UNIX Epoch as the reference
     varobj.units = "seconds since %d-%d-%d %d:%d:%f 0:00" % (ensData['VLeader']['Year'],
         ensData['VLeader']['Month'],ensData['VLeader']['Day'],ensData['VLeader']['Hour'],
         ensData['VLeader']['Minute'],ensData['VLeader']['Second']+
         ensData['VLeader']['Hundredths']/100)
+    varobj.standard_name = "time"
+    varobj.axis = "T"
     
-    # we are not using these EPIC definitions yet.  They are here for reference
-    #varobj = cdf.createVariable('Rec','int',('time'))
-    #varobj = cdf.createVariable('time','int',('Rec'))
-    #varobj.units = "True Julian Day"
-    #varobj.epic_code = 624
-    #varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-    #varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-    #varobj = cdf.createVariable('time2','int',('Rec'))
-    #varobj.units = "msec since 0:00 GMT"
-    #varobj.epic_code = 624
-    #varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-    #varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    # we include time and time2 for EPIC compliance
+    varobj = cdf.createVariable('time','u4',('time'))
+    varobj.units = "True Julian Day"
+    varobj.epic_code = 624
+    varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    varobj = cdf.createVariable('time2','u4',('time'))
+    varobj.units = "msec since 0:00 GMT"
+    varobj.epic_code = 624
+    varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
 
     varobj = cdf.createVariable('sv','f4',('time'),fill_value=floatfill)
     varobj.units = "m s-1"
@@ -500,7 +503,7 @@ def setupCdf(fname, ensData, gens, serialnum):
         varobj = cdf.createVariable(varname,'f4',('time','depth'),fill_value=floatfill)
         varobj.units = "mm s-1"
         varobj.long_name = "Beam %d velocity (mm s-1)" % (i+1)
-        varobj.epic_code = 1280+i
+        varobj.epic_code = 1277+i
         varobj.valid_range = [-32767, 32767]
     
     for i in range(4):
@@ -508,15 +511,15 @@ def setupCdf(fname, ensData, gens, serialnum):
         varobj = cdf.createVariable(varname,'u2',('time','depth'),fill_value=intfill)
         varobj.units = "counts"
         varobj.long_name = "Beam %d correlation" % (i+1)
-        varobj.epic_code = 1294+i
+        varobj.epic_code = 1285+i
         varobj.valid_range = [0, 255]
 
     for i in range(4):
-        varname = "AGC%d" % (i+1)
+        varname = "att%d" % (i+1)
         varobj = cdf.createVariable(varname,'u2',('time','depth'),fill_value=intfill)
         varobj.units = "counts"
-        varobj.epic_code = 1221+i
-        varobj.long_name = "Echo Intensity (AGC) Beam %d" % (i+1)
+        varobj.epic_code = 1281+i
+        varobj.long_name = "ADCP attenuation of beam %d" % (i+1)
         varobj.valid_range = [0, 255]
 
     if ('GData' in ensData):
@@ -742,9 +745,9 @@ def setupCdf(fname, ensData, gens, serialnum):
             varobj.units = "counts"
             varobj.long_name = "Beam 5 correlation"
             varobj.valid_range = [0, 255]
-            varobj = cdf.createVariable("AGC5",'u2',('time','depth'),fill_value=intfill)
+            varobj = cdf.createVariable("att5",'u2',('time','depth'),fill_value=intfill)
             varobj.units = "counts"
-            varobj.long_name = "Echo Intensity (AGC) Beam 5"
+            varobj.long_name = "ADCP attenuation of beam 5"
             varobj.valid_range = [0, 255]
             if ('VBeamGData' in ensData):
                 varobj = cdf.createVariable("PGd5",'u2',('time','depth'),fill_value=intfill)
@@ -1098,9 +1101,9 @@ def parseTRDIVariableLeader(bstream, offset):
     jddt = ajd(VLeaderData['dtobj'])
     VLeaderData['julian_day_from_as_datetime_object'] = jddt
     VLeaderData['julian_day_from_julian'] = jd
-    #VLeaderData['time'] = int(math.floor(jd))
-    VLeaderData['time'] = jd
-    #VLeaderData['time2'] = int((jd - math.floor(jd))*(24*3600*1000))
+    #VLeaderData['time'] = jd
+    VLeaderData['EPIC_time'] = int(math.floor(jd))
+    VLeaderData['EPIC_time2'] = int((jd - math.floor(jd))*(24*3600*1000))
         
     VLeaderData['BIT_Result_Byte_13'] = bitstrLE(bstream[offset+12])
     VLeaderData['Demod_1_error_bit'] = int(VLeaderData['BIT_Result_Byte_13'][3])

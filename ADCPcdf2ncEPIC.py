@@ -72,7 +72,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     # new EPIC convention
     
     # raw variable name : EPIC variable name
-    varlist = {'time':'time','sv':'SV_80'}
+    varlist = {'cf_time':'cf_time','time':'time','time2':'time2','sv':'SV_80'}
     
     for key in varlist:
         varobj = nc.variables[varlist[key]]
@@ -107,8 +107,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     if 'cor5' in rawvars:
         nc['corvert'][:] = rawcdf.variables['cor5'][s:e,:]
     
-    if 'AGC5' in rawvars:
-        nc['AGCvert'][:] = rawcdf.variables['AGC5'][s:e,:]
+    if 'att5' in rawvars:
+        nc['AGCvert'][:] = rawcdf.variables['att5'][s:e,:]
 
     nc['PGd_1203'][:,:,0,0] = rawcdf.variables['PGd4'][s:e,:]
     
@@ -119,7 +119,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     # TODO - write boolean up/down depending on data read, depending on instrument
 
     # figure out DELTA_T
-    dtime = np.diff( nc['time'][:])
+    dtime = np.diff( nc['cf_time'][:])
     DELTA_T = '%s' % int((dtime.mean().astype('float')).round())
     nc.DELTA_T = DELTA_T
     
@@ -164,8 +164,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     
     nc['depth'][:] = depths        
     
-    nc.start_time = '%s' % netcdf.num2date(nc['time'][0],nc['time'].units)
-    nc.stop_time = '%s' % netcdf.num2date(nc['time'][-1],nc['time'].units)
+    nc.start_time = '%s' % netcdf.num2date(nc['cf_time'][0],nc['cf_time'].units)
+    nc.stop_time = '%s' % netcdf.num2date(nc['cf_time'][-1],nc['cf_time'].units)
     
     # some of these repeating attributes depended on depth calculations
     # these are the same for all variables because all sensors are in the same
@@ -196,12 +196,12 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
 
     print('averaging AGC at %s' % (dt.datetime.now()))
     # this will be a problem - it loads all into memory
-    agc = (rawcdf.variables['AGC1'][s:e,:]+rawcdf.variables['AGC2'][s:e,:]+ \
-        rawcdf.variables['AGC3'][s:e,:]+rawcdf.variables['AGC4'][s:e,:]) / 4
+    agc = (rawcdf.variables['att1'][s:e,:]+rawcdf.variables['att2'][s:e,:]+ \
+        rawcdf.variables['att3'][s:e,:]+rawcdf.variables['att4'][s:e,:]) / 4
     #varobj = nc.variables['cor']
     nc['AGC_1202'][:,:,0,0] = agc[:,:]
     
-    print('converting %d ensembles from beam to earth %s' % (len(nc['time']), dt.datetime.now()))
+    print('converting %d ensembles from beam to earth %s' % (len(nc['cf_time']), dt.datetime.now()))
     
     # check our indexing
     print('heading[0] = %f' % heading[0])
@@ -648,20 +648,20 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
 
     # if f8, 64 bit is not used, time is clipped
     # for ADCP fast sampled, single ping data, need millisecond resolution
-    varobj = cdf.createVariable('time','f8',('time'))
-    varobj.units = rawcdf.variables['time'].units
-    # we are not using these EPIC definitions yet.  They are here for reference
-    #varobj = cdf.createVariable('Rec','int',('time'))
-    #varobj = cdf.createVariable('time','int',('Rec'))
-    #varobj.units = "True Julian Day"
-    #varobj.epic_code = 624
-    #varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-    #varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-    #varobj = cdf.createVariable('time2','int',('Rec'))
-    #varobj.units = "msec since 0:00 GMT"
-    #varobj.epic_code = 624
-    #varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-    #varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    # for CF convention
+    varobj = cdf.createVariable('cf_time','f8',('time'))
+    varobj.units = rawcdf.variables['cf_time'].units
+    # for EPIC convention
+    varobj = cdf.createVariable('time','u4',('time'))
+    varobj.units = "True Julian Day"
+    varobj.epic_code = 624
+    varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    varobj = cdf.createVariable('time2','u4',('time'))
+    varobj.units = "msec since 0:00 GMT"
+    varobj.epic_code = 624
+    varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
 
     varobj = cdf.createVariable('depth','f4',('depth'),fill_value=floatfill)
     varobj.units = "m"
@@ -812,7 +812,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         varobj.valid_range = [0, 255]
         varobj.NOTE = "From the center vertical beam"
 
-    if 'AGC5' in rawvars:
+    if 'att5' in rawvars:
         varobj = cdf.createVariable('AGCvert','u2',('time','depth','lat','lon'),fill_value=intfill)
         varobj.setncattr('name','AGC')
         varobj.long_name = "Vertical Beam Echo Intensity (AGC)"
