@@ -1,0 +1,25 @@
+    SciPi; C.Sherwood
+    PROJECT; USGS Coastal Marine Geology Program
+    EXPERIMENT; MVCO 2015 Stress Comparison
+    DESCRIPTION; Quadpod 13.9m
+    DATA_SUBTYPE; MOORED
+    COORD_SYSTEM; GEOGRAPHIC
+    Conventions; PMEL/EPIC
+    MOORING; 1057
+    WATER_DEPTH; 13.9
+    WATER_DEPTH_NOTE; (meters), nominal
+    WATER_DEPTH_source; ship fathometer
+    latitude; 41.3336633
+    longitude; -70.565877
+    magnetic_variation; -14.7
+    Deployment_date; 17-Nov-2015
+    Recovery_date; 14-Dec-2015
+    DATA_CMNT;  
+    platform_type; USGS aluminum T14 quadpod
+    DRIFTER; 0
+    POS_CONST; 0
+    DEPTH_CONST; 0
+    COORD_SYSTEM; GEOGRAPHIC
+    Conventions; PMEL/EPIC
+    institution; United States Geological Survey, Woods Hole Coastal and Marine Science Center
+    institution_url; http://woodshole.er.usgs.gov

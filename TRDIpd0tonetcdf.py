@@ -14,6 +14,8 @@ where:
     start        ensemble at which to start exporting
     end          ensemble at which to stop exporting
     
+note that file names and paths may not include spaces
+    
 As a module:
 import TRDIpd0tonetcdf as pd0
 
@@ -243,13 +245,13 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum):
                     
             if ('WaveParams' in ensData):
                 # we can get away with this because the key names and var names are the same
-                for key, value in ensData['WaveParams']:
+                for key in ensData['WaveParams']:
                     varobj = cdf.variables[key]
                     varobj[cdfIdx] = ensData['WaveParams'][key]
     
             if ('WaveSeaSwell' in ensData):
                 # we can get away with this because the key names and var names are the same
-                for key, value in ensData['WaveSeaSwell']:
+                for key in ensData['WaveSeaSwell']:
                     varobj = cdf.variables[key]
                     varobj[cdfIdx] = ensData['WaveSeaSwell'][key]
 
@@ -267,12 +269,13 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum):
             print('stopping at estimated end of file ensemble %d' % goodens[1])
             break        
         
-        if maxens < 100:  n=10
-        elif (maxens > 100) and (maxens < 1000): n=100
-        elif (maxens > 1000) and (maxens < 10000): n=1000
-        elif (maxens > 10000) and (maxens < 100000): n=10000
-        elif (maxens > 100000) and (maxens < 1000000): n=100000
-        else: n = 1000000
+        #if maxens < 100:  n=10
+        #elif (maxens > 100) and (maxens < 1000): n=100
+        #elif (maxens > 1000) and (maxens < 10000): n=1000
+        #elif (maxens > 10000) and (maxens < 100000): n=10000
+        #elif (maxens > 100000) and (maxens < 1000000): n=100000
+        #else: n = 1000000
+        n = 1000
         
         ensf, ensi = math.modf(ensCount/n)
         if ensf == 0:
@@ -826,7 +829,7 @@ def setupCdf(fname, ensData, gens, serialnum):
         varobj.units = "s"
         varobj.long_name = "Peak Wave Period (s)"
         varobj.note = "in the sea region of the power spectrum"
-        varobj = cdf.createVariable("TpSea",'f4',('time'),fill_value=floatfill)
+        varobj = cdf.createVariable("TpSwell",'f4',('time'),fill_value=floatfill)
         varobj.units = "s"
         varobj.long_name = "Peak Wave Period (s)"
         varobj.note = "in the swell region of the power spectrum"
@@ -1448,7 +1451,7 @@ def parseTRDIWaveSeaSwell(bstream, offset):
     data['TpSwell'] = struct.unpack('<H',bstream[offset+8:offset+10])[0]
     data['DpSea'] = struct.unpack('<H',bstream[offset+10:offset+12])[0]
     data['DpSwell'] = struct.unpack('<H',bstream[offset+12:offset+14])[0]
-    data['Sea_Swell_Period'] = struct.unpack('<H',bstream[offset+44:offset+46])[0]
+    data['SeaSwellPeriod'] = struct.unpack('<H',bstream[offset+44:offset+46])[0]
 
     return data
 

@@ -1,5 +1,7 @@
 Known issues:
 
+It's possible for pressure standard deviation to be zero as computed by the instrument.  Detect this and omit it from the final .nc file if so.
+
 This code will likely run very slowly.  Need to restructure to make use of xarray.  Need to do matrix transformations with numpy.einsum
 
 It is possible for the 5th beam of a V to have a different number of cells.  This is trapped, but not dealt with, in the code.  In this case 5th beam data will nto be output.

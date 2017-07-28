@@ -15,6 +15,8 @@ Depth dependent attributes are compute from the mean Pressure found in the raw
 data file.  So it is best to have the time series trimmed to the in water
 time or to provide the good ensemble indeces for in water time
 
+note that file names and paths may not include spaces
+
 Created on Tue May 16 13:33:31 2017
 
 @author: mmartini
@@ -110,7 +112,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     if 'att5' in rawvars:
         nc['AGCvert'][:] = rawcdf.variables['att5'][s:e,:]
 
-    nc['PGd_1203'][:,:,0,0] = rawcdf.variables['PGd4'][s:e,:]
+    if 'PGd4' in rawvars:
+        nc['PGd_1203'][:,:,0,0] = rawcdf.variables['PGd4'][s:e,:]
     
     varobj = nc.variables['bindist']
     bindist = np.arange(len(nc['bindist']))
@@ -784,14 +787,15 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     varobj.valid_range = [0, 255]
     varobj.NOTE = "Calculated from the slant beams"
 
-    varobj = cdf.createVariable('PGd_1203','u2',('time','depth','lat','lon'),fill_value=intfill)
-    varobj.setncattr('name','Pgd')
-    varobj.long_name = "Percent Good Pings"
-    varobj.generic_name = "PGd"
-    varobj.units = "percent"
-    varobj.epic_code = 1203
-    varobj.valid_range = [0, 100]
-    varobj.NOTE = "Percentage of good 4-bem solutions (Field #4)"
+    if 'PGd4' in rawvars:
+        varobj = cdf.createVariable('PGd_1203','u2',('time','depth','lat','lon'),fill_value=intfill)
+        varobj.setncattr('name','Pgd')
+        varobj.long_name = "Percent Good Pings"
+        varobj.generic_name = "PGd"
+        varobj.units = "percent"
+        varobj.epic_code = 1203
+        varobj.valid_range = [0, 100]
+        varobj.NOTE = "Percentage of good 4-bem solutions (Field #4)"
 
     varobj = cdf.createVariable('AGC_1202','u2',('time','depth','lat','lon'),fill_value=intfill)
     varobj.setncattr('name','AGC')
