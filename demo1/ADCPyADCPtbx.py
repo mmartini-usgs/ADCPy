@@ -13,8 +13,10 @@ import datetime as dt
 import numpy as np
 
 pd0File = '9991wh000.000'
-cdfFile = 'py9991wh.cdf'
+cdfFile = 'py9991whCFtime.cdf'
 serialnum = "473"
+timetype = 'CF' # the time variable will have a CF time format
+#timetype = 'EPIC' # there will be time and time2, and cf_time variables
 #goodens = [265,np.inf]
 goodens = [0,np.inf]
 
@@ -34,5 +36,5 @@ print('----')
 print('Start file conversion at', dt.datetime.now())
 # when using this module this way, the start and end ensembles are required.
 # use Inf to indicate all ensembles.
-pd0.dopd0file(pd0File,cdfFile, goodens, serialnum)
+pd0.dopd0file(pd0File,cdfFile, goodens, serialnum, timetype)
 print('Finished file conversion at', dt.datetime.now())

@@ -34,7 +34,7 @@ import numpy as np
 from netCDF4 import Dataset
 import datetime as dt
 
-def dopd0file(pd0File, cdfFile, goodens, serialnum):
+def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
 
 	# TODO figure out a better way to handle this situation
 	# need this check in case this function is used as a stand alone function
@@ -50,7 +50,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum):
            
     # we are good to go, get the output file ready
     print('Setting up netCDF file %s' % cdfFile)
-    cdf = setupCdf(cdfFile, ensData, goodens, serialnum)
+    cdf = setupCdf(cdfFile, ensData, goodens, serialnum, timetype)
     # we want to save the time stamp from this ensemble since it is the
     # time from which all other times in the file will be relative to
     t0 = ensData['VLeader']['dtobj']
@@ -97,15 +97,24 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum):
                 return
 
             # time calculations done when vleader is read
-            varobj = cdf.variables['cf_time']
-            #varobj[cdfIdx] = ensData['VLeader']['julian_day_from_julian']
-            elapsed = ensData['VLeader']['dtobj']-t0 # timedelta
-            elapsed_sec = elapsed.total_seconds()
-            varobj[cdfIdx] = elapsed_sec
-            varobj = cdf.variables['time']
-            varobj[cdfIdx] = ensData['VLeader']['EPIC_time']
-            varobj = cdf.variables['time2']
-            varobj[cdfIdx] = ensData['VLeader']['EPIC_time2']
+            if timetype == 'EPIC':
+                varobj = cdf.variables['time']
+                varobj[cdfIdx] = ensData['VLeader']['EPIC_time']
+                varobj = cdf.variables['time2']
+                varobj[cdfIdx] = ensData['VLeader']['EPIC_time2']
+                varobj = cdf.variables['cf_time']
+                elapsed = ensData['VLeader']['dtobj']-t0 # timedelta
+                elapsed_sec = elapsed.total_seconds()
+                varobj[cdfIdx] = elapsed_sec              
+            else:
+                varobj = cdf.variables['EPIC_time']
+                varobj[cdfIdx] = ensData['VLeader']['EPIC_time']
+                varobj = cdf.variables['EPIC_time2']
+                varobj[cdfIdx] = ensData['VLeader']['EPIC_time2']
+                varobj = cdf.variables['time']
+                elapsed = ensData['VLeader']['dtobj']-t0 # timedelta
+                elapsed_sec = elapsed.total_seconds()
+                varobj[cdfIdx] = elapsed_sec              
             
             # diagnostic
             if (goodens[1]-goodens[0]-1)<100:
@@ -275,12 +284,10 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum):
         #elif (maxens > 10000) and (maxens < 100000): n=10000
         #elif (maxens > 100000) and (maxens < 1000000): n=100000
         #else: n = 1000000
-        n = 1000
+        n = 10000
         
         ensf, ensi = math.modf(ensCount/n)
         if ensf == 0:
-            #print('%d ensembles read at %s and TRDI #%d' % (ensCount,              
-            #    ensData['VLeader']['timestr'], ensData['VLeader']['Ensemble_Number']))
             print('%d ensembles read at %s and TRDI #%d' % (ensCount,              
                 ensData['VLeader']['dtobj'], ensData['VLeader']['Ensemble_Number']))
         
@@ -440,7 +447,7 @@ def parseTRDIensemble(ensbytes, verbose):
         
     return ensData, ensError
     
-def setupCdf(fname, ensData, gens, serialnum):
+def setupCdf(fname, ensData, gens, serialnum, timetype):
      
     # note that 
     # f4 = 4 byte, 32 bit float
@@ -472,29 +479,55 @@ def setupCdf(fname, ensData, gens, serialnum):
     # the ensemble number is a two byte LSB and a one byte MSB (for the rollover)
     varobj.valid_range = [0, 2**23]
 
-    # we include cf_time for cf compliance and use by python packages like xarray
-    # if f8, 64 bit is not used, time is clipped
-    # for ADCP fast sampled, single ping data, need millisecond resolution
-    varobj = cdf.createVariable('cf_time','f8',('time'))
-    # for cf convention, always assume UTC for now, and use the UNIX Epoch as the reference
-    varobj.units = "seconds since %d-%d-%d %d:%d:%f 0:00" % (ensData['VLeader']['Year'],
-        ensData['VLeader']['Month'],ensData['VLeader']['Day'],ensData['VLeader']['Hour'],
-        ensData['VLeader']['Minute'],ensData['VLeader']['Second']+
-        ensData['VLeader']['Hundredths']/100)
-    varobj.standard_name = "time"
-    varobj.axis = "T"
-    
-    # we include time and time2 for EPIC compliance
-    varobj = cdf.createVariable('time','u4',('time'))
-    varobj.units = "True Julian Day"
-    varobj.epic_code = 624
-    varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-    varobj = cdf.createVariable('time2','u4',('time'))
-    varobj.units = "msec since 0:00 GMT"
-    varobj.epic_code = 624
-    varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    # it's not yet clear which way to go with this.  python tools like xarray 
+    # and panoply demand that time be a CF defined time.
+    # USGS CMG MATLAB tools need time and time2
+    if timetype=='EPIC':
+        # we include cf_time for cf compliance and use by python packages like xarray
+        # if f8, 64 bit is not used, time is clipped
+        # for ADCP fast sampled, single ping data, need millisecond resolution
+        varobj = cdf.createVariable('cf_time','f8',('time'))
+        # for cf convention, always assume UTC for now, and use the UNIX Epoch as the reference
+        varobj.units = "seconds since %d-%d-%d %d:%d:%f 0:00" % (ensData['VLeader']['Year'],
+            ensData['VLeader']['Month'],ensData['VLeader']['Day'],ensData['VLeader']['Hour'],
+            ensData['VLeader']['Minute'],ensData['VLeader']['Second']+
+            ensData['VLeader']['Hundredths']/100)
+        varobj.standard_name = "time"
+        varobj.axis = "T"    
+        # we include time and time2 for EPIC compliance
+        varobj = cdf.createVariable('time','u4',('time'))
+        varobj.units = "True Julian Day"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+        varobj = cdf.createVariable('time2','u4',('time'))
+        varobj.units = "msec since 0:00 GMT"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    else:
+        # cf_time for cf compliance and use by python packages like xarray
+        # if f8, 64 bit is not used, time is clipped
+        # for ADCP fast sampled, single ping data, need millisecond resolution
+        varobj = cdf.createVariable('time','f8',('time'))
+        # for cf convention, always assume UTC for now, and use the UNIX Epoch as the reference
+        varobj.units = "seconds since %d-%d-%d %d:%d:%f 0:00" % (ensData['VLeader']['Year'],
+            ensData['VLeader']['Month'],ensData['VLeader']['Day'],ensData['VLeader']['Hour'],
+            ensData['VLeader']['Minute'],ensData['VLeader']['Second']+
+            ensData['VLeader']['Hundredths']/100)
+        varobj.standard_name = "time"
+        varobj.axis = "T"
+        # we include time and time2 for EPIC compliance
+        varobj = cdf.createVariable('EPIC_time','u4',('time'))
+        varobj.units = "True Julian Day"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+        varobj = cdf.createVariable('EPIC_time2','u4',('time'))
+        varobj.units = "msec since 0:00 GMT"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
 
     varobj = cdf.createVariable('sv','f4',('time'),fill_value=floatfill)
     varobj.units = "m s-1"
@@ -1721,10 +1754,16 @@ def __main():
         serialnum = sys.argv[5]
     except:
         print('No serial number provided')
-        serialnum = "unknown"           
+        serialnum = "unknown"      
+    
+    try:
+        timetype = sys.argv[6]
+    except:
+        print('Time type will be CF')
+        timetype = "CF"      
     
     print('Start file conversion at ',dt.datetime.now())
-    dopd0file(infileName, outfileName, goodens, serialnum)
+    dopd0file(infileName, outfileName, goodens, serialnum, timetype)
     
     print('Finished file conversion at ',dt.datetime.now())
 

@@ -46,6 +46,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         print('No transducer_offset_from_bottom, assuming 0')
     if 'transformation' not in settings.keys():
         settings['transformation'] = "EARTH"
+    if 'timetype' not in settings.keys():
+        settings['timetype'] = "CF"
 
     rawcdf = Dataset(cdfFile, mode='r',format='NETCDF4')
     rawvars = []
@@ -74,7 +76,10 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     # new EPIC convention
     
     # raw variable name : EPIC variable name
-    varlist = {'cf_time':'cf_time','time':'time','time2':'time2','sv':'SV_80'}
+    if settings['timetype'] == 'EPIC':
+        varlist = {'cf_time':'cf_time','time':'time','time2':'time2','sv':'SV_80'}
+    else:
+        varlist = {'time':'time','EPIC_time':'EPIC_time','EPIC_time2':'EPIC_time2','sv':'SV_80'}
     
     for key in varlist:
         varobj = nc.variables[varlist[key]]
@@ -122,7 +127,13 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     # TODO - write boolean up/down depending on data read, depending on instrument
 
     # figure out DELTA_T
-    dtime = np.diff( nc['cf_time'][:])
+    if settings['timetype'] == 'EPIC':
+        timekey = 'cf_time'
+    else:
+        timekey = 'time'
+    
+    # this calculation uses for CF time
+    dtime = np.diff( nc[timekey][:])
     DELTA_T = '%s' % int((dtime.mean().astype('float')).round())
     nc.DELTA_T = DELTA_T
     
@@ -167,8 +178,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     
     nc['depth'][:] = depths        
     
-    nc.start_time = '%s' % netcdf.num2date(nc['cf_time'][0],nc['cf_time'].units)
-    nc.stop_time = '%s' % netcdf.num2date(nc['cf_time'][-1],nc['cf_time'].units)
+    nc.start_time = '%s' % netcdf.num2date(nc[timekey][0],nc[timekey].units)
+    nc.stop_time = '%s' % netcdf.num2date(nc[timekey][-1],nc[timekey].units)
     
     # some of these repeating attributes depended on depth calculations
     # these are the same for all variables because all sensors are in the same
@@ -204,17 +215,21 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     #varobj = nc.variables['cor']
     nc['AGC_1202'][:,:,0,0] = agc[:,:]
     
-    print('converting %d ensembles from beam to earth %s' % (len(nc['cf_time']), dt.datetime.now()))
+    print('converting %d ensembles from beam to earth %s' % (len(nc[timekey]), dt.datetime.now()))
     
     # check our indexing
-    print('heading[0] = %f' % heading[0])
-    print('rawcdf Hdg[s] = %f for s = %d' % (rawcdf['Hdg'][s],s))
-    print('nc Hdg_1215[0] = %f' % nc['Hdg_1215'][0,0,0])
-    print('declination = %f' % declination)
+    print('magnetic variation at site = %f' % nc.magnetic_variation_at_site)
+    print('magnetic variation applied = %f' % nc.magnetic_variation_applied)
+    print('magnetic variation applied note = %s' % nc.magnetic_variation_applied_note)
+    n = int(len(heading)/2)
+    print('From the middle of the time series at ensemble #%d, we have:' % n)
+    print('heading variable in this python process = %f' % heading[n])
+    print('rawcdf Hdg[n] = %f' % rawcdf['Hdg'][n])
+    print('nc Hdg_1215[n] = %f' % nc['Hdg_1215'][n,0,0])
     # TODO replace this with xarray methodology when we understand how to write
     # xarray to netcdf
     
-    # TODO add depth bin scaling
+    # TODO add depth bin mapping
 
     # this beam arrangement is for TRDI Workhorse and V
     rawvarnames = ["vel1", "vel2", "vel3", "vel4"]
@@ -271,6 +286,12 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
                 nc[ncvarnames[beam]][ncidx,:,0,0] = adcpo['vel'][:,beam] 
                    
             ncidx = ncidx + 1
+            
+            n = 1000
+            ensf, ensi = np.modf(ncidx/n)
+            if ensf == 0:
+                print('%d ensembles read at %s' % (ncidx, nc[timekey][ncidx]))
+
     
     """    
     
@@ -649,22 +670,40 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     # the ensemble number is a two byte LSB and a one byte MSB (for the rollover)
     varobj.valid_range = [0, 2**23]
 
-    # if f8, 64 bit is not used, time is clipped
-    # for ADCP fast sampled, single ping data, need millisecond resolution
-    # for CF convention
-    varobj = cdf.createVariable('cf_time','f8',('time'))
-    varobj.units = rawcdf.variables['cf_time'].units
-    # for EPIC convention
-    varobj = cdf.createVariable('time','u4',('time'))
-    varobj.units = "True Julian Day"
-    varobj.epic_code = 624
-    varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-    varobj = cdf.createVariable('time2','u4',('time'))
-    varobj.units = "msec since 0:00 GMT"
-    varobj.epic_code = 624
-    varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-    varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    if settings['timetype'] == 'EPIC':
+        # if f8, 64 bit is not used, time is clipped
+        # for ADCP fast sampled, single ping data, need millisecond resolution
+        # for CF convention
+        varobj = cdf.createVariable('cf_time','f8',('time'))
+        varobj.units = rawcdf.variables['cf_time'].units
+        # for EPIC convention
+        varobj = cdf.createVariable('time','u4',('time'))
+        varobj.units = "True Julian Day"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+        varobj = cdf.createVariable('time2','u4',('time'))
+        varobj.units = "msec since 0:00 GMT"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+    else:
+        # if f8, 64 bit is not used, time is clipped
+        # for ADCP fast sampled, single ping data, need millisecond resolution
+        # for CF convention
+        varobj = cdf.createVariable('time','f8',('time'))
+        varobj.units = rawcdf.variables['time'].units
+        # for EPIC convention
+        varobj = cdf.createVariable('EPIC_time','u4',('time'))
+        varobj.units = "True Julian Day"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+        varobj = cdf.createVariable('EPIC_time2','u4',('time'))
+        varobj.units = "msec since 0:00 GMT"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
 
     varobj = cdf.createVariable('depth','f4',('depth'),fill_value=floatfill)
     varobj.units = "m"
@@ -941,6 +980,59 @@ def writeDict2atts(cdfobj, d, tag):
     
     # return the dictionary it's numerized values 
     return d
+
+def floor(dec):
+    # for convenience and to avoid loading math
+    # anf then because np.floor was causing unexpected behavior w.r.t ints
+    return int(dec - (dec % 1))
+    
+def s2hms(secs):
+    hour = floor(secs/3600)
+    mn = floor((secs % 3600)/60)
+    sec = secs % 60
+    return hour, mn, sec
+
+def EPICtime2datetime(time,time2):
+    
+    dtos = []
+    gtime = []
+    for idx in range(len(time)):
+        # time and time2 are the julian day and milliseconds 
+        # in the day as per PMEL EPIC convention for netcdf
+        jd = time[idx]+(time2[idx]/(24*3600*1000))
+        secs = (jd % 1)*(24*3600)
+        
+        j = floor(jd) - 1721119
+        in1 = 4*j-1
+        y = floor(in1/146097)
+        j = in1 - 146097*y
+        in1 = floor(j/4)
+        in1 = 4*in1 +3
+        j = floor(in1/1461)
+        d = floor(((in1 - 1461*j) +4)/4)
+        in1 = 5*d -3
+        m = floor(in1/153)
+        d = floor(((in1 - 153*m) +5)/5)
+        y = y*100 +j
+        mo=m-9
+        yr=y+1
+        if m<10:
+            mo = m+3
+            yr = y
+        hour, mn, sec = s2hms(secs)
+        ss = floor(sec)
+        
+        hund = floor((sec-ss)*100)
+
+        gtime.append([yr, mo, d, hour, mn, ss, hund])
+
+        # centiseconds * 10000 = microseconds
+        dto = dt.datetime(yr, mo, d, hour, mn, ss, int(hund*10000))
+        
+        dtos.append(dto)
+
+    return gtime, dtos
+
 
     
 def __main():
