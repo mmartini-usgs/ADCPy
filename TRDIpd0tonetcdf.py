@@ -527,7 +527,9 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         varobj.units = "msec since 0:00 GMT"
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"  
+        
+    # TODO - no bindist computed here because it is not native to what the instrument recorded, reconsider?
 
     varobj = cdf.createVariable('sv','f4',('time'),fill_value=floatfill)
     varobj.units = "m s-1"

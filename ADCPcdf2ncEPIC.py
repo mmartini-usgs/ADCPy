@@ -85,12 +85,19 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         varobj = nc.variables[varlist[key]]
         varobj[:] = rawcdf.variables[key][s:e]  
     
+    # TRDI instruments have heading, pitch, roll and temperature in hundredths of degrees
+    if rawcdf.sensor_type == "TRDI":
+        degree_factor = 100
+    else:
+        degree_factor = 1
+    
     varlist = {'Ptch':'Ptch_1216','Roll':'Roll_1217',
                'Tx':'Tx_1211'}
     
     for key in varlist:
         varobj = nc.variables[varlist[key]]
-        varobj[:] = rawcdf.variables[key][s:e]/100 # hundredths deg. to deg. 
+        # TODO check units for hundredths of degrees or degrees
+        varobj[:] = rawcdf.variables[key][s:e]/degree_factor 
               
     # TODO will need an isntrument dependent methodology to check for any
     # previous adjustments to heading prior to this correction.
@@ -99,7 +106,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     # applied to the raw data seen by TRDIpd0tonetcdf.py
     nc.magnetic_variation_applied = declination
     nc.magnetic_variation_applied_note = "as provided by user"
-    heading = rawcdf.variables['Hdg'][s:e]/100 + declination
+    # TODO check units for hundredths of degrees or degrees
+    heading = rawcdf.variables['Hdg'][s:e]/degree_factor + declination
     # TODO - what happens for very large files?
     heading[heading >= 360] = heading[heading >= 360] - 360
     heading[heading < 0] = heading[heading < 0] + 360
@@ -759,6 +767,12 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     varobj.generic_name = " "
     varobj.valid_range = rawvarobj.valid_range
     
+    # TRDI instruments have heading, pitch, roll and temperature in hundredths of degrees
+    if rawcdf.sensor_type == "TRDI":
+        degree_factor = 100
+    else:
+        degree_factor = 1
+
     rawvarobj = rawcdf.variables['Hdg']
     varobj = cdf.createVariable('Hdg_1215','f4',('time','lat','lon'),fill_value=floatfill)
     varobj.units = "degrees"
@@ -769,7 +783,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     varobj.epic_code = 1215
     #varobj.heading_alignment = rawvarobj.heading_alignment
     #varobj.heading_bias = rawvarobj.heading_bias
-    varobj.valid_range = rawvarobj.valid_range/100 # will depend on the instrument
+    varobj.valid_range = rawvarobj.valid_range/degree_factor
     # TODO - this note is instrument specific
     #varobj.NOTE = rawvarobj.NOTE_9
     
@@ -778,14 +792,14 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     varobj.units = "degrees"
     varobj.long_name = "INST Pitch"
     varobj.epic_code = 1216
-    varobj.valid_range = rawvarobj.valid_range/100
+    varobj.valid_range = rawvarobj.valid_range/degree_factor
     
     rawvarobj = rawcdf.variables['Roll']
     varobj = cdf.createVariable('Roll_1217','f4',('time','lat','lon'),fill_value=floatfill)
     varobj.units = "degrees"
     varobj.long_name = "INST Roll"
     varobj.epic_code = 1217
-    varobj.valid_range = rawvarobj.valid_range/100
+    varobj.valid_range = rawvarobj.valid_range/degree_factor
     
     rawvarobj = rawcdf.variables['Tx']
     varobj = cdf.createVariable('Tx_1211','f4',('time','lat','lon'),fill_value=floatfill)
@@ -794,7 +808,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     varobj.setncattr('name', "T")
     varobj.long_name = "instrument Transducer Temp."
     varobj.epic_code = 1211
-    varobj.valid_range = rawvarobj.valid_range/100   
+    varobj.valid_range = rawvarobj.valid_range/degree_factor   
 
     if 'Pressure' in rawvars:
         rawvarobj = rawcdf.variables['Pressure']
