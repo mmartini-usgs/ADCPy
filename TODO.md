@@ -1,5 +1,7 @@
 Known issues:
 
+Rotations not yet working for the Nortek Signature.
+
 It's possible for pressure standard deviation to be zero as computed by the instrument.  Detect this and omit it from the final .nc file if so.
 
 This code will likely run very slowly.  Need to restructure to make use of xarray.  Need to do matrix transformations with numpy.einsum

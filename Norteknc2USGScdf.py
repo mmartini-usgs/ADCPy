@@ -29,7 +29,9 @@ Notes:
 
 """
 
-# 1/25/2017 MM got this running on old Workhorse ADCP data
+# TODO note that the ADCPcdf2ncEPIC keys off attributes for "burst" and
+# there may be burst1, avg, avg1 etc. in a Nortek file.  This may need to
+# be dealt with as separate .cdf files
 
 import sys, math
 import numpy as np 

@@ -23,11 +23,15 @@ Created on Tue May 16 13:33:31 2017
 """
 import sys
 import numpy as np 
+#from math import floor
 #import netCDF4 as nc4
 from netCDF4 import Dataset
+#from netCDF4 import num2date
 import netCDF4 as netcdf
 import datetime as dt
 from datetime import datetime
+#from TRDIpd0tonetcdf import julian
+from TRDIpd0tonetcdf import ajd
 
 def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     
@@ -113,12 +117,28 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     heading[heading < 0] = heading[heading < 0] + 360
     nc['Hdg_1215'][:] = heading
     
+    # pressure needs to be in db or m
     if 'Pressure' in rawvars:
-        # TODO - detect conversion by units depending on isntrument type
-        # in this case, decapascals to dbar = /1000
-        convconst = 1000
-        nc['P_1'][:] = rawcdf.variables['Pressure'][s:e]/convconst
+        pconvconst = 1 # when in doubt, do nothing
+        punits = rawcdf['Pressure'].units
+        if 'deca-pascals' in punits:
+            pconvconst = 1000 # decapascals to dbar = /1000
+            print('Pressure in deca-pascals will be converted to db' )
+        nc['P_1'][:] = rawcdf.variables['Pressure'][s:e]/pconvconst
     
+    # check units of current velocity and convert to cm/s
+    vunits = rawcdf['vel1'].units
+    vconvconst = 1 # when in doubt, do nothing
+    if ('mm s-1' in vunits) | ('mm/s' in vunits):
+        vconvconst = 0.1 # mm/s to cm/s
+        print('Velocity in mm s-1 will be converted to cm s-1')
+    if ('m s-1' in vunits) | ('m/s' in vunits):
+        vconvconst = 100 # m/s to cm/s
+        print('Velocity in m s-1 will be converted to cm s-1')
+
+    if 'vel5' in rawvars:
+        nc['Wvert'][:] = rawcdf.variables['vel5'][s:e,:] * vconvconst
+
     if 'cor5' in rawvars:
         nc['corvert'][:] = rawcdf.variables['cor5'][s:e,:]
     
@@ -238,8 +258,9 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     # xarray to netcdf
     
     # TODO add depth bin mapping
-
-    # this beam arrangement is for TRDI Workhorse and V
+    
+    # this beam arrangement is for TRDI Workhorse and V, other instruments 
+    # should be re-ordered to match
     rawvarnames = ["vel1", "vel2", "vel3", "vel4"]
     ncidx = 0
     if settings['transformation'].upper() == "BEAM":
@@ -247,7 +268,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         for idx in range(s,e):
             for beam in range(nbeams):
                 nc[ncvarnames[beam]][ncidx,:,0,0] = \
-                    rawcdf.variables[rawvarnames[beam]][idx,:] /10
+                    rawcdf.variables[rawvarnames[beam]][idx,:] * vconvconst
             ncidx = ncidx + 1
             
     elif (settings['transformation'].upper() == "INST") or \
@@ -276,7 +297,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
             for beam in range(nbeams):
                 # load data of one ensemble to dolfyn shape, in cm/s
                 #adcpo['vel'][:,beam,0] = rawcdf.variables[rawvarnames[beam]][idx,:] * 0.1
-                vels = rawcdf.variables[rawvarnames[beam]][idx,:] * 0.1
+                vels = rawcdf.variables[rawvarnames[beam]][idx,:] * vconvconst
                 adcpo['vel'][:,beam] = vels
             
             # need to keep setting this with new beam data since we are iterating
@@ -318,7 +339,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         for idx in range(s,e):
             for beam in range(nbeams):
                 nc[ncvarnames[beam]][ncidx,:,0,0] = \
-                    rawcdf.variables[rawvarnames[beam]][idx,:] /10
+                    rawcdf.variables[rawvarnames[beam]][idx,:] * vconvconst
             ncidx = ncidx +1
     elif settings['transformation'].upper() == "INST":
         ncvarnames = ["X","Y","Z","Error"]            
@@ -326,7 +347,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         Tb2i = calc_beam_rotmatrix(rawcdf.TRDI_Beam_Angle, convex)
         for idx in range(s,e):
             for beam in range(nbeams):
-                vbeam[beam,:] = rawcdf.variables[rawvarnames[beam]][idx,:] /10
+                vbeam[beam,:] = rawcdf.variables[rawvarnames[beam]][idx,:] * vconvconst
                 vinst = Tb2i*vbeam
                 #vels = np.array(vinst[beam,:])
                 nc[ncvarnames[beam]][ncidx,:,0,0] = np.array(vinst[beam,:])
@@ -339,7 +360,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         for idx in range(s,e):
             # first put in instrument coordinates.
             for beam in range(nbeams): 
-                vbeam[beam,:] = rawcdf.variables[rawvarnames[beam]][idx,:] /10             
+                vbeam[beam,:] = rawcdf.variables[rawvarnames[beam]][idx,:] * vconvconst             
             vinst = Tb2i*vbeam # [[x,y,z,err],[1-n bins]]
             heading = nc.variables['Hdg_1215'][idx]
             pitch = nc.variables['Ptch_1216'][idx]
@@ -655,6 +676,25 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         cdf.heading_bias_applied_EB = rawcdf.TRDI_Heading_Bias_Hundredths_of_Deg
         cdf.beam_angle = rawcdf.TRDI_Beam_Angle
         cdf.beam_pattern = rawcdf.TRDI_Beam_Pattern
+    elif rawcdf.sensor_type == "Nortek":
+        # Nortek attributes
+        # TODO - what to do about multiple sampling schemes?
+        cdf.sensor_type = "Nortek"
+        cdf.bin_size = rawcdf.Nortek_burst_cellSize
+        cdf.bin_count = rawcdf.Nortek_burst_nCells
+        # Nortek Signature does not seem to have an odd offset to center of
+        # bin 1.  This value comes from the Velocity Range provided by Nortek
+        cdf.center_first_bin = rawcdf['bindist'][0]
+        cdf.blanking_distance = rawcdf.Nortek_burst_blankingDistance
+        cdf.transform = rawcdf.Nortek_burst_coordSystem
+        # Nortek provides two angles for each beam, theta being from the vertical
+        cdf.beam_angle = rawcdf.Nortek_BeamCfg1_theta
+        cdf.number_of_slant_beams = 4
+        # there's no indication from Nortek's metadata that magvar is applied or not
+        # TODO have to include information from the user
+        cdf.heading_bias_applied_EB = 0
+        # TODO hard coded for now.  Could be deduced from the theta and phi beam angles
+        cdf.beam_pattern = "Convex"
 
     
     # attributes requiring user input
@@ -1047,8 +1087,57 @@ def EPICtime2datetime(time,time2):
 
     return gtime, dtos
 
-
+def cftime2EPICtime(timecount, timeunits):
+    # take a CF time variable and convert to EPIC time and time2
+    # timecountis the integer count of minutes (for instance) since the time stamp
+    # given in timeunits
+    buf = timeunits.split()
+    t0 = dt.datetime.strptime(buf[2]+' '+buf[3], '%Y-%m-%d %H:%M:%S')
+    t0j = ajd(t0)
+    # julian day for EPIC is the beginning of the day e.g. midnight
+    t0j = t0j+0.5 # add 0.5 because ajd() subtracts 0.5 
     
+    if buf[0] == 'hours':
+        tj = timecount/(24)
+    elif buf[0] == 'minutes':
+        tj = timecount/(24*60)
+    elif buf[0] == 'seconds':
+        tj = timecount/(24*60*60)
+    elif buf[0] == 'milliseconds':
+        tj = timecount/(24*60*60*1000)
+    elif buf[0] == 'microseconds':
+        tj = timecount/(24*60*60*1000*1000)
+        
+    tj = t0j+tj
+    
+    time = np.floor(tj)
+    time2 = np.floor((tj-time)*(24*3600*1000))
+    
+    return time, time2
+
+"""
+# this does not work
+def cf2EPICtime(cftime, cfunits, cfcalendar):
+    tobj = num2date(cftime,cfunits,calendar=cfcalendar)
+    elapsed_sec = []
+    for idx in range(len(tobj)):
+        tdelta = tobj[idx]-tobj[0] # timedelta
+        elapsed_sec.append(tdelta.total_seconds())
+    # from the datetime object convert to time and time2
+    jd = []
+    time = []
+    time2 = []
+    for idx in range(len(tobj)):
+        j = julian(tobj[idx].year,tobj[idx].month,tobj[idx].day, \
+                   tobj[idx].hour,tobj[idx].minute,tobj[idx].second,\
+                   floor(tobj[idx].microsecond/1000000))
+        jd.append(j)
+        time.append(int(floor(j)))
+        time2.append(int((j - floor(j))*(24*3600*1000)))
+        
+    return time, time2
+"""
+
 def __main():
     # TODO add - and -- types of command line arguments
     print('%s running on python %s' % (sys.argv[0], sys.version))
