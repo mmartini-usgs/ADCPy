@@ -4,18 +4,54 @@ This code takes a raw netcdf file containing data from any 4 beam Janus
 acoustic doppler profiler, with or without a center beam, and transforms the
 data into Earth coordinates.  Data are output to netCDF using controlled
 vocabulary for the variable names, following the EPIC convention wherever
-possible.  This means given along beam velocity for each 
-beam are used to compute East, North, and two redundant vertical velocities.
-The difference between the two vertical velocities can be considered as the
-error velocity, as originally introduced for the RD Instruments workhorse ADCP.
+possible.  
 
-Output is stored in a netcdf file structured according to PMEL EPIC conventions.
+ADCPcdf2ncEPIC.doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings)
+
+cdfFile = path to a USGS raw netCDF ADCP data file
+ncFile = a netcdf file structured according to PMEL EPIC conventions
+attFile = a file containing global attributes (metadata) for the data.  See below
+timetype = 'EPIC' for EPIC time and time2 convention, 
+           'CF' for the time variable to be CF convention
+           if CF is specified, EPIC time will be included as EPIC_time and EPIC_time2
+settings = a dictionary of preferences for the processing
+    settings['good_ensembles'] = starting and ending indeces of the input file.  
+        For all data use [0,np.inf]
+    settings['orientation'] = 'UP' # uplooking ADCP, for downlookers, use DOWN
+    settings['transducer_offset_from_bottom'] = 2.02
+    settings['transformation'] = 'EARTH' # | BEAM | INST
 
 Depth dependent attributes are compute from the mean Pressure found in the raw
 data file.  So it is best to have the time series trimmed to the in water
 time or to provide the good ensemble indeces for in water time
 
 note that file names and paths may not include spaces
+
+Example contents of a Global Attribute file:
+    SciPi; J.Q. Scientist
+    PROJECT; USGS Coastal Marine Geology Program
+    EXPERIMENT; MVCO 2015 Stress Comparison
+    DESCRIPTION; Quadpod 13.9m
+    DATA_SUBTYPE; MOORED
+    COORD_SYSTEM; GEOGRAPHIC + SAMPLE
+    Conventions; PMEL/EPIC
+    MOORING; 1057
+    WATER_DEPTH; 13.9
+    WATER_DEPTH_NOTE; (meters), nominal
+    WATER_DEPTH_source; ship fathometer
+    latitude; 41.3336633
+    longitude; -70.565877
+    magnetic_variation; -14.7
+    Deployment_date; 17-Nov-2015
+    Recovery_date; 14-Dec-2015
+    DATA_CMNT;  
+    platform_type; USGS aluminum T14 quadpod
+    DRIFTER; 0
+    POS_CONST; 0
+    DEPTH_CONST; 0
+    Conventions; PMEL/EPIC
+    institution; United States Geological Survey, Woods Hole Coastal and Marine Science Center
+    institution_url; http://woodshole.er.usgs.gov
 
 Created on Tue May 16 13:33:31 2017
 
@@ -52,6 +88,11 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         settings['transformation'] = "EARTH"
     if 'timetype' not in settings.keys():
         settings['timetype'] = "CF"
+    if 'beam_velocity_multiplier' in settings.keys():
+        beamvelmultiplier = settings['beam_velocity_multiplier']
+        settings.pop('beam_velocity_multiplier') 
+    else:
+        beamvelmultiplier = 1
 
     rawcdf = Dataset(cdfFile, mode='r',format='NETCDF4')
     rawvars = []
@@ -137,7 +178,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         print('Velocity in m s-1 will be converted to cm s-1')
 
     if 'vel5' in rawvars:
-        nc['Wvert'][:] = rawcdf.variables['vel5'][s:e,:] * vconvconst
+        nc['Wvert'][:] = rawcdf.variables['vel5'][s:e,:] * vconvconst 
 
     if 'cor5' in rawvars:
         nc['corvert'][:] = rawcdf.variables['cor5'][s:e,:]
@@ -293,11 +334,19 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         # for now, vels has to be pre-defined to get the shapes to broadcast
         vels = np.ones([nbins,1],dtype='float')*np.NAN
         
+        # Nortek and TRDI do their along beam velocity directions opposite for
+        # slant beams.  Vertical beam directions are the same.
+        if rawcdf.sensor_type == 'Nortek':
+            beamvelmultiplier = -1
+        else:
+            beamvelmultiplier = 1
+        
         for idx in range(s,e):
             for beam in range(nbeams):
                 # load data of one ensemble to dolfyn shape, in cm/s
                 #adcpo['vel'][:,beam,0] = rawcdf.variables[rawvarnames[beam]][idx,:] * 0.1
-                vels = rawcdf.variables[rawvarnames[beam]][idx,:] * vconvconst
+                vels = rawcdf.variables[rawvarnames[beam]][idx,:] \
+                    * vconvconst * beamvelmultiplier
                 adcpo['vel'][:,beam] = vels
             
             # need to keep setting this with new beam data since we are iterating
@@ -948,12 +997,16 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         varobj.epic_code = codes[i]
         varobj.valid_range = [-1e35, 1e35]
 
+    if 'vel5' in rawvars:
+        varobj = cdf.createVariable('Wvert','f4',('time','depth','lat','lon'),fill_value=floatfill)
+        varobj.units = "cm s-1"
+        varobj.long_name = "Vertical velocity (cm s-1)" 
+        varobj.valid_range = [-1e35, 1e35]
+
     # TODO do we do bottom track data here?  Later?  Or as a separate thing?
 
     add_VAR_DESC(cdf)
-    
-    #cdf.close()
-    
+        
     return cdf
 
 
