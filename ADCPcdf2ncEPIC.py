@@ -122,9 +122,9 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     
     # raw variable name : EPIC variable name
     if settings['timetype'] == 'EPIC':
-        varlist = {'cf_time':'cf_time','time':'time','time2':'time2','sv':'SV_80'}
+        varlist = {'cf_time':'cf_time','time':'time','time2':'time2','sv':'SV_80','Rec':'Rec'}
     else:
-        varlist = {'time':'time','EPIC_time':'EPIC_time','EPIC_time2':'EPIC_time2','sv':'SV_80'}
+        varlist = {'time':'time','EPIC_time':'EPIC_time','EPIC_time2':'EPIC_time2','sv':'SV_80','Rec':'Rec'}
     
     for key in varlist:
         varobj = nc.variables[varlist[key]]
