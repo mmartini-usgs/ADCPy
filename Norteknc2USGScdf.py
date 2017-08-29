@@ -112,7 +112,26 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
         jd.append(j)
         time.append(int(math.floor(j)))
         time2.append(int((j - math.floor(j))*(24*3600*1000)))
-    if timetype=='EPIC':
+    if timetype=='CF':
+        # cf_time for cf compliance and use by python packages like xarray
+        # if f8, 64 bit is not used, time is clipped
+        # for ADCP fast sampled, single ping data, need millisecond resolution
+        varobj = cdf.createVariable('time','f8',('time'))
+        varobj.setncatts(dictifyatts(data['time'],''))
+        varobj[:] = data['time'][:]
+        varobj = cdf.createVariable('EPIC_time','u4',('time'))
+        varobj.units = "True Julian Day"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"   
+        varobj[:] = time[:]
+        varobj = cdf.createVariable('EPIC_time2','u4',('time'))
+        varobj.units = "msec since 0:00 GMT"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"  
+        varobj[:] = time2[:]
+    else:
         # we include cf_time for cf compliance and use by python packages like xarray
         # if f8, 64 bit is not used, time is clipped
         # for ADCP fast sampled, single ping data, need millisecond resolution
@@ -131,25 +150,6 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
         varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-        varobj[:] = time2[:]
-    else:
-        # cf_time for cf compliance and use by python packages like xarray
-        # if f8, 64 bit is not used, time is clipped
-        # for ADCP fast sampled, single ping data, need millisecond resolution
-        varobj = cdf.createVariable('time','f8',('time'))
-        varobj.setncatts(dictifyatts(data['time'],''))
-        varobj[:] = data['time'][:]
-        varobj = cdf.createVariable('EPIC_time','u4',('time'))
-        varobj.units = "True Julian Day"
-        varobj.epic_code = 624
-        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"   
-        varobj[:] = time[:]
-        varobj = cdf.createVariable('EPIC_time2','u4',('time'))
-        varobj.units = "msec since 0:00 GMT"
-        varobj.epic_code = 624
-        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"  
         varobj[:] = time2[:]
         
     cdf.start_time = '%s' % num2date(data['time'][0],data['time'].units)

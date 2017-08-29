@@ -97,21 +97,21 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
                 return
 
             # time calculations done when vleader is read
-            if timetype == 'EPIC':
-                varobj = cdf.variables['time']
-                varobj[cdfIdx] = ensData['VLeader']['EPIC_time']
-                varobj = cdf.variables['time2']
-                varobj[cdfIdx] = ensData['VLeader']['EPIC_time2']
-                varobj = cdf.variables['cf_time']
-                elapsed = ensData['VLeader']['dtobj']-t0 # timedelta
-                elapsed_sec = elapsed.total_seconds()
-                varobj[cdfIdx] = elapsed_sec              
-            else:
+            if timetype == 'CF':
                 varobj = cdf.variables['EPIC_time']
                 varobj[cdfIdx] = ensData['VLeader']['EPIC_time']
                 varobj = cdf.variables['EPIC_time2']
                 varobj[cdfIdx] = ensData['VLeader']['EPIC_time2']
                 varobj = cdf.variables['time']
+                elapsed = ensData['VLeader']['dtobj']-t0 # timedelta
+                elapsed_sec = elapsed.total_seconds()
+                varobj[cdfIdx] = elapsed_sec              
+            else:
+                varobj = cdf.variables['time']
+                varobj[cdfIdx] = ensData['VLeader']['EPIC_time']
+                varobj = cdf.variables['time2']
+                varobj[cdfIdx] = ensData['VLeader']['EPIC_time2']
+                varobj = cdf.variables['cf_time']
                 elapsed = ensData['VLeader']['dtobj']-t0 # timedelta
                 elapsed_sec = elapsed.total_seconds()
                 varobj[cdfIdx] = elapsed_sec              
@@ -528,6 +528,19 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
         varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"  
+        
+    varobj = cdf.createVariable('bindist','f4',('depth'),fill_value=floatfill)
+    # note name is one of the netcdf4 reserved attributes, use setncattr
+    varobj.setncattr('name', "bindist")
+    varobj.units = "m"
+    varobj.long_name = "bin distance from instrument for slant beams"
+    varobj.epic_code = 0
+    #varobj.valid_range = [0 0]
+    varobj.NOTE = "distance is calculated from center of bin 1 and bin size"
+    bindist = []
+    for idx in range(ensData['FLeader']['Number_of_Cells']):
+        bindist.append(idx*(ensData['FLeader']['Depth_Cell_Length_cm']/100)+ensData['FLeader']['Bin_1_distance_cm']/100)
+    varobj[:] = bindist[:]
         
     # TODO - no bindist computed here because it is not native to what the instrument recorded, reconsider?
 
