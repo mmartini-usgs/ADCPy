@@ -73,6 +73,8 @@ from TRDIpd0tonetcdf import ajd
 def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     
     # check some of the settings we can't live without
+    # set flags, then remove fromt he settings list if we don't want them in 
+    # metadata
     if 'good_ensembles' not in settings.keys():
         settings['good_ensembles'] = [0, np.inf] # nothing from user, do them all
         print('No starting and ending ensembles specfied, processing entire file')
@@ -80,8 +82,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         settings['orientation'] = "UP"
         settings['orientation_note'] = "assumed by program"
         print('No orientation specfied, assuming up-looking')
-    else:
-        settings['orientation_note'] = "user provided orientation"        
+    else: settings['orientation_note'] = "user provided orientation"        
     if 'transducer_offset_from_bottom' not in settings.keys():
         settings['transducer_offset_from_bottom'] = 0
         print('No transducer_offset_from_bottom, assuming 0')
@@ -92,8 +93,12 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     if 'beam_velocity_multiplier' in settings.keys():
         beamvelmultiplier = settings['beam_velocity_multiplier']
         settings.pop('beam_velocity_multiplier') 
-    else:
-        beamvelmultiplier = 1
+    else: beamvelmultiplier = 1
+    if 'use_pressure_for_WATER_DEPTH' in settings.keys():
+        if settings['use_pressure_for_WATER_DEPTH']:
+            usep4waterdepth = True
+            settings.pop('use_pressure_for_WATER_DEPTH')
+        else: usep4waterdepth = False
         
     rawcdf = Dataset(cdfFile, mode='r',format='NETCDF4')
     rawvars = []
@@ -196,7 +201,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     bindist = bindist*nc.bin_size+nc.center_first_bin
     nc['bindist'][:] = bindist
 
-    # figure out DELTA_T
+    # figure out DELTA_T - we need to use the cf_time, more convenient
     if settings['timetype'] == 'CF':
         # we will set the main "time' variable to CF convention
         timekey = 'time'
@@ -215,7 +220,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     # deeper than user supplied water depth
     # idx is returned as a tuple, the first of which is the actual index values
 
-    if 'Pressure' in rawvars:
+    # set the water depth here, this will be used throughout
+    if ('Pressure' in rawvars) and usep4waterdepth:
         idx = np.where(nc['P_1'] > nc.WATER_DEPTH/2)
         # now for the mean of only on bottom pressure measurements
         pmean = nc['P_1'][idx[0]].mean()
@@ -267,7 +273,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     for varname in ncvarnames:
         if varname not in omitnames:
             varobj = nc.variables[varname]
-            varobj.sensor_type = nc.sensor_type
+            varobj.sensor_type = nc.INST_TYPE
             varobj.sensor_depth = nc.nominal_sensor_depth
             varobj.initial_sensor_height = nc.initial_instrument_height 
             varobj.initial_sensor_height_note = "height in meters above bottom:  accurate for tripod mounted instruments"
@@ -369,7 +375,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
             n = 1000
             ensf, ensi = np.modf(ncidx/n)
             if ensf == 0:
-                print('%d ensembles read at %s' % (ncidx, nc[timekey][ncidx]))
+                print('%d ensembles read' % ncidx)
             
     # minima and maxima to be added as a separate operation after averaging
 

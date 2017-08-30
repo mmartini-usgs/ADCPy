@@ -1,7 +1,5 @@
 Known issues:
 
-Rotations not yet working for the Nortek Signature.
-
 It's possible for pressure standard deviation to be zero as computed by the instrument.  Detect this and omit it from the final .nc file if so.
 
 This code will likely run very slowly.  Need to restructure to make use of xarray.  Need to do matrix transformations with numpy.einsum
@@ -15,3 +13,11 @@ Learn how to impliment and output a log file.
 Time values that are not unique are still being output for very fast sampled time series or where there are bottom track pings or other combined sampling.  This needs to be sorted out, possibly by implmenting groups.
 
 With some data sets, when time is written to netCDF, there are invalid values.  This seems to happen if Inf is used as the last ensemble to read, with the intent to read the whole file.  In these cases it is best to use an explicit ensemble count. 
+
+Need perform on raw data before performing rotations:
+-- QA/QC thresholds 
+-- masking
+-- bin mapping
+
+During rotations:
+-- 3 beam solution
