@@ -34,7 +34,6 @@ Notes:
 # be dealt with as separate .cdf files
 
 import sys, math
-import numpy as np 
 from netCDF4 import Dataset
 from netCDF4 import num2date
 import datetime as dt
@@ -42,12 +41,18 @@ from TRDIpd0tonetcdf import julian
 
 def doNortekRawFile(infileName, outfileName, goodens, timetype):
     
+    # this is necessary so that this function does not change the value
+    # in the calling function
+    ens2process = goodens[:]
+    
     nc = Dataset(infileName, mode='r', format='NETCDF4')
     
     maxens = len(nc['Data']['Burst']['time'])
-        
-    if goodens[1] == np.inf:
-        goodens[1] = maxens
+    print('%s has %d ensembles' % (infileName,maxens))
+    
+    # TODO - ens2process[1] has the file size from the previous file run when multiple files are processed!
+    if ens2process[1] < 0:
+        ens2process[1] = maxens
            
     # we are good to go, get the output file ready
     print('Setting up netCDF output file %s' % outfileName)
@@ -67,7 +72,7 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
     intfill = -32768
     floatfill = 1E35
     
-    nens = goodens[1]-goodens[0]
+    nens = ens2process[1]-ens2process[0]
     print('creating netCDF file %s with %d records' % (outfileName, nens))
     
     cdf = Dataset(outfileName, 'w', clobber=True, format='NETCDF4')
@@ -116,6 +121,10 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
         # cf_time for cf compliance and use by python packages like xarray
         # if f8, 64 bit is not used, time is clipped
         # for ADCP fast sampled, single ping data, need millisecond resolution
+        #cf_time = data['time'][:]
+        #cdf.createVariable('time','f8',('time'))
+        #cdf['time'].setncatts(dictifyatts(data['time'],''))
+        #cdf['time'][:] = cf_time[:]
         varobj = cdf.createVariable('time','f8',('time'))
         varobj.setncatts(dictifyatts(data['time'],''))
         varobj[:] = data['time'][:]
@@ -450,7 +459,7 @@ def __main():
         goodens = [int(sys.argv[3]), int(sys.argv[4])]
     except:
         print('No starting and ending ensembles specfied, processing entire file')
-        goodens = [0,np.inf]
+        goodens = [0,-1]
         
     try:
         timetype = sys.argv[5]

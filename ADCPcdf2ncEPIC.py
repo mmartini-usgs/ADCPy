@@ -117,7 +117,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
 
     # start and end indices
     s = settings['good_ensembles'][0]
-    if settings['good_ensembles'][1] == np.inf:
+    if settings['good_ensembles'][1] < 0:
         e = nens
     else:
         e = settings['good_ensembles'][1]
@@ -372,10 +372,14 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
                    
             ncidx = ncidx + 1
             
-            n = 1000
-            ensf, ensi = np.modf(ncidx/n)
-            if ensf == 0:
-                print('%d ensembles read' % ncidx)
+            # immediate - then less feedback
+            ensf, ensi = np.modf(ncidx/1000)
+            if (ensf == 0) and (ncidx < 10000):
+                print('%d of %d ensembles read' % (ncidx, nens))
+            else:
+                ensf, ensi = np.modf(ncidx/10000)
+                if ensf == 0:
+                    print('%d of %d ensembles read' % (ncidx, nens))
             
     # minima and maxima to be added as a separate operation after averaging
 
@@ -597,7 +601,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     
     # check the ensemble limits asked for by the user
     nens = rawcdf.variables['Rec'].size
-    if settings['good_ensembles'][1] == np.inf:
+    if settings['good_ensembles'][1] < 0:
         settings['good_ensembles'][1] = nens
     if settings['good_ensembles'][0] < 0:
         settings['good_ensembles'][0] = 0

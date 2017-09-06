@@ -39,18 +39,22 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
 	# TODO figure out a better way to handle this situation
 	# need this check in case this function is used as a stand alone function
     
+    # this is necessary so that this function does not change the value
+    # in the calling function
+    ens2process = goodens[:]
+    
     maxens, ensLen, ensData, dataStartPosn = analyzepd0file(pd0File)
     
     infile = open(pd0File, 'rb')
     
     infile.seek(dataStartPosn)
     
-    if goodens[1] == np.inf:
-        goodens[1] = maxens
+    if ens2process[1] < 0:
+        ens2process[1] = maxens
            
     # we are good to go, get the output file ready
     print('Setting up netCDF file %s' % cdfFile)
-    cdf = setupCdf(cdfFile, ensData, goodens, serialnum, timetype)
+    cdf = setupCdf(cdfFile, ensData, ens2process, serialnum, timetype)
     # we want to save the time stamp from this ensemble since it is the
     # time from which all other times in the file will be relative to
     t0 = ensData['VLeader']['dtobj']
@@ -81,7 +85,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
         #print(ensData['Header'])        
         ensData, ensError = parseTRDIensemble(ens, verbose)
         
-        if (ensError == 'None') and (ensCount >= goodens[0]):
+        if (ensError == 'None') and (ensCount >= ens2process[0]):
             # write to netCDF
             if cdfIdx == 0:
                 print('--- first ensembles read at %s and TRDI #%d' % (              
@@ -117,7 +121,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
                 varobj[cdfIdx] = elapsed_sec              
             
             # diagnostic
-            if (goodens[1]-goodens[0]-1)<100:
+            if (ens2process[1]-ens2process[0]-1)<100:
                 print('%d %15.8f %s' % (ensData['VLeader']['Ensemble_Number'], 
                                         ensData['VLeader']['julian_day_from_julian'],
                                         ensData['VLeader']['timestr']))
@@ -275,7 +279,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
         ensCount += 1
         
         if ensCount > maxens:
-            print('stopping at estimated end of file ensemble %d' % goodens[1])
+            print('stopping at estimated end of file ensemble %d' % ens2process[1])
             break        
         
         #if maxens < 100:  n=10
@@ -291,8 +295,8 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
             print('%d ensembles read at %s and TRDI #%d' % (ensCount,              
                 ensData['VLeader']['dtobj'], ensData['VLeader']['Ensemble_Number']))
         
-        if ensCount >= goodens[1]-1:
-            print('stopping at requested ensemble %d' % goodens[1])
+        if ensCount >= ens2process[1]-1:
+            print('stopping at requested ensemble %d' % ens2process[1])
             break
         
         # note that ensemble lengths can change in the middle of the file!
@@ -1763,7 +1767,7 @@ def __main():
         goodens = [int(sys.argv[3]), int(sys.argv[4])]
     except:
         print('No starting and ending ensembles specfied, processing entire file')
-        goodens = [0,np.inf]
+        goodens = [0,-1]
         
     try:
         serialnum = sys.argv[5]
