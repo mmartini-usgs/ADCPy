@@ -20,7 +20,9 @@ settings = a dictionary of preferences for the processing
     settings['orientation'] = 'UP' # uplooking ADCP, for downlookers, use DOWN
     settings['transducer_offset_from_bottom'] = 2.02
     settings['transformation'] = 'EARTH' # | BEAM | INST
-
+    # this code depnds on time being in UTC because of various time standards
+    settings['adjust_to_UTC'] = 5 # for EST to UTC, if no adjustment, set to 0 or omit
+    
 Depth dependent attributes are compute from the mean Pressure found in the raw
 data file.  So it is best to have the time series trimmed to the in water
 time or to provide the good ensemble indeces for in water time
@@ -90,6 +92,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         settings['transformation'] = "EARTH"
     if 'timetype' not in settings.keys():
         settings['timetype'] = "CF"
+    if 'adjust_to_UTC' not in settings.keys():
+        settings['adjust_to_UTC'] = 0
     if 'beam_velocity_multiplier' in settings.keys():
         beamvelmultiplier = settings['beam_velocity_multiplier']
         settings.pop('beam_velocity_multiplier') 
@@ -125,7 +129,18 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
 
     # many variables do not need processing and can just be copied to the
     # new EPIC convention
+    varlist = {'sv':'SV_80','Rec':'Rec'}
     
+    for key in varlist:
+        varobj = nc.variables[varlist[key]]
+        varobj[:] = rawcdf.variables[key][s:e]  
+        
+    # check the time zone, Nortek data are usually set to UTC, no matter what
+    # the actual time zone of deployment might have been
+    if abs(settings['adjust_to_UTC']) > 0:
+        nc.time_zone_change_applied = settings['adjust_to_UTC']
+        nc.time_zone_change_applied_note = "adjust time to UTC requested by user"    
+    toffset = settings['adjust_to_UTC']*3600    
     # raw variable name : EPIC variable name
     # EPIC time (time, time2) is the default time convention
     if settings['timetype'] == 'CF':
@@ -135,8 +150,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     
     for key in varlist:
         varobj = nc.variables[varlist[key]]
-        varobj[:] = rawcdf.variables[key][s:e]  
-    
+        varobj[:] = rawcdf.variables[key][s:e]+toffset 
+        
     # TRDI instruments have heading, pitch, roll and temperature in hundredths of degrees
     if rawcdf.sensor_type == "TRDI":
         degree_factor = 100
@@ -759,7 +774,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     varobj.bin_count = nbins
     varobj.transducer_offset_from_bottom = cdf.transducer_offset_from_bottom
     
-    varobj = cdf.createVariable('lat','f4',('lat'))
+    varobj = cdf.createVariable('lat','f8',('lat'))
     varobj.units = "degree_north"
     varobj.epic_code = 500
     # note name is one of the netcdf4 reserved attributes, use setncattr
@@ -768,7 +783,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     varobj.datum = "NAD83"
     varobj[:] = float(gatts['latitude'])    
 
-    varobj = cdf.createVariable('lon','f4',('lon'))
+    varobj = cdf.createVariable('lon','f8',('lon'))
     varobj.units = "degree_east"
     varobj.epic_code = 502
     # note name is one of the netcdf4 reserved attributes, use setncattr
