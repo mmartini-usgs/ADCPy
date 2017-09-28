@@ -21,3 +21,12 @@ Need perform on raw data before performing rotations:
 
 During rotations:
 -- 3 beam solution
+
+Post processing cleanup things to implement
+-- trim to surface, by following surface or by bin
+-- trim in time
+-- swap between EPIC and CF time base
+-- post resample, shift time base to center of burst (resample default is probably beginning of hour or time interval)
+
+For wave processing
+-- reshape into bursts

@@ -731,6 +731,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
 
     if settings['timetype'] == 'CF':
         # if f8, 64 bit is not used, time is clipped
+        # TODO test this theory, because downstream 64 bit time is a problem
         # for ADCP fast sampled, single ping data, need millisecond resolution
         # for CF convention
         varobj = cdf.createVariable('time','f8',('time'))

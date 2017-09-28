@@ -120,6 +120,7 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
     if timetype=='CF':
         # cf_time for cf compliance and use by python packages like xarray
         # if f8, 64 bit is not used, time is clipped
+        # TODO test this theory, because downstream 64 bit time is a problem
         # for ADCP fast sampled, single ping data, need millisecond resolution
         #cf_time = data['time'][:]
         #cdf.createVariable('time','f8',('time'))
