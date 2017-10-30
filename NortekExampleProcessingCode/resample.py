@@ -14,24 +14,16 @@ import datetime as dt
 import xarray as xr
 import netCDF4 as nc
 
-datapath = "E:\\data\\MVCO15\\10573_Signature\\Nortekncsmall\\"
+datapath = "E:\\data\\Matanzas\\WellTest2017\\Signature\\python2\\"
 
-datafiles = ['10573sig000.nc',\
-             '10573sig001.nc',\
-             '10573sig002.nc',\
-             '10573sig003.nc',\
-             '10573sig000nomagvar.nc',\
-             '10573sig001nomagvar.nc',\
-             '10573sig002nomagvar.nc',\
-             '10573sig003nomagvar.nc']
+datafiles = ['1108sigall.nc']
 doHourly = True
-do5min = False
+do5min = True
 
 # ------------------ beyond here the user should not need to edit anything
 allstarttime = dt.datetime.now()
 
 for filenum in range(len(datafiles)):
-#for filenum in range(0,1):
 
     ncFile = datapath + datafiles[filenum]
     

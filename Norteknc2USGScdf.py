@@ -5,11 +5,12 @@ Data are taken from the "Burst" group of "Data"
 
 As a script:
 
-python Norteknc2USGScdf.py [path] infileName outfileName
+python Norteknc2USGScdf.py [path] infileBName outfileName
 
 where:
     path         is a path to prepend to the following
-    infileName   is path of netCDF4 input file from a Nortek Signature
+    infileBName   is path of netCDF4 input Burst file from a Nortek Signature
+    infileIName   is path of netCDF4 input IBurst file from a Nortek Signature
     outfileName      is path of a netcdf4 output file
     start        ensemble at which to start exporting
     end          ensemble at which to stop exporting
@@ -39,16 +40,25 @@ from netCDF4 import num2date
 import datetime as dt
 from TRDIpd0tonetcdf import julian
 
-def doNortekRawFile(infileName, outfileName, goodens, timetype):
+def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
     
+    if infileIName == '':
+        midasdata = True
+        
     # this is necessary so that this function does not change the value
     # in the calling function
     ens2process = goodens[:]
     
-    nc = Dataset(infileName, mode='r', format='NETCDF4')
+    nc = Dataset(infileBName, mode='r', format='NETCDF4')
+    # so the MIDAS output and the Contour output are different, here we hope
+    # to handle both, since MIDAS has been more tolerant of odd data
+    if midasdata:
+        ncI = nc
+    else:
+        ncI = Dataset(infileIName, mode='r', format='NETCDF4')
     
     maxens = len(nc['Data']['Burst']['time'])
-    print('%s has %d ensembles' % (infileName,maxens))
+    print('%s has %d ensembles' % (infileBName,maxens))
     
     # TODO - ens2process[1] has the file size from the previous file run when multiple files are processed!
     if ens2process[1] < 0:
@@ -60,7 +70,7 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
     # set up some pointers to the netCDF groups
     config = nc['Config']
     data = nc['Data']['Burst']
-    idata = nc['Data']['IBurst']
+    idata = ncI['Data']['IBurstHR']
     
     # TODO - pay attention to the possible number of bursts.
     # we are assuming here that the first burst is the primary sample set of
@@ -79,14 +89,20 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
     
     # dimensions, in EPIC order
     cdf.createDimension('time',nens)
-    cdf.createDimension('depth',config.burst_nCells)
+    if midasdata: 
+        cdf.createDimension('depth',config.burst_nCells)
+    else:
+        cdf.createDimension('depth',config.Instrument_burst_nCells)
     cdf.createDimension('lat',1)
     cdf.createDimension('lon',1)
     
     # write global attributes
     cdf.history = "translated to USGS netCDF by Norteknc2USGScdf.py"
     cdf.sensor_type = 'Nortek'
-    cdf.serial_number = config.serialNumberDoppler
+    if midasdata:
+        cdf.serial_number = config.serialNumberDoppler
+    else:
+        cdf.serial_number = config.Instrument_serialNumberDoppler
     
     # TODO - reduce the number if attributes we copy from the nc file
     # build a dictionary of global attributes is a faster way to load attributes
@@ -184,6 +200,8 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
     varobj.valid_range = [1400, 1600]
     varobj[:] = data['SpeedOfSound'][:]
     
+    # get the number
+    
     # there are separate Amplitude_Range, Correlation_Range and Velocity_Range
     # we will pass on Velocity_Range as bindist
     varobj = cdf.createVariable('bindist','f4',('depth'),fill_value=floatfill)
@@ -194,13 +212,26 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
     varobj.epic_code = 0
     #varobj.valid_range = [0 0]
     varobj.NOTE = "distance is not specified by Nortek as along beam or vertical"
-    varobj[:] = data['Velocity Range'][:]
+    if midasdata:
+        vardata = data.variables['Velocity Range'][:] # in raw data
+    else:        
+        # because this is a coordinate variable, one can't just say data['Burst_Velocity_Beam_Range'][:]
+        try: 
+            vardata = data.variables['Burst Velocity_Range'][:] # in raw data
+        except:
+            vardata = data.variables['Burst Velocity Beam_Range'][:] # in processed data
+        
+    varobj[:] = vardata
+    nbbins = vardata.size
     
     # map the Nortek beams onto TRDI order since later code expects TRDI order
     TRDInumber = [3,1,4,2]
     for i in range(4):
         varname = "vel%d" % TRDInumber[i]
-        key = 'VelocityBeam%d' % (i+1)
+        if midasdata:
+            key = 'VelocityBeam%d' % (i+1)
+        else:
+            key = 'Vel_Beam%d' % (i+1)
         varobj = cdf.createVariable(varname,'f4',('time','depth'),fill_value=floatfill)
         varobj.units = "m s-1"
         varobj.long_name = "Beam %d velocity (m s-1)" % TRDInumber[i]
@@ -211,7 +242,10 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
     
     for i in range(4):
         varname = "cor%d" % (i+1)
-        key = 'CorrelationBeam%d' % (i+1)
+        if midasdata:
+            key = 'CorrelationBeam%d' % (i+1)
+        else:
+            key = 'Cor_Beam%d' % (i+1)
         varobj = cdf.createVariable(varname,'u2',('time','depth'),fill_value=intfill)
         varobj.units = "percent"
         varobj.long_name = "Beam %d correlation" % (i+1)
@@ -221,7 +255,10 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
 
     for i in range(4):
         varname = "att%d" % (i+1)
-        key = 'AmplitudeBeam%d' % (i+1)
+        if midasdata:
+            key = 'AmplitudeBeam%d' % (i+1)
+        else:
+            key = 'Amp_Beam%d' % (i+1)
         varobj = cdf.createVariable(varname,'f4',('time','depth'),fill_value=intfill)
         varobj.units = "dB"
         #varobj.epic_code = 1281+i
@@ -277,139 +314,40 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
     varobj[:] = data[varname][:]
 
     # TODO - Signature can bottom track, and we don't have an example yet
-    """
-    if 'BTData' in ensData: 
-        # write globals attributable to BT setup
-        cdf.setncattr('TRDI_BT_pings_per_ensemble',ensData['BTData']['Pings_per_ensemble'])
-        cdf.setncattr('TRDI_BT_reacquire_delay',ensData['BTData']['delay_before_reacquire'])
-        cdf.setncattr('TRDI_BT_min_corr_mag',ensData['BTData']['Corr_Mag_Min'])
-        cdf.setncattr('TRDI_BT_min_eval_mag',ensData['BTData']['Eval_Amp_Min'])
-        cdf.setncattr('TRDI_BT_min_percent_good',ensData['BTData']['PGd_Minimum'])
-        cdf.setncattr('TRDI_BT_mode',ensData['BTData']['Mode'])
-        cdf.setncattr('TRDI_BT_max_err_vel',ensData['BTData']['Err_Vel_Max'])
-        #cdf.setncattr('TRDI_BT_max_tracking_depth',ensData['BTData'][''])
-        #cdf.setncattr('TRDI_BT_shallow_water_gain',ensData['BTData'][''])
-
-        for i in range(4):
-            varname = "BTR%d" % (i+1)
-            varobj = cdf.createVariable(varname,'u8',('time'),fill_value=intfill)
-            varobj.units = "cm"
-            varobj.long_name = "BT Range %d" % (i+1)
-            varobj.valid_range = [0, 65536*16777215]
-
-        for i in range(4):
-            varnames = ('BTWe','BTWu','BTWv','BTWd')
-            longnames = ('BT Error Velocity','BT Eastward Velocity','BT Northward Velocity','BT Vertical Velocity')
-            if ensData['FLeader']['Coord_Transform'] == 'EARTH':
-                varobj = cdf.createVariable(varnames[i+1],'i2',('time'),fill_value=intfill)
-                varobj.units = "mm s-1"
-                varobj.long_name = "%s, mm s-1" % longnames[i+1]
-                varobj.valid_range = [-32768, 32767]
-                
-            else:
-                varname = "BTV%d" % (i+1)
-                varobj = cdf.createVariable(varname,'i2',('time'),fill_value=intfill)
-                varobj.units = "mm s-1"
-                varobj.long_name = "BT velocity, mm s-1 %d" % (i+1)
-                varobj.valid_range = [-32768, 32767]
-                
-        for i in range(4):
-            varname = "BTc%d" % (i+1)
-            varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
-            varobj.units = "counts"
-            varobj.long_name = "BT correlation %d" % (i+1)
-            varobj.valid_range = [0, 255]
-                
-        for i in range(4):
-            varname = "BTe%d" % (i+1)
-            varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
-            varobj.units = "counts"
-            varobj.long_name = "BT evaluation amplitude %d" % (i+1)
-            varobj.valid_range = [0, 255]
-            
-        for i in range(4):
-            varname = "BTp%d" % (i+1)
-            varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
-            varobj.units = "percent"
-            varobj.long_name = "BT percent good %d" % (i+1)
-            varobj.valid_range = [0, 100]
-
-        for i in range(4):
-            varname = "BTRSSI%d" % (i+1)
-            varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
-            varobj.units = "counts"
-            varobj.long_name = "BT Receiver Signal Strength Indicator %d" % (i+1)
-            varobj.valid_range = [0, 255]
-
-        if ensData['BTData']['Mode'] == 0: # water reference layer was used
-            varobj = cdf.createVariable('BTRmin','f4',('time'),fill_value=floatfill)
-            varobj.units = 'dm'
-            varobj.long_name = "BT Ref. min"
-            varobj.valid_range = [0,999]
-            varobj = cdf.createVariable('BTRnear','f4',('time'),fill_value=floatfill)
-            varobj.units = 'dm'
-            varobj.long_name = "BT Ref. near"
-            varobj.valid_range = [0,9999]
-            varobj = cdf.createVariable('BTRfar','f4',('time'),fill_value=floatfill)
-            varobj.units = 'dm'
-            varobj.long_name = "BT Ref. far"
-            varobj.valid_range = [0,9999]
-                
-            for i in range(4):
-                varname = "BTRv%d" % (i+1)
-                varobj = cdf.createVariable(varname,'i2',('time'),fill_value=intfill)
-                varobj.units = "mm s-1"
-                varobj.long_name = "BT Ref. velocity, mm s-1 %d" % (i+1)
-                varobj.valid_range = [-32768, 32767]
-
-            for i in range(4):
-                varname = "BTRc%d" % (i+1)
-                varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
-                varobj.units = "counts"
-                varobj.long_name = "BT Ref. correlation %d" % (i+1)
-                varobj.valid_range = [0, 255]
-                    
-            for i in range(4):
-                varname = "BTRi%d" % (i+1)
-                varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
-                varobj.units = "counts"
-                varobj.long_name = "BT Ref. intensity %d" % (i+1)
-                varobj.valid_range = [0, 255]
-                
-            for i in range(4):
-                varname = "BTRp%d" % (i+1)
-                varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
-                varobj.units = "percent"
-                varobj.long_name = "BT Ref. percent good %d" % (i+1)
-                varobj.epic_code = 1269+i
-                varobj.valid_range = [0, 100]
-    """   
+    # we will want to model it on the TRDI ADCP format that laredy exists
         
     # it is possible in a Signature for the vertical beam data to be on a
     # different time base.  Test for this.  If it is the same time base we can 
     # include it now.  If it isn't we will have to add it later by some other
     # code.  5th beam Signature data is stored under the IBurst group
     # it is also possible for the number of bins to be different
-    
+    if midasdata: 
+        vrkey = 'Velocity Range'
+    else:
+        vrkey = 'IBurstHR Velocity_Range'
+        
     if (data['time'].size == idata['time'].size):
-        if (nc['Data']['Burst']['Velocity Range'].size == nc['Data']['IBurst']['Velocity Range'].size):
+        if (nbbins == idata.variables[vrkey].size):
             varobj = cdf.createVariable("vel5",'f4',('time','depth'),fill_value=floatfill)
             varobj.units = "m s-1"
             varobj.long_name = "Beam 5 velocity (m s-1)"
             #varobj.valid_range = [-32767, 32767]
-            varobj[:,:] = idata['VelocityBeam5'][:,:]
+            #varobj[:,:] = idata['VelocityBeam5'][:,:]
+            varobj[:,:] = idata['Vel_Beam5'][:,:]
             
             varobj = cdf.createVariable("cor5",'u2',('time','depth'),fill_value=intfill)
             varobj.units = "percent"
             varobj.long_name = "Beam 5 correlation"
             varobj.valid_range = [0, 100]
-            varobj[:,:] = idata['CorrelationBeam5'][:,:]
+            #varobj[:,:] = idata['CorrelationBeam5'][:,:]
+            varobj[:,:] = idata['Cor_Beam5'][:,:]
             
             varobj = cdf.createVariable("att5",'u2',('time','depth'),fill_value=intfill)
             varobj.units = "dB"
             varobj.long_name = "ADCP amplitude of beam 5"
             #varobj.valid_range = [0, 255]
-            varobj[:,:] = idata['AmplitudeBeam5'][:,:]
+            #varobj[:,:] = idata['AmplitudeBeam5'][:,:]
+            varobj[:,:] = idata['Amp_Beam5'][:,:]
 
         else:
             print('Vertical beam data found with different number of cells.')
@@ -428,7 +366,12 @@ def doNortekRawFile(infileName, outfileName, goodens, timetype):
 def dictifyatts(varptr, tag):
     theDict = {}
     for key in varptr.ncattrs():
-        newkey = tag+key
+        if key.startswith('Instrument_'):
+            # we need to strip the 'Instrument_' off the beginning
+            n = key.find('_')
+            newkey = tag+key[n+1:]
+        else:
+            newkey = tag+key
         theDict[newkey] = varptr.getncattr(key)
 
     return theDict
@@ -437,39 +380,45 @@ def __main():
 # TODO add - and -- types of command line arguments
     print('%s running on python %s' % (sys.argv[0], sys.version))
 	
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         print("%s useage:" % sys.argv[0])
-        print("Norteknc2USGScdf infilename outfilename [startingensemble endingensemble]" )
+        print("Norteknc2USGScdf infileBName infileIName outfilename [startingensemble endingensemble]" )
         sys.exit(1)
     
     try:
-        infileName = sys.argv[1]
+        infileBName = sys.argv[1]
     except:
-        print('error - input file name missing')
+        print('error - Burst input file name missing')
         sys.exit(1)
         
     try:
-        outfileName = sys.argv[2]
+        infileIName = sys.argv[2]
+    except:
+        print('error - IBurst input file name missing')
+        sys.exit(1)
+
+    try:
+        outfileName = sys.argv[3]
     except:
         print('error - output file name missing')
         sys.exit(1)
         
-    print('Converting %s to %s' % (infileName, outfileName))
+    print('Converting %s to %s' % (infileBName, outfileName))
 
     try:
-        goodens = [int(sys.argv[3]), int(sys.argv[4])]
+        goodens = [int(sys.argv[4]), int(sys.argv[5])]
     except:
         print('No starting and ending ensembles specfied, processing entire file')
         goodens = [0,-1]
         
     try:
-        timetype = sys.argv[5]
+        timetype = sys.argv[6]
     except:
         print('Time type will be CF')
         timetype = "CF"      
     
     print('Start file conversion at ',dt.datetime.now())
-    doNortekRawFile(infileName, outfileName, goodens, timetype)
+    doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype)
     
     print('Finished file conversion at ',dt.datetime.now())
 

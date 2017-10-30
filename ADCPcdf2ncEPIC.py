@@ -700,7 +700,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         cdf.blanking_distance = rawcdf.Nortek_burst_blankingDistance
         cdf.transform = rawcdf.Nortek_burst_coordSystem
         # Nortek provides two angles for each beam, theta being from the vertical
-        cdf.beam_angle = rawcdf.Nortek_BeamCfg1_theta
+        cdf.beam_angle = rawcdf.Nortek_beamConfiguration1_theta
         cdf.number_of_slant_beams = 4
         # there's no indication from Nortek's metadata that magvar is applied or not
         # TODO have to include information from the user
@@ -724,8 +724,8 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         cdf.depth_note = "downlooking bin depths = WATER_DEPTH-transducer_offset_from_bottom+bindist"
     cdf.serial_number = rawcdf.serial_number
     
-      
-    varobj = cdf.createVariable('Rec','u4',('time'),fill_value=intfill)
+    timetype = 'u2'  # u4 may be causing downstream problems with NCO
+    varobj = cdf.createVariable('Rec',timetype,('time'),fill_value=intfill)
     varobj.units = "count"
     varobj.long_name = "Ensemble Number"
 
@@ -737,12 +737,12 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         varobj = cdf.createVariable('time','f8',('time'))
         varobj.units = rawcdf.variables['time'].units
         # for EPIC convention
-        varobj = cdf.createVariable('EPIC_time','u4',('time'))
+        varobj = cdf.createVariable('EPIC_time',timetype,('time'))
         varobj.units = "True Julian Day"
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
         varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-        varobj = cdf.createVariable('EPIC_time2','u4',('time'))
+        varobj = cdf.createVariable('EPIC_time2',timetype,('time'))
         varobj.units = "msec since 0:00 GMT"
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
@@ -754,12 +754,12 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         varobj = cdf.createVariable('cf_time','f8',('time'))
         varobj.units = rawcdf.variables['cf_time'].units
         # for EPIC convention
-        varobj = cdf.createVariable('time','u4',('time'))
+        varobj = cdf.createVariable('time',timetype,('time'))
         varobj.units = "True Julian Day"
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
         varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-        varobj = cdf.createVariable('time2','u4',('time'))
+        varobj = cdf.createVariable('time2',timetype,('time'))
         varobj.units = "msec since 0:00 GMT"
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"

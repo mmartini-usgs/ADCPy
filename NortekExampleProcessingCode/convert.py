@@ -2,6 +2,8 @@
 # at the anaconda prompt in the data directory, with IOOS3 activated, run this script as
 # E:\data\MVCO14\101003_ADCP767\python>python do767py.py > output.txt
 
+# ---- this script handles output from MIDAS
+
 import sys
 # this is important in order to import my package which is not on the python path
 sys.path.append('c:\projects\python\ADCPy')
@@ -10,40 +12,39 @@ import ADCPcdf2ncEPIC as cdf2nc
 #import os
 import datetime as dt
 
-datapath = "E:\\data\\MVCO15\\10573_Signature\\Nortekncsmall\\"
+datapathin = "E:\\data\\Matanzas\\WellTest2017\\Signature\\S100593A010_WHOI_well\\"
+datapathout = "E:\\data\\Matanzas\\WellTest2017\\Signature\\python2\\"
 
-datafiles = ['S100076A006_MVCO15_00.ad2cp.00000_1.nc',\
-             'S100076A006_MVCO15_00.ad2cp.00000_2.nc',\
-             'S100076A006_MVCO15_01.ad2cp.00000_1.nc',\
-             'S100076A006_MVCO15.ad2cp.00000.nc']
-outfileroot = '10573sig'
-attFile = datapath + 'glob_att1057.txt'
+# this is output from the MIDAS program
+datafileroot = 'S100593A010_WHOI_well.ad2cp.00000_'
+nfiles = 24
+
+outfileroot = '1108sig'
+attFile = 'E:\\data\\Matanzas\\WellTest2017\\glob_att1108.txt'
 good_ens = [0,-1]
 
 settings = {}
 # add things to the settings dictionary to add them to global attributes
 settings['good_ensembles'] = [0,-1]
 #settings['good_ensembles'] = [0, 2048*10]
-settings['orientation'] = 'UP' # uplooking ADCP, for downlookers, use DOWN
+settings['orientation'] = 'DOWN' # uplooking ADCP, for downlookers, use DOWN
 settings['transducer_offset_from_bottom'] = 2.02
 # turn this off if you do not have data that is trimmed to in water only
 settings['use_pressure_for_WATER_DEPTH'] = False 
-settings['adjust_to_UTC'] = 5 # for EST to UTC, if no adjustment, set to 0 or omit
+settings['adjust_to_UTC'] = 0 # for EST to UTC, if no adjustment, set to 0 or omit
 
-do_part_one = False # Nortek nc to USGS cdf
+do_part_one = True # Nortek nc to USGS cdf
 do_part_two = True # apply rotations, output EPIC file
     
 # --------------  beyond here the user should not need to change things
-for filenum in range(len(datafiles)):
-#for filenum in range(1,len(datafiles)):
-#for filenum in range(0,1):
+for filenum in range(1,nfiles+1):
 
     print('\n--------------\n')
-    NortekncFile = datapath + datafiles[filenum]
+    NortekncFile = datapathin + ('%s%d.nc' % (datafileroot,filenum))
     print(NortekncFile)
-    rawcdfFile = datapath + ('%s%03d.cdf' % (outfileroot,filenum))
+    rawcdfFile = datapathout + ('%s%03d.cdf' % (outfileroot,filenum))
     print(rawcdfFile)
-    EPICFile = datapath + ('%s%03d.nc' % (outfileroot,filenum))
+    EPICFile = datapathout + ('%s%03d.nc' % (outfileroot,filenum))
     print(EPICFile)
     print('\n')
     
@@ -56,11 +57,13 @@ for filenum in range(len(datafiles)):
         print("start binary to raw cdf conversion at %s" % starttime)
         # when using this module this way, the start and end ensembles are required.
         # use Inf to indicate all ensembles.
-        print('Converting from %s\n to %s\n' % (NortekncFile,rawcdfFile))
-        try:
-            ntk.doNortekRawFile(NortekncFile, rawcdfFile, good_ens, timetype)
-        except:
-            sys.exit(1)
+        print('Converting from %s\n and %s\n to %s\n' % (NortekncFile,'',rawcdfFile))
+        ntk.doNortekRawFile(NortekncFile, '', rawcdfFile, good_ens, timetype)
+
+        # try:
+        #     ntk.doNortekRawFile(NortekncBFile, NortekncIFile, rawcdfFile, good_ens, timetype)
+        # except:
+        #     sys.exit(1)
         endtime = dt.datetime.now()
         print("finished binary to raw cdf conversion at %s" % starttime)
         print("processing time was %s\n" % (endtime-starttime))

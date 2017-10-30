@@ -4,12 +4,10 @@
 from netCDF4 import Dataset
 import numpy as np
 
-datapath = "E:\\data\\MVCO15\\10573_Signature\\Nortekncsmall\\"
+datapath = ".\\"
 
-datafiles = ['10573sig000_1h.nc',\
-             '10573sig001_1h.nc',\
-             '10573sig002_1h.nc',\
-             '10573sig003_1h.nc']
+datafiles = ['1108sigall_1h.nc',\
+             '1108sigall_5m.nc']
 
 for filenum in range(len(datafiles)):
     

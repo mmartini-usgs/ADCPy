@@ -11,12 +11,12 @@ sys.path.append('c:\projects\python\ADCPy')
 #from ADCPcdf2ncEPIC import EPICtime2datetime
 from TRDIpd0tonetcdf import ajd
 
-datapath = "E:\\data\\MVCO15\\10573_Signature\\Nortekncsmall\\"
+datapath = ".\\"
 
-datafiles = ['10573sig000_1h.nc',\
-             '10573sig001_1h.nc',\
-             '10573sig002_1h.nc',\
-             '10573sig003_1h.nc']
+#datafiles = ['1108sig000_1h.nc', '1108sig001_1h.nc', '1108sig002_1h.nc', '1108sig003_1h.nc']
+#datafiles = ['1108sig000_5m.nc', '1108sig001_5m.nc', '1108sig002_5m.nc', '1108sig003_5m.nc']
+datafiles = ['1108sigall_1h.nc','1108sigall_5m.nc']
+
 
 # ------------------ beyond here the user should not need to edit anything
 def cftime2EPICtime(time, timeunits):
@@ -54,7 +54,7 @@ for filenum in range(len(datafiles)):
 #for filenum in range(0,1):
 
     pydata = datapath+datafiles[filenum]
-    
+    print('Working on file %s\n' % pydata)
     
     # re-open the dataset for numerical operations such as min and max
     # we have to make attribute changes, etc. so need to open with the netCDF package
@@ -69,9 +69,11 @@ for filenum in range(len(datafiles)):
         if (key not in dkeys) & (key not in {'time','EPIC_time','EPIC_time2'}):
             mn = np.min(pyd[key][:])
             # why doesn't this detect NaN?
-            if np.isnan(mn): mn = 1E35
+            if np.isnan(mn): 
+                mn = 1E35
             mx = np.max(pyd[key][:])
-            if np.isnan(mx): mx = 1E35
+            if np.isnan(mx): 
+                mx = 1E35
             print('%s min = %f, max = %f' % (key, mn, mx))
             pyd[key].minimum = mn
             pyd[key].maximum = mx
