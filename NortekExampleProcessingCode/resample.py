@@ -13,6 +13,7 @@ sys.path.append('c:\projects\python\ADCPy')
 import datetime as dt
 import xarray as xr
 import netCDF4 as nc
+from EPICstuff import resample_cleanup
 
 datapath = "E:\\data\\Matanzas\\WellTest2017\\Signature\\python2\\"
 
@@ -60,7 +61,7 @@ for filenum in range(len(datafiles)):
         starttime = dt.datetime.now()
         print("start resample at %s" % starttime)
         #ds_1h = ds.resample('H','time',how='mean',keep_attrs=True,skipna=True)
-        ds_1h = ds.resample('H','time',how='mean',keep_attrs=True)
+        ds_1h = ds.resample('H','time',how='mean',closed='left',keep_attrs=True)
         endtime = dt.datetime.now()
         print("finished resample at %s" % endtime)
         print("processing time was %s" % (endtime-starttime))
@@ -73,12 +74,14 @@ for filenum in range(len(datafiles)):
         print('after resampling')
         print(ds_1h['lat'].__dict__)
         ds_1h.to_netcdf(outfile)
+        
+        resample_cleanup([outfile])
     
     if do5min:
         print(ds.dims)
         starttime = dt.datetime.now()
         print("start resample at %s" % starttime)
-        ds_5min = ds.resample('5min','time',how='mean',keep_attrs=True)
+        ds_5min = ds.resample('5min','time',how='mean',closed='left',keep_attrs=True)
         endtime = dt.datetime.now()
         print("finished resample at %s" % endtime)
         print("processing time was %s" % (endtime-starttime))
@@ -88,6 +91,8 @@ for filenum in range(len(datafiles)):
         outfile = fileparts[0]+"_5m.nc"
         print(outfile)
         ds_5min.to_netcdf(outfile)
+
+        resample_cleanup([outfile])
     
     ds.close()
     

@@ -42,8 +42,9 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
     # this is necessary so that this function does not change the value
     # in the calling function
     ens2process = goodens[:]
+    verbose = 1 # diagnostic, 1 = turn on output, 0 = silent
     
-    maxens, ensLen, ensData, dataStartPosn = analyzepd0file(pd0File)
+    maxens, ensLen, ensData, dataStartPosn = analyzepd0file(pd0File, verbose)
     
     infile = open(pd0File, 'rb')
     
@@ -61,7 +62,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
 
     cdfIdx = 0
     ensCount = 0
-    verbose = 0 # diagnostic, 1 = turn on output, 0 = silent
+    verbose = 1 # diagnostic, 1 = turn on output, 0 = silent
     nslantbeams = 4
         
     # priming read - for the while loop
@@ -1650,7 +1651,7 @@ def ajd(dto):
     day_fraction = dto.hour / 24.0 + dto.minute / 1440.0 + dto.second / 86400.0
     return jdd + day_fraction - 0.5
     
-def analyzepd0file(pd0File):
+def analyzepd0file(pd0File, verbose):
     # determine the input file size
     # read some ensembles, make an estimate of the number of ensembles within
     infile = open(pd0File, 'rb')
@@ -1706,11 +1707,11 @@ def analyzepd0file(pd0File):
         Header = readTRDIHeader(infile)
         ensLen = Header['nbytesperens']+2
         infile.seek(fileposn)
-        ensData, ensError = parseTRDIensemble(infile.read(ensLen), 0)
+        ensData, ensError = parseTRDIensemble(infile.read(ensLen), verbose)
         if ensError != 'None':
-            print('error - problem reading the first ensemble')
-            infile.close()
-            sys.exit(1)
+            print('problem reading the first ensemble: ' + ensError)
+            #infile.close()
+            #sys.exit(1)
         
         if i == 0:
             firstEnsData = ensData

@@ -8,7 +8,7 @@ Then, in python (saved in python2 subdirectory), working only with the Burst dat
     + doEPIC_ADCPfile – perform transformation to Earth and save as EPIC netCDF
 + combine.py – implements catEPIC to combine the individual .nc and .cdf files
 + resample.py – implement Xarray to reduce the data to hourly and 5 min averages
-+ postproc.py – clean up from Xarray, reinstate EPIC convention items which are not compatible with or are lost in Xarray operations: time, time2, DELTA_T, etc.
+			– clean up from Xarray, reinstate EPIC convention items which are not compatible with or are lost in Xarray operations: time, time2, DELTA_T, etc.
 + unfill.py – clean up any NaNs
 
 Known issues:
