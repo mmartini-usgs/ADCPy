@@ -1,3 +1,4 @@
+11/8/2017 Code to fix up resample results from xarray back to EPIC conventions.  Time is a problem.  Still trouble with EPIC time calculations and also don't know why xarray moves the start of the time series to the beginning of a day when doing an hourly resample.
 10/30/2017 Update to handle Nortek Signature data.  Still having some issues with Xarray output conforming to USGS/EPIC conventions and needs.  
 7/27/2017 Changed time to time and time2 for EPIC compliance and backward compatibility with USGS CMG MATLAB tools.  Added cf_time for forward compatibility with CF tools.  Both versions of time can be interpreted by ncbrowse.  Panoply only knows cf_time but looks for these data in the time variable, so for now, these files cannot be opened by panoply.
 7/13/2017 Got rotations for uplooking ADCP to agree with known good methods we use in MATLAB.
