@@ -39,6 +39,7 @@ from netCDF4 import Dataset
 from netCDF4 import num2date
 import datetime as dt
 from TRDIpd0tonetcdf import julian
+from EPICstuff import cftime2EPICtime
 
 def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
     
@@ -118,6 +119,11 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
     # USGS CMG MATLAB tools need time and time2
     # create the datetime object from the CF time
     tobj = num2date(data['time'][:],data['time'].units,calendar=data['time'].calendar)
+    CFcount = data['time'][:]
+    CFunits = data['time'].units
+    EPICtime, EPICtime2 = cftime2EPICtime(CFcount,CFunits)
+    print('CFcount[0] = %f, CFunits = %s' % (CFcount[0], CFunits))
+    print('EPICtime[0] = %f, EPICtime2[0] = %f' % (EPICtime[0], EPICtime2[0]))
     elapsed_sec = []
     for idx in range(len(tobj)):
         tdelta = tobj[idx]-tobj[0] # timedelta
@@ -126,6 +132,17 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
     jd = []
     time = []
     time2 = []
+    # using u2 rather than u4 here because when EPIC time is written from this
+    # cdf to the nc file, it was getting messed up
+    #file is 1108sig001.cdf
+    #EPIC first time stamp = 25-Sep-2017 15:00:00
+    #seconds since 1970-01-01T00:00:00 UTC
+    #CF first time stamp = 25-Sep-2017 15:00:00
+    #file is 1108sig001.nc
+    #EPIC first time stamp = 08-Oct-5378 00:01:04
+    #seconds since 1970-01-01T00:00:00 UTC
+    #CF first time stamp = 25-Sep-2017 15:00:00
+    timevartype = 'u2'
     for idx in range(len(tobj)):
         j = julian(tobj[idx].year,tobj[idx].month,tobj[idx].day, \
                    tobj[idx].hour,tobj[idx].minute,tobj[idx].second,\
@@ -145,18 +162,20 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
         varobj = cdf.createVariable('time','f8',('time'))
         varobj.setncatts(dictifyatts(data['time'],''))
         varobj[:] = data['time'][:]
-        varobj = cdf.createVariable('EPIC_time','u4',('time'))
+        varobj = cdf.createVariable('EPIC_time',timevartype,('time'))
         varobj.units = "True Julian Day"
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
         varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"   
-        varobj[:] = time[:]
-        varobj = cdf.createVariable('EPIC_time2','u4',('time'))
+        #varobj[:] = time[:]
+        varobj[:] = EPICtime[:]
+        varobj = cdf.createVariable('EPIC_time2',timevartype,('time'))
         varobj.units = "msec since 0:00 GMT"
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
         varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"  
-        varobj[:] = time2[:]
+        #varobj[:] = time2[:]
+        varobj[:] = EPICtime2[:]
     else:
         # we include cf_time for cf compliance and use by python packages like xarray
         # if f8, 64 bit is not used, time is clipped
@@ -165,18 +184,20 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
         varobj.setncatts(dictifyatts(data['time'],''))
         varobj[:] = data['time'][:]
         # we include time and time2 for EPIC compliance
-        varobj = cdf.createVariable('time','u4',('time'))
+        varobj = cdf.createVariable('time',timevartype,('time'))
         varobj.units = "True Julian Day"
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
         varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-        varobj[:] = time[:]
-        varobj = cdf.createVariable('time2','u4',('time'))
+        #varobj[:] = time[:]
+        varobj[:] = EPICtime[:]
+        varobj = cdf.createVariable('time2',timevartype,('time'))
         varobj.units = "msec since 0:00 GMT"
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
         varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
-        varobj[:] = time2[:]
+        #varobj[:] = time2[:]
+        varobj[:] = EPICtime2[:]
         
     cdf.start_time = '%s' % num2date(data['time'][0],data['time'].units)
     cdf.stop_time = '%s' % num2date(data['time'][-1],data['time'].units)

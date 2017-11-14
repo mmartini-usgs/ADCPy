@@ -70,7 +70,7 @@ import netCDF4 as netcdf
 import datetime as dt
 from datetime import datetime
 #from TRDIpd0tonetcdf import julian
-from TRDIpd0tonetcdf import ajd
+#from TRDIpd0tonetcdf import ajd
 
 def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     
@@ -724,7 +724,19 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         cdf.depth_note = "downlooking bin depths = WATER_DEPTH-transducer_offset_from_bottom+bindist"
     cdf.serial_number = rawcdf.serial_number
     
+    # TODO consider using a float for time since less common integers are casuing issues
+    # the problem is, CF time is a count, so integer is appropriate
     timetype = 'u2'  # u4 may be causing downstream problems with NCO
+    # u2 caused rollover problems when EPIC time was stored or read:
+    #file is 1108sig001.nc
+    #EPIC first time stamp = 08-Oct-5378 00:01:04
+    #seconds since 1970-01-01T00:00:00 UTC
+    #CF first time stamp = 25-Sep-2017 15:00:00
+    # the bad EPIC time is because a u4 dataype in the cdf file
+    # is being sent to a u2 datatype in hte nc file.  Changing u2 to u4, etc.
+    # causes other problems
+    #timetype = 'u4' # u4 causes problems downstream in catEPIC with fill values
+    # for now choosing to live with the u2 problems
     varobj = cdf.createVariable('Rec',timetype,('time'),fill_value=intfill)
     varobj.units = "count"
     varobj.long_name = "Ensemble Number"
@@ -1063,6 +1075,7 @@ def EPICtime2datetime(time,time2):
 
     return gtime, dtos
 
+'''
 def cftime2EPICtime(timecount, timeunits):
     # take a CF time variable and convert to EPIC time and time2
     # timecountis the integer count of minutes (for instance) since the time stamp
@@ -1090,6 +1103,7 @@ def cftime2EPICtime(timecount, timeunits):
     time2 = np.floor((tj-time)*(24*3600*1000))
     
     return time, time2
+'''
 
 """
 # this does not work

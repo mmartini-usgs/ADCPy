@@ -1,10 +1,11 @@
 Known issues:
 
-Still having trouble converting between time formats in python.  EPIC time therefore is not correct.
+Still having trouble converting between time formats in python.  EPIC time therefore is not correct.  The problem has something to do with if EPIC_time are stored as u2 or u4.  Need to discuss this with someone who knows more about netCDF
+data types as they are treated in python than I do.
 
 It's possible for pressure standard deviation to be zero as computed by the instrument.  Detect this and omit it from the final .nc file if so.
 
-This code will likely run very slowly.  Need to restructure to make use of xarray.  Need to do matrix transformations with numpy.einsum
+This code will likely run very slowly when making the inital conversions.  May need to restructure to make use of xarray.  Try to do matrix transformations with numpy.einsum?
 
 It is possible for the 5th beam of a V or Signature to have a different number of cells.  This is trapped, but not dealt with, in the code.  In this case 5th beam data will not be output.
 

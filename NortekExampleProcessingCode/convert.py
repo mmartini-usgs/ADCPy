@@ -37,7 +37,11 @@ do_part_one = True # Nortek nc to USGS cdf
 do_part_two = True # apply rotations, output EPIC file
     
 # --------------  beyond here the user should not need to change things
-for filenum in range(1,nfiles+1):
+timetype = 'CF'
+allstarttime = dt.datetime.now()
+    
+#for filenum in range(1,nfiles+1):
+for filenum in range(1,2):
 
     print('\n--------------\n')
     NortekncFile = datapathin + ('%s%d.nc' % (datafileroot,filenum))
@@ -47,10 +51,6 @@ for filenum in range(1,nfiles+1):
     EPICFile = datapathout + ('%s%03d.nc' % (outfileroot,filenum))
     print(EPICFile)
     print('\n')
-    
-    timetype = 'CF'
-    
-    allstarttime = dt.datetime.now()
     
     if do_part_one:
         starttime = dt.datetime.now()

@@ -7,7 +7,7 @@ from EPICstuff import catEPIC
 path = '.\\'
 rootname = '1108sig'
 nfiles = 24
-do_nc_files = False
+do_nc_files = True
 do_cdf_files = True
 
 if do_nc_files:

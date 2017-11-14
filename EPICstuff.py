@@ -29,7 +29,16 @@ def cftime2EPICtime(time, timeunits):
     # timecountis the integer count of minutes (for instance) since the time stamp
     # given in timeunits
     buf = timeunits.split()
-    t0 = dt.datetime.strptime(buf[2]+' '+buf[3], '%Y-%m-%d %H:%M:%S')
+    tformat = '%Y-%m-%d %H:%M:%S'
+    if 'T' in buf[2]:
+        tformat = '%Y-%m-%dT%H:%M:%S'
+        
+    #TODO we're going to have to deal with time zones here...
+    if 'UTC' in buf[3]:
+        t0 = dt.datetime.strptime(buf[2], tformat)
+    else:
+        t0 = dt.datetime.strptime(buf[2]+' '+buf[3], tformat)
+    #t0 = dt.datetime.strptime(buf[2]+' '+buf[3], '%Y-%m-%d %H:%M:%S')
     t0j = ajd(t0)
     # julian day for EPIC is the beginning of the day e.g. midnight
     t0j = t0j+0.5 # add 0.5 because ajd() subtracts 0.5 
@@ -182,6 +191,8 @@ def catEPIC(datafiles, outfile):
             alldt = np.concatenate((alldt,tobj))
         
         print('file %d is %s to %s' % (ifile, tobj[0], tobj[-1]))
+        print('   first time object nc[''time''][0] is %f' % nc['time'][0])
+        print('   time units are %s' % nc['time'].units)
         nc.close()
         
     # it was the case in the MATLAB version that the schema technique
@@ -204,6 +215,7 @@ def catEPIC(datafiles, outfile):
     
     # variables with their attributes
     for varname in ncid_in.variables.keys():
+        print('Creating %s as %s' % (varname, ncid_in[varname].datatype))
         ncid_out.createVariable(varname, ncid_in[varname].datatype, 
                             dimensions = ncid_in[varname].dimensions)
         for attname in ncid_in[varname].__dict__:
@@ -211,7 +223,7 @@ def catEPIC(datafiles, outfile):
             
     ncid_out.close()
     ncid_in.close()
-    
+        
     # load the data
     ncid_out = Dataset(outfile, mode='r+', format="NETCDF4")
     print(timelens)
@@ -222,7 +234,7 @@ def catEPIC(datafiles, outfile):
         else:
             outidx_start = outidx_end
             outidx_end = outidx_start+timelens[ifile]
-        print('getting data from file %s and writing %d to %d' % (datafiles[ifile],outidx_start,outidx_end))
+        print('getting data from file %s and writing %d to %d (pythonic indeces)' % (datafiles[ifile],outidx_start,outidx_end))
         ncid_in = Dataset(datafiles[ifile], mode="r", format="NETCDF4")
         for varname in ncid_in.variables.keys():
             dimnames = ncid_in[varname].dimensions
@@ -233,8 +245,8 @@ def catEPIC(datafiles, outfile):
                 s = 0
                 e = len(ncid_in[varname])
             ndims = len(ncid_in[varname].dimensions)
-            print('%s, %d' % (varname, ndims))
-            print(len(ncid_in[varname]))
+            #print('%s, %d' % (varname, ndims))
+            #print(len(ncid_in[varname]))
             if ndims == 1:
                 ncid_out[varname][s:e] = ncid_in[varname][:]
             elif ndims == 2:
@@ -246,7 +258,11 @@ def catEPIC(datafiles, outfile):
         ncid_in.close()
     
     # finally, put the correct time span in th output file
-    units = "seconds since %d-%d-%d %d:%d:%f 0:00" % (alldt[0].year, 
+    units = "seconds since %d-%d-%d %d:%d:%f" % (alldt[0].year, 
+        alldt[0].month,alldt[0].day,alldt[0].hour,alldt[0].minute,
+        alldt[0].second+alldt[0].microsecond/1000000)
+    # the 0:00 here was causing problems for xarray
+    units = "seconds since %d-%d-%d %d:%d:%f +0:00" % (alldt[0].year, 
         alldt[0].month,alldt[0].day,alldt[0].hour,alldt[0].minute,
         alldt[0].second+alldt[0].microsecond/1000000)
     elapsed = alldt-alldt[0] # output is a numpy array of timedeltas

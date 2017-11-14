@@ -20,6 +20,7 @@ datapath = "E:\\data\\Matanzas\\WellTest2017\\Signature\\python2\\"
 datafiles = ['1108sigall.nc']
 doHourly = True
 do5min = True
+endian = '' # | 'left' e.g. take tiem stamp from beginning or end of burst
 
 # ------------------ beyond here the user should not need to edit anything
 allstarttime = dt.datetime.now()
@@ -61,7 +62,8 @@ for filenum in range(len(datafiles)):
         starttime = dt.datetime.now()
         print("start resample at %s" % starttime)
         #ds_1h = ds.resample('H','time',how='mean',keep_attrs=True,skipna=True)
-        ds_1h = ds.resample('H','time',how='mean',closed='left',keep_attrs=True)
+        ds_1h = ds.resample('H','time',how='mean',closed=endian,keep_attrs=True)
+        #ds_1h = ds.resample('H','time',how='mean',loffset=,keep_attrs=True)
         endtime = dt.datetime.now()
         print("finished resample at %s" % endtime)
         print("processing time was %s" % (endtime-starttime))
@@ -81,7 +83,7 @@ for filenum in range(len(datafiles)):
         print(ds.dims)
         starttime = dt.datetime.now()
         print("start resample at %s" % starttime)
-        ds_5min = ds.resample('5min','time',how='mean',closed='left',keep_attrs=True)
+        ds_5min = ds.resample('5min','time',how='mean',closed=endian,keep_attrs=True)
         endtime = dt.datetime.now()
         print("finished resample at %s" % endtime)
         print("processing time was %s" % (endtime-starttime))
