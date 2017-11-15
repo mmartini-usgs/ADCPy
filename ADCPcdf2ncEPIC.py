@@ -103,6 +103,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
             usep4waterdepth = True
             settings.pop('use_pressure_for_WATER_DEPTH')
         else: usep4waterdepth = False
+    else:
+        usep4waterdepth = True
         
     rawcdf = Dataset(cdfFile, mode='r',format='NETCDF4')
     rawvars = []
@@ -236,11 +238,16 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     # idx is returned as a tuple, the first of which is the actual index values
 
     # set the water depth here, this will be used throughout
+    # the user may have put units next to the depth
+    if type(nc.WATER_DEPTH) is str:
+        water_depth = nc.WATER_DEPTH.split()
+        water_depth = float(water_depth[0])
+    else: water_depth = nc.WATER_DEPTH
     if ('Pressure' in rawvars) and usep4waterdepth:
-        idx = np.where(nc['P_1'] > nc.WATER_DEPTH/2)
+        idx = np.where(nc['P_1'][:] > water_depth/2)
         # now for the mean of only on bottom pressure measurements
         pmean = nc['P_1'][idx[0]].mean()
-        print('Site WATER_DEPTH given is %f' % nc.WATER_DEPTH)
+        print('Site WATER_DEPTH given is %f' % water_depth)
         print('Calculated mean water level from P_1 is %f m' % pmean)
         print('Updating site WATER_DEPTH to %f m' % pmean)
         nc.WATER_DEPTH = pmean+nc.transducer_offset_from_bottom
@@ -251,25 +258,25 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         varnames = ['P_1','bindist','depth']
         # WATER_DEPTH_datum is not used in this circumstance.
     else:
-        print('Site WATER_DEPTH given is %f' % nc.WATER_DEPTH)
+        print('Site WATER_DEPTH given is %f' % water_depth)
         print('No pressure data available, so no adjustment to water depth made')
         nc.WATER_DEPTH_source = "water depth as given by user, (meters), nominal"
         nc.WATER_DEPTH_NOTE = nc.WATER_DEPTH_source
-        nc.nominal_sensor_depth = nc.WATER_DEPTH-settings['transducer_offset_from_bottom']
+        nc.nominal_sensor_depth = water_depth-settings['transducer_offset_from_bottom']
         nc.nominal_sensor_depth_note = "inst_depth = (water_depth - inst_height); nominal depth below surface, meters"
         varnames = ['bindist','depth']
         # WATER_DEPTH_datum is not used in this circumstance.
 
     for varname in varnames:
-        nc[varname].WATER_DEPTH = nc.WATER_DEPTH
+        nc[varname].WATER_DEPTH = water_depth
         nc[varname].WATER_DEPTH_source = nc.WATER_DEPTH_source
         nc[varname].transducer_offset_from_bottom = nc.transducer_offset_from_bottom
     
     # update depth variable for location of bins based on WATER_DEPTH information
     if "UP" in nc.orientation:
-        depths = nc.WATER_DEPTH-nc.transducer_offset_from_bottom-nc['bindist']
+        depths = water_depth-nc.transducer_offset_from_bottom-nc['bindist']
     else:
-        depths = -1 * (nc.WATER_DEPTH-nc.transducer_offset_from_bottom+nc['bindist'])
+        depths = -1 * (water_depth-nc.transducer_offset_from_bottom+nc['bindist'])
     
     nc['depth'][:] = depths        
     

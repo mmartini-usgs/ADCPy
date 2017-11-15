@@ -81,6 +81,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
     infile.seek(bookmark)
     ens = infile.read(ensLen)   
         
+    verbose = 0
     while len(ens) > 0:
         #print('-- ensemble %d length %g, file position %g' % (ensCount, len(ens), infile.tell()))
         #print(ensData['Header'])        
