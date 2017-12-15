@@ -1,3 +1,4 @@
+12/12/2017 removed old battery voltage variables no longer used by TRDI
 11/14/2017 tested updates on TRDI V data
 11/8/2017 Code to fix up resample results from xarray back to EPIC conventions.  Time is a problem.  Still trouble with EPIC time calculations and also don't know why xarray moves the start of the time series to the beginning of a day when doing an hourly resample.
 10/30/2017 Update to handle Nortek Signature data.  Still having some issues with Xarray output conforming to USGS/EPIC conventions and needs.  

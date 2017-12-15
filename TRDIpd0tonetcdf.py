@@ -174,13 +174,13 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
             varobj[cdfIdx] = ensData['VLeader']['Xmit_Current']
             varobj = cdf.variables['xmitv']
             varobj[cdfIdx] = ensData['VLeader']['Xmit_Voltage']
-            varobj = cdf.variables['dac']
+            varobj = cdf.variables['Ambient_Temp']
             varobj[cdfIdx] = ensData['VLeader']['Ambient_Temp']
-            varobj = cdf.variables['VDD3']
+            varobj = cdf.variables['Pressure+']
             varobj[cdfIdx] = ensData['VLeader']['Pressure_(+)']
-            varobj = cdf.variables['VDD1']
+            varobj = cdf.variables['Pressure-']
             varobj[cdfIdx] = ensData['VLeader']['Pressure_(-)']
-            varobj = cdf.variables['VDC']
+            varobj = cdf.variables['Attitude_Temp']
             varobj[cdfIdx] = ensData['VLeader']['Attitude_Temp']
             varobj = cdf.variables['EWD1']
             varobj[cdfIdx] = int(ensData['VLeader']['Error_Status_Word_Low_16_bits_LSB'])
@@ -644,21 +644,21 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
     varobj.units = "volts"
     varobj.long_name = "transmit voltage"
 
-    varobj = cdf.createVariable('dac','i2',('time'),fill_value=intfill)
-    varobj.units = "counts"
-    varobj.long_name = "DAC output"
+    varobj = cdf.createVariable('Ambient_Temp','i2',('time'),fill_value=intfill)
+    varobj.units = "C"
+    varobj.long_name = "Ambient_Temp"
 
-    varobj = cdf.createVariable('VDD3','i2',('time'),fill_value=intfill)
-    varobj.units = "volts"
-    varobj.long_name = "battery voltage 3"
+    varobj = cdf.createVariable('Pressure+','i2',('time'),fill_value=intfill)
+    varobj.units = "unknown"
+    varobj.long_name = "Pressure+"
 
-    varobj = cdf.createVariable('VDD1','i2',('time'),fill_value=intfill)
-    varobj.units = "volts"
-    varobj.long_name = "battery voltage 1"
+    varobj = cdf.createVariable('Pressure-','i2',('time'),fill_value=intfill)
+    varobj.units = "unknown"
+    varobj.long_name = "Pressure-"
 
-    varobj = cdf.createVariable('VDC','i2',('time'),fill_value=intfill)
-    varobj.units = "volts"
-    varobj.long_name = "VDC"
+    varobj = cdf.createVariable('Attitude_Temp','i2',('time'),fill_value=intfill)
+    varobj.units = "C"
+    varobj.long_name = "Attitude_Temp"
 
     for i in range(4):
         varname = "EWD%d" % (i+1)

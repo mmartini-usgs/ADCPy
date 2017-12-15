@@ -246,7 +246,9 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     if ('Pressure' in rawvars) and usep4waterdepth:
         idx = np.where(nc['P_1'][:] > water_depth/2)
         # now for the mean of only on bottom pressure measurements
-        pmean = nc['P_1'][idx[0]].mean()
+        if len(idx[0]) > 0:
+            pmean = nc['P_1'][idx[0]].mean()
+        else: pmean = 0 # this could beif the ADCP is in air the whole time
         print('Site WATER_DEPTH given is %f' % water_depth)
         print('Calculated mean water level from P_1 is %f m' % pmean)
         print('Updating site WATER_DEPTH to %f m' % pmean)
