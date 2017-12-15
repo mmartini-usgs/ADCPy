@@ -193,6 +193,8 @@ def catEPIC(datafiles, outfile):
         print('file %d is %s to %s' % (ifile, tobj[0], tobj[-1]))
         print('   first time object nc[''time''][0] is %f' % nc['time'][0])
         print('   time units are %s' % nc['time'].units)
+        #if 'corvert' in nc.variables.keys():
+        #    print('   there is a corvert')
         nc.close()
         
     # it was the case in the MATLAB version that the schema technique
@@ -236,6 +238,7 @@ def catEPIC(datafiles, outfile):
             outidx_end = outidx_start+timelens[ifile]
         print('getting data from file %s and writing %d to %d (pythonic indeces)' % (datafiles[ifile],outidx_start,outidx_end))
         ncid_in = Dataset(datafiles[ifile], mode="r", format="NETCDF4")
+        # TODO - check for the variable int he outfile
         for varname in ncid_in.variables.keys():
             dimnames = ncid_in[varname].dimensions
             if 'time' in dimnames:

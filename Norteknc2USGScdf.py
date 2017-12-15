@@ -71,7 +71,12 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
     # set up some pointers to the netCDF groups
     config = nc['Config']
     data = nc['Data']['Burst']
-    idata = ncI['Data']['IBurstHR']
+    if 'IBurstHR' in ncI['Data'].groups:
+        idata = ncI['Data']['IBurstHR']
+        HRdata = True
+    else:
+        idata = ncI['Data']['IBurst']
+        HRdata = False
     
     # TODO - pay attention to the possible number of bursts.
     # we are assuming here that the first burst is the primary sample set of
@@ -353,22 +358,22 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
             varobj.units = "m s-1"
             varobj.long_name = "Beam 5 velocity (m s-1)"
             #varobj.valid_range = [-32767, 32767]
-            #varobj[:,:] = idata['VelocityBeam5'][:,:]
-            varobj[:,:] = idata['Vel_Beam5'][:,:]
+            varobj[:,:] = idata['VelocityBeam5'][:,:]
+            #varobj[:,:] = idata['Vel_Beam5'][:,:] # contour version
             
             varobj = cdf.createVariable("cor5",'u2',('time','depth'),fill_value=intfill)
             varobj.units = "percent"
             varobj.long_name = "Beam 5 correlation"
             varobj.valid_range = [0, 100]
-            #varobj[:,:] = idata['CorrelationBeam5'][:,:]
-            varobj[:,:] = idata['Cor_Beam5'][:,:]
+            varobj[:,:] = idata['CorrelationBeam5'][:,:]
+            #varobj[:,:] = idata['Cor_Beam5'][:,:] # contour version
             
             varobj = cdf.createVariable("att5",'u2',('time','depth'),fill_value=intfill)
             varobj.units = "dB"
             varobj.long_name = "ADCP amplitude of beam 5"
             #varobj.valid_range = [0, 255]
-            #varobj[:,:] = idata['AmplitudeBeam5'][:,:]
-            varobj[:,:] = idata['Amp_Beam5'][:,:]
+            varobj[:,:] = idata['AmplitudeBeam5'][:,:]
+            #varobj[:,:] = idata['Amp_Beam5'][:,:] # contour version
 
         else:
             print('Vertical beam data found with different number of cells.')
