@@ -676,7 +676,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         varobj = cdf.createVariable('PressVar','f4',('time'),fill_value=floatfill)
         varobj.units = "deca-pascals"
         varobj.long_name = "ADCP Transducer Pressure Variance"
-        varobj.valid_range = [0, 2**31]
+        varobj.valid_range = [0, maxfloat]
     
     if 'BTData' in ensData: 
         # write globals attributable to BT setup
