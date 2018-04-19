@@ -5,40 +5,42 @@ a Teledyne RD Instruments instrument that is in pd0 format
 
 As a script (to split a raw PD0 file into waves and currents):
 
-python pd0.py [path] rawFile wavesFile currentsFile
-python pd0.py [-p path] -r rawFile -w wavesFile -c currentsFile
-python pd0.py [--path=path] \\
+python pd0splitter.py [path] rawFile wavesFile currentsFile
+python pd0splitter.py [-p path] -r rawFile -w wavesFile -c currentsFile -f firstEnsemble -l lastEnsemble
+python pd0splitter.py [--path=path] \\
                --raw=rawFile \\
                --waves=wavesFile \\
-               --currents=currentsFile
+               --currents=currentsFile \\
+               --first=firstEnsemble \\
+               --last=lastEnsemble \\
 
 where:
     path         is a path to prepend to the following
     rawFile      is path of raw PD0 format input file
     wavesFile    is path of waves PD0 format output file
     currentsFile is path of currents PD0 format output file
-
-or (to run the test suite):
-
-python pd0.py -t
-python pd0.py --test
+    firstEnsemble   is a integer ensemble number
+    lastEnsemble   is a integer ensemble number
 
 or (to see this help message):
 
-python pd0.py -h
-python pd0.py --help
+python pd0splitter.py -h
+python pd0splitter.py --help
 
 As a module:
 
-import adcp.pd0
-adcp.pd0.split(rawFile,wavesFile,currentsFile)
+import pd0splitter
+pd0splitter.split(rawFile,wavesFile,currentsFile,firstEnsemble,lastEnsemble)
 
 where:
     rawFile      is a file object representing the raw PD0 format input
     wavesFile    is a file object representing the waves PD0 format output
     currentsFile is a file object representing the currents PD0 format output
+    firstEnsemble   is a integer ensemble number
+    lastEnsemble   is a integer ensemble number
 """
 
+import getopt,os,sys
 import struct
 
 #
@@ -64,15 +66,28 @@ import struct
 # adapted from pd0.py by Gregory P. Dusek
 # http://trac.nccoos.org/dataproc/wiki/DPWP/docs
 
-def split(rawFile,wavesFile,currentsFile):
-    """Split PD0 format data into seperate waves and currents
+def split(rawFile,wavesFile,currentsFile,firstEnsemble,lastEnsemble):
 
-    split()rawFile,wavesFile,currentsFile -> None
-    """
-
+    try:
+        rawFile = open(rawFile, 'rb')
+    except:
+        print('Cannot open %s' % rawFile)
+    try:
+        wavesFile = open(wavesFile, 'wb')
+    except:
+        print('Cannot open %s' % wavesFile)
+    try:
+        currentsFile = open(currentsFile, 'wb')
+    except:
+        print('Cannot open %s' % currentsFile)
+                
     # header IDs
     wavesId=0x797f
     currentsId=0x7f7f
+    
+    if lastEnsemble <0: lastEnsemble = 1E35
+    
+    print('Reading from %d to %d ensembles\n' % (firstEnsemble, lastEnsemble))
 
     # convenience function reused for header, length, and checksum
     def __nextLittleEndianUnsignedShort(file):
@@ -114,15 +129,18 @@ def split(rawFile,wavesFile,currentsFile):
 
     # get the starting point by throwing out unfound headers
     # and selecting the minumum
-    firstEnsemble = min([x for x in (firstWaves,firstCurrents) if x >= 0])
+    firstFileEnsemble = min([x for x in (firstWaves,firstCurrents) if x >= 0])
 
     #seeks to the first occurence of a waves or currents data
-    rawFile.seek(firstEnsemble)
+    rawFile.seek(firstFileEnsemble)
 
     # loop through raw data
     rawHeader, header = __nextLittleEndianUnsignedShort(rawFile)
+    
+    waveCount = 0
+    currentCount = 0
 
-    while (header == wavesId) or (header == currentsId):
+    while (header == wavesId) or (header == currentsId) or currentFlag:
         # get ensemble length
         rawLength, length = __nextLittleEndianUnsignedShort(rawFile)
         # read up to the checksum
@@ -137,121 +155,109 @@ def split(rawFile,wavesFile,currentsFile):
 
         # append to output stream
         if header == wavesId: 
+            waveCount = waveCount+1
             wavesFile.write(rawHeader)
             wavesFile.write(rawLength)
             wavesFile.write(rawEnsemble)
             wavesFile.write(rawChecksum)
         elif header == currentsId:
-            currentsFile.write(rawHeader)
-            currentsFile.write(rawLength)
-            currentsFile.write(rawEnsemble)
-            currentsFile.write(rawChecksum)
+            currentCount = currentCount+1
+            if (currentCount >= firstEnsemble) & (currentCount < lastEnsemble):
+                currentsFile.write(rawHeader)
+                currentsFile.write(rawLength)
+                currentsFile.write(rawEnsemble)
+                currentsFile.write(rawChecksum)
+            elif currentCount > lastEnsemble:
+                break
 
         try:
             rawHeader, header = __nextLittleEndianUnsignedShort(rawFile)
         except struct.error:
             break
+        
+        if (currentCount > 0) & ((currentCount % 100) == 0):
+            print('%d current ensembles read' % currentCount)
+        if (waveCount > 0) & ((waveCount % 1000) == 0):
+            print('%d wave ensembles read' % waveCount)
 
+        
+    print('wave Ensemble count = %d\n' % waveCount)
+    print('current Ensemble count = %d\n' % currentCount)
 
-def test():
-    """Execute test suite"""
-    try:
-        import adcp.tests.runalltests as runalltests
-    except:
-        # possible if executed as script
-        import sys,os
-        sys.path.append(os.path.join(os.path.dirname(__file__),'tests'))
-        import runalltests
-    runalltests.runalltests(subset='pd0')
+    currentsFile.close()
+    wavesFile.close()
+    rawFile.close()
 
-class __TestException(Exception):
-    """Flow control for running as script"""
-    pass
-
-# wrapper function
-def __test():
-   """Execute test suite from command line"""
-   test()
-   # raise __TestException, 'Wrapper function for command line testing only'
-   raise __TestException('Wrapper function for command line testing only')
 
 def __main():
-    """Process as script from command line"""
-    import getopt,os,sys
 
     # get the command line options and arguments
     path = ''
-    rawName,wavesName,currentsName = 3*[None]
+    rawFile,wavesFile,currentsFile,firstEnsemble,lastEnsemble = 5*[None]
 
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:],
-                                       'htp:r:w:c:',
+                                       'htp:r:w:c:f:l',
                                        ['help',
-                                        'test',
                                         'path=',
                                         'raw=',
                                         'waves=',
-                                        'currents='])
+                                        'currents=',
+                                        'first=',
+                                        'last-'])
         for opt,arg in opts:
             if opt in ['-h','--help']:
                 raise getopt.GetoptError('')
-            if opt in ['-t','--test']:
-                __test()
             elif opt in ['-p','--path']:
                 path = arg
             elif opt in ['-r','--raw']:
-                rawName = arg
+                rawFile = arg
             elif opt in ['-w','--waves']:
-                wavesName = arg
+                wavesFile = arg
             elif opt in ['-c','--currents']:
-                currentsName = arg
+                currentsFile = arg
+            elif opt in ['-f','--first']:
+                firstEnsemble = arg
+            elif opt in ['-l','--last']:
+                lastEnsemble = arg
             else:
                 raise getopt.GetoptError('')
-        if (rawName is None) or \
-           (wavesName is None) or \
-           (currentsName is None):
-            if len(args) not in [3, 4]:
+        if (rawFile is None) or \
+           (wavesFile is None) or \
+           (currentsFile is None):
+            if len(args) not in [3, 4, 5, 6]:
                 raise getopt.GetoptError('')
             else:
-                if (rawName is not None) or \
-                   (wavesName is not None) or \
-                   (currentsName is not None):
+                if (rawFile is not None) or \
+                   (wavesFile is not None) or \
+                   (currentsFile is not None):
                     raise getopt.GetoptError('')
                 else:
-                    if len(args) == 4:
+                    #if len(args) == 4:
+                    if len(args) in [4, 5, 6]:
                         path = args[0]
                         del args[0]
-                    rawName = args[0]
-                    wavesName = args[1]
-                    currentsName = args[2]
+                    rawFile = args[0]
+                    wavesFile = args[1]
+                    currentsFile = args[2]
+                    if len(args) in [5, 6]:
+                        firstEnsemble = args[3]
+                        lastEnsemble = args[4]
         elif len(args) != 0:
             raise getopt.GetoptError('')
     except getopt.GetoptError:
         print (__doc__)
         return
-    except __TestException:
-        return
 
     # split a raw PD0 file
-    rawName = os.path.join(path, rawName)
-    print(('Raw file path:', rawName))
-    wavesName = os.path.join(path, wavesName)
-    print(('Waves file path:', wavesName))
-    currentsName = os.path.join(path, currentsName)
-    print(('Currents file path:', currentsName))
-    rawFile = open(rawName, 'rb')
-    try:
-        wavesFile = open(wavesName, 'wb')
-        try:
-            currentsFile = open(currentsName, 'wb')
-            try:
-                split(rawFile, wavesFile, currentsFile)
-            finally:
-                currentsFile.close()
-        finally:
-            wavesFile.close()
-    finally:
-        rawFile.close()
+    rawFile = os.path.join(path, rawFile)
+    print(('Raw file path:', rawFile))
+    wavesFile = os.path.join(path, wavesFile)
+    print(('Waves file path:', wavesFile))
+    currentsFile = os.path.join(path, currentsFile)
+    print(('Currents file path:', currentsFile))
+
+    split(rawFile, wavesFile, currentsFile, firstEnsemble, lastEnsemble)
 
 if __name__ == "__main__":
     __main()
