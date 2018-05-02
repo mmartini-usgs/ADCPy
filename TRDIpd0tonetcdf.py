@@ -33,6 +33,8 @@ import sys, struct, math
 import numpy as np 
 from netCDF4 import Dataset
 import datetime as dt
+from EPICstuff import cftime2EPICtime
+from EPICstuff import ajd
 
 def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
 
@@ -55,7 +57,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
            
     # we are good to go, get the output file ready
     print('Setting up netCDF file %s' % cdfFile)
-    cdf = setupCdf(cdfFile, ensData, ens2process, serialnum, timetype)
+    cdf, cf_units = setupCdf(cdfFile, ensData, ens2process, serialnum, timetype)
     # we want to save the time stamp from this ensemble since it is the
     # time from which all other times in the file will be relative to
     t0 = ensData['VLeader']['dtobj']
@@ -104,14 +106,18 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
 
             # time calculations done when vleader is read
             if timetype == 'CF':
-                varobj = cdf.variables['EPIC_time']
-                varobj[cdfIdx] = ensData['VLeader']['EPIC_time']
-                varobj = cdf.variables['EPIC_time2']
-                varobj[cdfIdx] = ensData['VLeader']['EPIC_time2']
                 varobj = cdf.variables['time']
                 elapsed = ensData['VLeader']['dtobj']-t0 # timedelta
                 elapsed_sec = elapsed.total_seconds()
-                varobj[cdfIdx] = elapsed_sec              
+                varobj[cdfIdx] = elapsed_sec   
+                t1, t2 = cftime2EPICtime(elapsed_sec,cf_units)
+                varobj = cdf.variables['EPIC_time']
+                #varobj[cdfIdx] = ensData['VLeader']['EPIC_time']
+                varobj[cdfIdx] = t1
+                varobj = cdf.variables['EPIC_time2']
+                #varobj[cdfIdx] = ensData['VLeader']['EPIC_time2']
+                varobj[cdfIdx] = t2
+                
             else:
                 varobj = cdf.variables['time']
                 varobj[cdfIdx] = ensData['VLeader']['EPIC_time']
@@ -302,8 +308,12 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
             break
         
         # note that ensemble lengths can change in the middle of the file!
+        # TODO - is there a fastwe way to do this??
         bookmark = infile.tell() # save beginning of next ensemble
-        # need to read the header from the file to know the ensemble size
+        # TODO - since we are jumping around, we should check here to see
+        #   how close to the end of the file we are - if it is within one
+        #   header length - we are done
+        #   need to read the header from the file to know the ensemble size
         Header = readTRDIHeader(infile)
         if Header['sourceID'] != b'\x7f':
             print('non-currents ensemble found at %d' % bookmark)
@@ -311,6 +321,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
         if ensLen != Header['nbytesperens']+2:
             ensLen = Header['nbytesperens']+2 # update to what we have
         
+        # TODO - fix this so that we aren't going back and forth
         # go back to where this ensemble started before we checked the header
         infile.seek(bookmark)
         ens = infile.read(ensLen)
@@ -518,6 +529,10 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         varobj = cdf.createVariable('time','f8',('time'))
         # for cf convention, always assume UTC for now, and use the UNIX Epoch as the reference
         varobj.units = "seconds since %d-%d-%d %d:%d:%f 0:00" % (ensData['VLeader']['Year'],
+            ensData['VLeader']['Month'],ensData['VLeader']['Day'],ensData['VLeader']['Hour'],
+            ensData['VLeader']['Minute'],ensData['VLeader']['Second']+
+            ensData['VLeader']['Hundredths']/100)
+        cf_units = "seconds since %d-%d-%d %d:%d:%f 0:00" % (ensData['VLeader']['Year'],
             ensData['VLeader']['Month'],ensData['VLeader']['Day'],ensData['VLeader']['Hour'],
             ensData['VLeader']['Minute'],ensData['VLeader']['Second']+
             ensData['VLeader']['Hundredths']/100)
@@ -899,7 +914,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         varobj.units = "s"
         varobj.long_name = "Transition Period between Sea and Swell (s)"     
         
-    return cdf
+    return cdf, cf_units
 
 def donothing():
     # this function is for placeholders where pylint is whining about
@@ -1161,7 +1176,7 @@ def parseTRDIVariableLeader(bstream, offset):
     #VLeaderData['time'] = jd
     VLeaderData['EPIC_time'] = int(math.floor(jd))
     VLeaderData['EPIC_time2'] = int((jd - math.floor(jd))*(24*3600*1000))
-        
+    
     VLeaderData['BIT_Result_Byte_13'] = bitstrLE(bstream[offset+12])
     VLeaderData['Demod_1_error_bit'] = int(VLeaderData['BIT_Result_Byte_13'][3])
     VLeaderData['Demod_0_error_bit'] = int(VLeaderData['BIT_Result_Byte_13'][4])
@@ -1625,7 +1640,8 @@ def julian(year,month,day,hour,mn,sec,hund):
     j=j+decimalhrs/24
     
     return j
-
+# moved to EPICstuff.py
+"""
 def jdn(dto):
     # Given datetime object returns Julian Day Number
     year = dto.year
@@ -1651,6 +1667,58 @@ def ajd(dto):
     jdd = jdn(dto)
     day_fraction = dto.hour / 24.0 + dto.minute / 1440.0 + dto.second / 86400.0
     return jdd + day_fraction - 0.5
+
+def cftime2EPICtime(timecount, timeunits):
+    # take a CF time variable and convert to EPIC time and time2
+    # timecountis the integer count of minutes (for instance) since the time stamp
+    # given in timeunits
+    buf = timeunits.split()
+    t0 = dt.datetime.strptime(buf[2]+' '+buf[3], '%Y-%m-%d %H:%M:%S.%f')
+    t0j = ajd(t0)
+    # julian day for EPIC is the beginning of the day e.g. midnight
+    t0j = t0j+0.5 # add 0.5 because ajd() subtracts 0.5 
+    
+    if buf[0] == 'hours':
+        tj = timecount/(24)
+    elif buf[0] == 'minutes':
+        tj = timecount/(24*60)
+    elif buf[0] == 'seconds':
+        tj = timecount/(24*60*60)
+    elif buf[0] == 'milliseconds':
+        tj = timecount/(24*60*60*1000)
+    elif buf[0] == 'microseconds':
+        tj = timecount/(24*60*60*1000*1000)
+        
+    tj = t0j+tj
+    
+    time = np.floor(tj)
+    time2 = np.floor((tj-time)*(24*3600*1000))
+    
+    return time, time2
+"""
+"""
+# this does not work
+def cf2EPICtime(cftime, cfunits, cfcalendar):
+    tobj = num2date(cftime,cfunits,calendar=cfcalendar)
+    elapsed_sec = []
+    for idx in range(len(tobj)):
+        tdelta = tobj[idx]-tobj[0] # timedelta
+        elapsed_sec.append(tdelta.total_seconds())
+    # from the datetime object convert to time and time2
+    jd = []
+    time = []
+    time2 = []
+    for idx in range(len(tobj)):
+        j = julian(tobj[idx].year,tobj[idx].month,tobj[idx].day, \
+                   tobj[idx].hour,tobj[idx].minute,tobj[idx].second,\
+                   floor(tobj[idx].microsecond/1000000))
+        jd.append(j)
+        time.append(int(floor(j)))
+        time2.append(int((j - floor(j))*(24*3600*1000)))
+        
+    return time, time2
+"""
+
     
 def analyzepd0file(pd0File, verbose):
     # determine the input file size
@@ -1730,7 +1798,7 @@ def analyzepd0file(pd0File, verbose):
     
     infile.seek(0,2)
     nbytesinfile = infile.tell()
-    maxens = nbytesinfile/ensLen
+    maxens = (nbytesinfile/ensLen)-1
     print('estimating %g ensembles in file using a %d ensemble size' % (maxens, ensLen))
         
     infile.close()

@@ -1,6 +1,6 @@
 Known issues:
 
-Still having trouble converting between time formats in python.  EPIC time therefore is not correct.  The problem has something to do with if EPIC_time are stored as u2 or u4.  In one case, the EPIC time is good until about 1/3 of the way through a long time series, and then for no apparent reason, jumps ahead about 6 months.  Need to discuss this with someone who knows more about netCDF data types as they are treated in python than I do.
+Have posted a fix for the following, will be testing on further data sets:  Still having trouble converting between time formats in python.  EPIC time therefore is not correct.  The problem has something to do with if EPIC_time are stored as u2 or u4.  In one case, the EPIC time is good until about 1/3 of the way through a long time series, and then for no apparent reason, jumps ahead about 6 months.  Need to discuss this with someone who knows more about netCDF data types as they are treated in python than I do.
 
 It's possible for pressure standard deviation to be zero as computed by the instrument.  Detect this and omit it from the final .nc file if so.
 
@@ -15,6 +15,8 @@ Learn how to impliment and output a log file.
 Time values that are not unique are still being output for very fast sampled time series or where there are bottom track pings or other combined sampling.  This needs to be sorted out, possibly by implmenting groups.
 
 With some data sets, when time is written to netCDF, there are invalid values.  This seems to happen if Inf is used as the last ensemble to read, with the intent to read the whole file.  In these cases it is best to use an explicit ensemble count. 
+
+Code does not end gracefully if data stops with an incomplete ensemble.
 
 Need perform on raw data before performing rotations:
 -- QA/QC thresholds 

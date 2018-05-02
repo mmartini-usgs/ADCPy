@@ -1,3 +1,4 @@
+5/2/2018 fixed the problem with EPIC_time, moved some utility sub-functions to a separate file EPICstuff.py
 12/12/2017 removed old battery voltage variables no longer used by TRDI
 11/14/2017 tested updates on TRDI V data
 11/8/2017 Code to fix up resample results from xarray back to EPIC conventions.  Time is a problem.  Still trouble with EPIC time calculations and also don't know why xarray moves the start of the time series to the beginning of a day when doing an hourly resample.

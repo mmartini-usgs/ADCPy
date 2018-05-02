@@ -20,25 +20,47 @@ import sys
 # this is important in order to import my package which is not on the python path
 sys.path.append('c:\projects\python\ADCPy')
 #from TRDIpd0tonetcdf import julian
-from TRDIpd0tonetcdf import ajd
-from ADCPcdf2ncEPIC import EPICtime2datetime
+#from TRDIpd0tonetcdf import ajd
+#from ADCPcdf2ncEPIC import EPICtime2datetime
 
-def cftime2EPICtime(time, timeunits):
-    timecount = np.array(time)
+def s2hms(secs):
+    hour = math.floor(secs/3600)
+    mn = math.floor((secs % 3600)/60)
+    sec = secs % 60
+    return hour, mn, sec
+
+def jdn(dto):
+    # Given datetime object returns Julian Day Number
+    year = dto.year
+    month = dto.month
+    day = dto.day
+
+    not_march = month < 3
+    if not_march:
+        year -= 1
+        month += 12
+
+    fr_y = math.floor(year / 100)
+    reform = 2 - fr_y + math.floor(fr_y / 4)
+    jjs = day + (
+        math.floor(365.25 * (year + 4716)) + math.floor(30.6001 * (month + 1)) + reform - 1524)
+
+    return jjs
+
+def ajd(dto):
+    #Given datetime object returns Astronomical Julian Day.
+    #Day is from midnight 00:00:00+00:00 with day fractional
+    #value added.
+    jdd = jdn(dto)
+    day_fraction = dto.hour / 24.0 + dto.minute / 1440.0 + dto.second / 86400.0
+    return jdd + day_fraction - 0.5
+
+def cftime2EPICtime(timecount, timeunits):
     # take a CF time variable and convert to EPIC time and time2
     # timecountis the integer count of minutes (for instance) since the time stamp
     # given in timeunits
     buf = timeunits.split()
-    tformat = '%Y-%m-%d %H:%M:%S'
-    if 'T' in buf[2]:
-        tformat = '%Y-%m-%dT%H:%M:%S'
-        
-    #TODO we're going to have to deal with time zones here...
-    if 'UTC' in buf[3]:
-        t0 = dt.datetime.strptime(buf[2], tformat)
-    else:
-        t0 = dt.datetime.strptime(buf[2]+' '+buf[3], tformat)
-    #t0 = dt.datetime.strptime(buf[2]+' '+buf[3], '%Y-%m-%d %H:%M:%S')
+    t0 = dt.datetime.strptime(buf[2]+' '+buf[3], '%Y-%m-%d %H:%M:%S.%f')
     t0j = ajd(t0)
     # julian day for EPIC is the beginning of the day e.g. midnight
     t0j = t0j+0.5 # add 0.5 because ajd() subtracts 0.5 
@@ -56,10 +78,51 @@ def cftime2EPICtime(time, timeunits):
         
     tj = t0j+tj
     
-    time = np.floor(tj)
-    time2 = np.floor((tj-time)*(24*3600*1000))
+    time = math.floor(tj)
+    time2 = math.floor((tj-time)*(24*3600*1000))
     
     return time, time2
+
+def EPICtime2datetime(time,time2):
+    
+    dtos = []
+    gtime = []
+    for idx in range(len(time)):
+        # time and time2 are the julian day and milliseconds 
+        # in the day as per PMEL EPIC convention for netcdf
+        jd = time[idx]+(time2[idx]/(24*3600*1000))
+        secs = (jd % 1)*(24*3600)
+        
+        j = math.floor(jd) - 1721119
+        in1 = 4*j-1
+        y = math.floor(in1/146097)
+        j = in1 - 146097*y
+        in1 = math.floor(j/4)
+        in1 = 4*in1 +3
+        j = math.floor(in1/1461)
+        d = math.floor(((in1 - 1461*j) +4)/4)
+        in1 = 5*d -3
+        m = math.floor(in1/153)
+        d = math.floor(((in1 - 153*m) +5)/5)
+        y = y*100 +j
+        mo=m-9
+        yr=y+1
+        if m<10:
+            mo = m+3
+            yr = y
+        hour, mn, sec = s2hms(secs)
+        ss = math.floor(sec)
+        
+        hund = math.floor((sec-ss)*100)
+
+        gtime.append([yr, mo, d, hour, mn, ss, hund])
+
+        # centiseconds * 10000 = microseconds
+        dto = dt.datetime(yr, mo, d, hour, mn, ss, int(hund*10000))
+        
+        dtos.append(dto)
+
+    return gtime, dtos
 
 def resample_cleanup(datafiles):
 
@@ -156,6 +219,8 @@ def resample_cleanup(datafiles):
         pyd.VAR_DESC = vardesc
             
         pyd.close()    
+        
+        
 
 def catEPIC(datafiles, outfile):
     

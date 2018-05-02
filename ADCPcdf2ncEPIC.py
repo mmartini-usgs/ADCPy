@@ -1037,6 +1037,9 @@ def floor(dec):
     # anf then because np.floor was causing unexpected behavior w.r.t ints
     return int(dec - (dec % 1))
     
+
+# moved to EPICstuff.py
+"""
 def s2hms(secs):
     hour = floor(secs/3600)
     mn = floor((secs % 3600)/60)
@@ -1083,58 +1086,6 @@ def EPICtime2datetime(time,time2):
         dtos.append(dto)
 
     return gtime, dtos
-
-'''
-def cftime2EPICtime(timecount, timeunits):
-    # take a CF time variable and convert to EPIC time and time2
-    # timecountis the integer count of minutes (for instance) since the time stamp
-    # given in timeunits
-    buf = timeunits.split()
-    t0 = dt.datetime.strptime(buf[2]+' '+buf[3], '%Y-%m-%d %H:%M:%S')
-    t0j = ajd(t0)
-    # julian day for EPIC is the beginning of the day e.g. midnight
-    t0j = t0j+0.5 # add 0.5 because ajd() subtracts 0.5 
-    
-    if buf[0] == 'hours':
-        tj = timecount/(24)
-    elif buf[0] == 'minutes':
-        tj = timecount/(24*60)
-    elif buf[0] == 'seconds':
-        tj = timecount/(24*60*60)
-    elif buf[0] == 'milliseconds':
-        tj = timecount/(24*60*60*1000)
-    elif buf[0] == 'microseconds':
-        tj = timecount/(24*60*60*1000*1000)
-        
-    tj = t0j+tj
-    
-    time = np.floor(tj)
-    time2 = np.floor((tj-time)*(24*3600*1000))
-    
-    return time, time2
-'''
-
-"""
-# this does not work
-def cf2EPICtime(cftime, cfunits, cfcalendar):
-    tobj = num2date(cftime,cfunits,calendar=cfcalendar)
-    elapsed_sec = []
-    for idx in range(len(tobj)):
-        tdelta = tobj[idx]-tobj[0] # timedelta
-        elapsed_sec.append(tdelta.total_seconds())
-    # from the datetime object convert to time and time2
-    jd = []
-    time = []
-    time2 = []
-    for idx in range(len(tobj)):
-        j = julian(tobj[idx].year,tobj[idx].month,tobj[idx].day, \
-                   tobj[idx].hour,tobj[idx].minute,tobj[idx].second,\
-                   floor(tobj[idx].microsecond/1000000))
-        jd.append(j)
-        time.append(int(floor(j)))
-        time2.append(int((j - floor(j))*(24*3600*1000)))
-        
-    return time, time2
 """
 
 def __main():
