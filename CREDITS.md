@@ -8,6 +8,7 @@ Gregory P Dusek <gdusek@email.unc.edu> - original prototype
 Sara M Haines <sara_haines@unc.edu> - project management
 Chris Calloway <cbc@unc.edu> (cbcunc) - testing, release management
 Harvey E Seim <hseim@email.unc.edu> - chief science officer
+And the original so far is still here:  http://trac.nccoos.org/dataproc
 
 And for holding my hand while trying to unlearn lots of past programming thinking in order to learn python:
 Tarandeep Kalra, Dan Nowacki, Rich Signell
