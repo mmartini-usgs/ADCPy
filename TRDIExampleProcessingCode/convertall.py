@@ -5,8 +5,8 @@
 import sys
 # this is important in order to import my package which is not on the python path
 sys.path.append('c:\projects\python\ADCPy')
-import TRDIpd0tonetcdf as pd0
-import ADCPcdf2ncEPIC as cdf2nc
+import TRDIstuff.TRDIpd0tonetcdf as pd0
+import EPICstuff.ADCPcdf2ncEPIC as cdf2nc
 import datetime as dt
 
 datapath = 'C:\\data\\10811_V20784\\'

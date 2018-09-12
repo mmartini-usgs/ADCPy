@@ -7,8 +7,8 @@
 import sys
 # this is important in order to import my package which is not on the python path
 sys.path.append('c:\projects\python\ADCPy')
-import Norteknc2USGScdf as ntk
-import ADCPcdf2ncEPIC as cdf2nc
+import Nortekstuff.Norteknc2USGScdf as ntk
+import EPICstuff.ADCPcdf2ncEPIC as cdf2nc
 #import os
 import datetime as dt
 

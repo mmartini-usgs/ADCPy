@@ -9,7 +9,7 @@ import datetime as dt
 import numpy as np
 import xarray as xr
 import netCDF4 as nc
-from EPICstuff import resample_cleanup
+from EPICstuff.EPICmisc import resample_cleanup
 
 datapath = 'C:\\data\\10811_V20784\\'
 

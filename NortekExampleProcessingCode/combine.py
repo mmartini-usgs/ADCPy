@@ -2,7 +2,7 @@
 import sys
 # this is important in order to import my package which is not on the python path
 sys.path.append('c:\projects\python\ADCPy')
-from EPICstuff import catEPIC
+from EPICstuff.EPICmisc import catEPIC
 
 path = '.\\'
 rootname = '1108sig'
