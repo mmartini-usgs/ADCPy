@@ -18,6 +18,8 @@ With some data sets, when time is written to netCDF, there are invalid values.  
 
 Code does not end gracefully if data stops with an incomplete ensemble.
 
+Help docstrings need to be improved
+
 Need perform on raw data before performing rotations:
 -- QA/QC thresholds 
 -- masking

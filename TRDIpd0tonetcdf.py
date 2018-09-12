@@ -44,7 +44,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
     # this is necessary so that this function does not change the value
     # in the calling function
     ens2process = goodens[:]
-    verbose = 1 # diagnostic, 1 = turn on output, 0 = silent
+    verbose = True # diagnostic, True = turn on output, False = silent
     
     maxens, ensLen, ensData, dataStartPosn = analyzepd0file(pd0File, verbose)
     
@@ -64,7 +64,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
 
     cdfIdx = 0
     ensCount = 0
-    verbose = 1 # diagnostic, 1 = turn on output, 0 = silent
+    verbose = True # diagnostic, True = turn on output, False = silent
     nslantbeams = 4
         
     # priming read - for the while loop
@@ -409,7 +409,7 @@ def parseTRDIensemble(ensbytes, verbose):
             ensData['BTData'] = parseTRDIBottomTrack(ensbytes, offset, nbeams)
         elif val == 1792: #raw == b'\x00\x07':
             # this not defined in TRDI docs
-            donothing()
+            pass
         elif val == 2048: #raw == b'\x00\x08':
             if verbose: print('MicroCAT data found at %g' % offset)
         elif val == 12800: #raw == b'\x00\x32': #12800
@@ -915,12 +915,6 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         varobj.long_name = "Transition Period between Sea and Swell (s)"     
         
     return cdf, cf_units
-
-def donothing():
-    # this function is for placeholders where pylint is whining about
-    # missing indented blocks
-    i = 0
-    return i
 
 def bitstrLE(byte): # make a bit string from little endian byte
     # surely there's a better way to do this!!
@@ -1720,26 +1714,23 @@ def cf2EPICtime(cftime, cfunits, cfcalendar):
 """
 
     
-def analyzepd0file(pd0File, verbose):
+def analyzepd0file(pd0File, verbose=False):
     # determine the input file size
     # read some ensembles, make an estimate of the number of ensembles within
     infile = open(pd0File, 'rb')
     
-    flag = 1;
-    while flag==1:
+    while infile.tell() < 3000:
         b1 = infile.read(1)
         if ( b1 == b'\x7f'):
             b2 = infile.read(1)
             if (b2 == b'\x7f'):
-                flag=0;
-        idx = infile.tell()
-        #print('%d %s' % (idx, b1))
-        if idx > 3000:
-            print('Desired TRDI 7f7f ID not found within 3 kB from beginning of the file')
-            infile.close()
-            sys.exit(1)
+                break
+    else:
+        print('Desired TRDI 7f7f ID not found within 3 kB from beginning of the file')
+        infile.close()
+        sys.exit(1)
     
-    startofdata = idx-2    
+    startofdata = infile.tell()-2
     if startofdata != 0:
         print('data starts %d bytes into the file' % startofdata)
     infile.seek(startofdata)
