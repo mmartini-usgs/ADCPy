@@ -13,7 +13,7 @@ where:
     cdfFile      is path of a netcdf4 EPIC compliant output file
     start        ensemble at which to start exporting
     end          ensemble at which to stop exporting
-    
+
 note that file names and paths may not include spaces
     
 As a module:
@@ -38,8 +38,8 @@ from EPICstuff.EPICmisc import ajd
 
 def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
 
-	# TODO figure out a better way to handle this situation
-	# need this check in case this function is used as a stand alone function
+	 # TODO figure out a better way to handle this situation
+	 # need this check in case this function is used as a stand alone function
     
     # this is necessary so that this function does not change the value
     # in the calling function
