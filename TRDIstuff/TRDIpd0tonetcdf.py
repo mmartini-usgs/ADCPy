@@ -563,7 +563,14 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         bindist.append(idx*(ensData['FLeader']['Depth_Cell_Length_cm']/100)+ensData['FLeader']['Bin_1_distance_cm']/100)
     varobj[:] = bindist[:]
         
-    # TODO - no bindist computed here because it is not native to what the instrument recorded, reconsider?
+    varobj = cdf.createVariable('depth','f4',('depth')) # no fill for ordinates
+    varobj.units = "m"
+    varobj.long_name = "distance from transducer, depth placeholder"
+    varobj.center_first_bin_m = ensData['FLeader']['Bin_1_distance_cm']/100
+    varobj.blanking_distance_m = ensData['FLeader']['Blank_after_Transmit_cm']/100
+    varobj.bin_size_m = ensData['FLeader']['Depth_Cell_Length_cm']/100
+    varobj.bin_count = ensData['FLeader']['Number_of_Cells']
+    varobj[:] = bindist[:]
 
     varobj = cdf.createVariable('sv','f4',('time'),fill_value=floatfill)
     varobj.units = "m s-1"
