@@ -45,6 +45,7 @@ import sys
 import os
 import datetime as dt
 import netCDF4 as nc
+from netCDF4 import num2date
 import numpy as np
 import math
 
@@ -352,6 +353,10 @@ def reshapeEPIC(*args, **kwargs):
             # end of if 'sample' not in vdims_burst:
         # end of if varname not in drop:
     # for cvar in contcdf.variables.items():
+    
+    burstcdf.start_time = str(num2date(burstcdf['time'][0,0],burstcdf['time'].units))
+    burstcdf.stop_time = str(num2date(burstcdf['time'][-1,0],burstcdf['time'].units))
+    # TODO compute datetime
     
     burstcdf.close()
     contcdf.close()
