@@ -148,18 +148,9 @@ def reshapeEPIC(*args, **kwargs):
             print('\tthe fill value is {}'.format(fillValue))
         except AttributeError:
             print('\tfailed to read the fill value')
-            coordset = {} #{'time','EPIC_time','EPIC_time2','depth','lat','lon'}
-            if cvarobj.name in coordset:
-                # this will avoid the typerror when EPIC_time is written and is
-                # not a good solution because it causes zeros in a time variable
-                fillValue = 0 # TODO this is not a great solution
-            else:
-                fillValue = None
-        
-        if fillValue == None:
             fillValue = False
                 
-        print('\tfillValue in burst file will be set to {} (if None, then False)'.format(fillValue))
+        print('\tfillValue in burst file will be set to {} (if None, then False will be used)'.format(fillValue))
         
         if cvarobj.name not in drop:  # are we copying this variable?
             dtype = cvarobj.dtype
@@ -237,11 +228,10 @@ def reshapeEPIC(*args, **kwargs):
             except:
                 if 'EPIC' in varname:
                     # EPIC was ending up with odd fill values in the raw file
-                    # TODO this will cause pain later but we just want to get
-                    # data into the file
-                    # this will avoid the typerror when EPIC_time is written and is
-                    # not a good solution
-                    fillval_burst = 0 
+                    # this will avoid the typerror when EPIC_time is written 
+                    # not sure it is the best solution, for now it works
+                    fillval_burst = 0
+                    print('\tfillval_burst {}'.format(fillval_burst))
                     # this will prevent EPIC_time from being written
                     #fillval_burst = None
                 else:
@@ -320,9 +310,7 @@ def reshapeEPIC(*args, **kwargs):
                         
                     if 'EPIC' in varname and iburst==0 :
                         print('\tdata {}'.format(data[1:10]))
-                        print('\tburstdata {}'.format(burstdata[1:5,1:10]))
-                        print('\tvndims_cont {}'.format(vndims_cont))
-                        print('\tvndims_burst {}'.format(vndims_burst))
+                        print('\tburstdata {}'.format(burstdata[1:10]))
                                                                                        
                     if len(burstcdf[varname].shape) == 1:
                         pass # no known scalars
@@ -331,11 +319,8 @@ def reshapeEPIC(*args, **kwargs):
                             burstcdf[varname][iburst,:] = burstdata[:,:]
                         except TypeError:
                             # TypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'
-                            # burstdata is object numpy ndarray
-                            # varname is str
-                            # iburst is int
-                            # there were Nones in burstdata, why this is a problem only for EPIC_time I don't know
-                            # EPIC_time was given a fill vale in the raw file.
+                            # EPIC_time was given a fill value in the raw file.
+                            # this was solved by making sure coordinate variables had fill value set to False
                             if iburst == 0:
                                 print('\t{} in Burst file is data type {}, burstdata is type {} and got a TypeError when writing'.format(
                                     varname, bvarobj.dtype, type(burstdata)))
@@ -376,14 +361,6 @@ if __name__ == "__main__":
         
     if len(sys.argv) != 3:
         # TODO the keywork pairs do not get into reshape EPIC correctly,
-        # a command line call of 
-        # python reshapeEPIC.py junk1 junk2 3 dim='time' edges=[1,2,3,4,5]
-        # parses to
-        # reshapeEPIC.py running on python 3.6.6 | packaged by conda-forge | (default, Jul 26 2018, 11:48:23) [MSC v.1900 64 bit (AMD64)]
-        #junk1
-        #junk2
-        #3
-        #["dim='time'", 'edges=[1,2,3,4,5]']
         reshapeEPIC(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:])
     else:
         reshapeEPIC(sys.argv[1], sys.argv[2], sys.argv[3])
