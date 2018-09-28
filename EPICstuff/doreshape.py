@@ -18,8 +18,10 @@ sys.path.append('c:\projects\python\ADCPy\EPICstuff')
 from reshapeEPIC import reshapeEPIC
 
 # making the indeces
-contFile = 'E:\\data\\Sandwich\\10811_V20784\\python\\10811whVsubset00nbetterfill.cdf'
-burstFile = 'E:\\data\\Sandwich\\10811_V20784\\python\\junkbetterfill.cdf'
+#contFile = 'E:\\data\\Sandwich\\10811_V20784\\python\\10811whVsubset00nbetterfill.cdf'
+#burstFile = 'E:\\data\\Sandwich\\10811_V20784\\python\\junkbetterfill.cdf'
+contFile = 'E:\\data\\Sandwich\\10811_V20784\\python\\10811whVsubset00n.cdf'
+burstFile = 'E:\\data\\Sandwich\\10811_V20784\\python\\junk.cdf'
 sample_rate = 2
 burstlength = 2048
 burst_interval = 3600

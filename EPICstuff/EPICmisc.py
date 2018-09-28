@@ -84,6 +84,8 @@ def cftime2EPICtime(timecount, timeunits):
     return time, time2
 
 def EPICtime2datetime(time,time2):
+    # EPICtime2datetime(time,time2)
+    # convert EPIC time and time2 to python datetime object
     
     dtos = []
     gtime = []

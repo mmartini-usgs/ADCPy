@@ -21,7 +21,7 @@ from reshapeEPIC import reshapeEPIC
 inpath = 'E:\\data\\Sandwich\\10811_V20784\\python\\'
 contFile = '10811whVsubset00nbetterfill.cdf'
 outpath = 'E:\\data\\Sandwich\\10811_V20784\\python\\'
-burstFile = '10811whVsubset00nbetterfill.cdf'
+burstFileRoot = '10811whVsubset00nbetterfill.cdf'
 sample_rate = 2
 burstlength = 2048
 burst_interval = 3600
@@ -90,7 +90,7 @@ print('edge tuples {} such as {}...'.format(len(slices),slices[0:5]))
 
 burstnum = 0
 print('the last time is {} seconds from the start of the experiment'.format(contcdf['time'][-1]))
-print('looking up the boundaries... this take about aminute')
+print('looking up the boundaries... this take about a minute')
 edges = find_boundaries(contcdf['time'][:], slices)
 for x in edges[0:5]:  print('at indeces {} to {} we found times {} to {}'.format(x[0],x[1], 
     contcdf['time'][x[0]],contcdf['time'][x[1]]))
@@ -100,10 +100,11 @@ for x in burstlengths[0:5]:  print('bursts are {} long'.format(x))
     
 nburstsperfile = int(math.floor(nbursts/nfiles))
 contcdf.close()
+print('elapsed time is {} min'.format((dt.datetime.now()-opstart).total_seconds()/60))
 
 # now iterate throught he number of output files
 for ifile in range(nfiles):
-    s = burstFile.split('.')
+    s = burstFileRoot.split('.')
     burstFile = s[0]+(f'%02d.' % ifile)+s[1]
     print('making burst file {}'.format(burstFile))
     
@@ -141,3 +142,4 @@ for ifile in range(nfiles):
     
 
 print('End script run at ',dt.datetime.now())
+print('elapsed time is {} min'.format((dt.datetime.now()-opstart).total_seconds()/60))
