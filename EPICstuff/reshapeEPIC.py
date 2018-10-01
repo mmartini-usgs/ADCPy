@@ -131,7 +131,10 @@ def reshapeEPIC(*args, **kwargs):
     burstcdf.createDimension('sample',burstlength)
      
     # ---------------- set up the variables
-    
+    # order of dimensions matters.
+    # per https://cmgsoft.repositoryhosting.com/trac/cmgsoft_m-cmg/wiki/EPIC_compliant
+    # for a burst file dimension order needs to be time, sample, depth, [lat], [lon]
+    # TODO - check the above order and reorder dimensions if necessary
     for cvar in contcdf.variables.items():
         cvarobj = cvar[1]
         print('{} is data type {}'.format(cvarobj.name,cvarobj.dtype))
@@ -197,9 +200,27 @@ def reshapeEPIC(*args, **kwargs):
     burstcdf['sample'][:] = list(range(burstlength))
 
     nbins = len(burstcdf['depth'])
-    ranges_m = list(map(lambda ibin: 
-        contcdf.TRDI_Bin_1_distance_cm/100+ibin*contcdf.TRDI_VBeam_Vertical_Depth_Cell_Size_cm/100,
-        range(nbins)))
+    try: 
+        binsize = contcdf['depth'].bin_size_m
+    except AttributeError:
+        try: 
+            binsize = contcdf['depth'].bin_size
+        except AttributeError: 
+            # TODO - get user input here
+            print('Warning:  no depth size information found, assuming 1 m')
+            binsize = 1
+    
+    try: 
+        bin1distance = contcdf['depth'].center_first_bin_m
+    except AttributeError:
+        try: 
+            bin1distance = contcdf['depth'].center_first_bin
+        except AttributeError: 
+            # TODO - get user input here
+            print('Warning:  no depth center of first bin information found, assuming 0.5 bins ')
+            bin1distance = binsize/2            
+    
+    ranges_m = list(map(lambda ibin: bin1distance/100+ibin*binsize/100, range(nbins)))
     burstcdf['depth'][:] = ranges_m
        
     issueflags = {}
@@ -212,14 +233,17 @@ def reshapeEPIC(*args, **kwargs):
             cvarobj = contcdf[varname]
             bvarobj = burstcdf[varname]
         
-            print('{} in Continuous file is data type {}'.format(varname,cvarobj.dtype))
-            print('\tin Burst file it is data type {}'.format(bvarobj.dtype))
             vdims_cont = cvarobj.dimensions
             vshapes_cont = cvarobj.shape
             vndims_cont = len(cvarobj.dimensions)
             vdims_burst = burstcdf[varname].dimensions
             vshapes_burst = burstcdf[varname].shape
             vndims_burst = len(burstcdf[varname].dimensions)
+            print('{}\tin Continuous file is data type {} shape {}'.format(
+                    varname,cvarobj.dtype,cvarobj.shape))
+            print('\tin Burst file it is data type {} shape {}'.format(
+                    bvarobj.dtype,bvarobj.shape))
+
             try:
                 fillval_burst = burstcdf[varname].getncattr('_FillValue')
             except:
@@ -248,8 +272,17 @@ def reshapeEPIC(*args, **kwargs):
                     
                     #print('\tburst {} is {} samples from time index {} to {}'.format(
                     #    iburst,ndatasamples,contcorner,contedges))
+                    # coords = {'depth','lat','lon'} including lat, lon here caused problems
+                    #coords = {'depth'}
+                    #for coord in range(len(coords)):
+                    #    if coord in vdims_cont:
+                    #        contedges[vdims_cont.index(coord)] = vshapes_cont[vdims_cont.index(coord)]
                     if 'depth' in vdims_cont:
                         contedges[vdims_cont.index('depth')] = vshapes_cont[vdims_cont.index('depth')]
+                    #if 'lat' in vdims_cont:
+                    #    contedges[vdims_cont.index('lat')] = vshapes_cont[vdims_cont.index('lat')]
+                    #if 'lon' in vdims_cont:
+                    #    contedges[vdims_cont.index('lon')] = vshapes_cont[vdims_cont.index('lon')]
 
                     # this was necessary in the MATLAB version, not sure I need it here yet
                     '''
@@ -265,6 +298,10 @@ def reshapeEPIC(*args, **kwargs):
                         break
                     '''
                     
+                    if iburst == 0:
+                        print('\tconcorner = {}, contedges = {}'.format(
+                                contcorner, contedges))
+  
                     # get the data, and this will be contingent on the number of dims
                     if vndims_cont == 1:
                         data = contcdf[varname][int(contcorner[0]):int(contcorner[0])+int(contedges[0])]
@@ -274,16 +311,17 @@ def reshapeEPIC(*args, **kwargs):
                         data = contcdf[varname][int(contcorner[0]):int(contcorner[0])+int(contedges[0]), \
                             int(contcorner[1]):int(contcorner[1])+int(contedges[1])]
                     elif vndims_cont == 3:
-                        data = contcdf[varname][int(contcorner[0]):int(contcorner[0])+int(contedges[0])] \
-                            [int(contcorner[1]):int(contcorner[1])+int(contedges[1])] \
-                            [int(contcorner[2]):int(contcorner[2])+int(contedges[2])]
+                        data = contcdf[varname][int(contcorner[0]):int(contcorner[0])+int(contedges[0]), \
+                            int(contcorner[1]):int(contcorner[1])+int(contedges[1]), \
+                            int(contcorner[2]):int(contcorner[2])+int(contedges[2])]
                     elif vndims_cont == 4:
-                        data = contcdf[varname][int(contcorner[0]):int(contcorner[0])+int(contedges[0])] \
-                            [int(contcorner[1]):int(contcorner[1])+int(contedges[1])] \
-                            [int(contcorner[2]):int(contcorner[2])+int(contedges[2])] \
-                            [int(contcorner[3]):int(contcorner[3])+int(contedges[3])]
+                        data = contcdf[varname][int(contcorner[0]):int(contcorner[0])+int(contedges[0]), \
+                            int(contcorner[1]):int(contcorner[1])+int(contedges[1]), \
+                            int(contcorner[2]):int(contcorner[2])+int(contedges[2]), \
+                            int(contcorner[3]):int(contcorner[3])+int(contedges[3])]
                     else:
-                        pass
+                        if iburst == 0:
+                            print('did not read data')
                     
                     burstcorner = np.zeros(vndims_burst)
                     burstedges = np.ones(vndims_burst) 
@@ -291,7 +329,8 @@ def reshapeEPIC(*args, **kwargs):
                     burstedges[vdims_burst.index('time')] = burstlength
                                             
                     # since we don't have regular and recurring indeces, we need to handle
-                    # situations where the data read is not the maximum number of samples   
+                    # situations where the data read is not the maximum number of samples
+                    # samples MUST be the second dimension!
                     if ndatasamples < burstlength:
                         issueflags[varname].append(ndatasamples)
                         if len(data.shape) == 1:
@@ -302,49 +341,40 @@ def reshapeEPIC(*args, **kwargs):
                             # start with a filled array
                             burstdata = np.full((1,vshapes_burst[1],vshapes_burst[2]),fillval_burst)
                             burstdata[:, 0:ndatasamples] = data[:,:]
+                        elif len(data.shape) == 3:
+                            # start with a filled array
+                            burstdata = np.full((1,vshapes_burst[1],vshapes_burst[2],vshapes_burst[3]),fillval_burst)
+                            burstdata[:, 0:ndatasamples,: ] = data[:,:,:]
+                        elif len(data.shape) == 4:
+                            # start with a filled array
+                            burstdata = np.full((1,vshapes_burst[1],vshapes_burst[2],
+                                                 vshapes_burst[3], vshapes_burst[4]),fillval_burst)
+                            burstdata[:, 0:ndatasamples,:,:] = data[:,:,:,:]
+                        elif len(data.shape) == 5:
+                            # start with a filled array
+                            burstdata = np.full((1,vshapes_burst[1],vshapes_burst[2],
+                                                 vshapes_burst[3], vshapes_burst[4],
+                                                 vshapes_burst[5]),fillval_burst)
+                            burstdata[:, 0:ndatasamples,:,:,:] = data[:,:,:,:,:]
                     else:
                         burstdata = data
                         
-                    if 'EPIC' in varname and iburst==0 :
+                    if 'EPIC' in varname and iburst == 0 :
                         print('\tdata {}'.format(data[1:10]))
                         print('\tburstdata {}'.format(burstdata[1:10]))
-                                                                                       
-#                    if len(burstcdf[varname].shape) == 1:
-#                        pass # no known scalars
-#                    elif vndims_burst == 2:
-#                        try:
-#                            burstcdf[varname][iburst,:] = burstdata[:,:]
-#                        except TypeError:
-#                            # TypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'
-#                            # EPIC_time was given a fill value in the raw file.
-#                            # this was solved by making sure coordinate variables had fill value set to False
-#                            if iburst == 0:
-#                                print('\t{} in Burst file is data type {}, burstdata is type {} and got a TypeError when writing'.format(
-#                                    varname, bvarobj.dtype, type(burstdata)))
-#                        except IndexError: # too many indices for array
-#                            if iburst == 0:
-#                                print('too many indices for array')
-#                                print('iburst = {}'.format(iburst))
-#                                print('burstdata = {}'.format(burstdata))
-#                            
-#                    elif vndims_burst == 3:
-#                        try:
-#                            burstcdf[varname][iburst,:,:] = burstdata[:,:,:]
-#                        except TypeError:
-#                            if iburst == 0:
-#                                print('\t{} is data type {} and got a TypeError when writing'.format(
-#                                    varname, cvarobj.dtype))
-#                        except IndexError: # too many indices for array
-#                            if iburst == 0:
-#                                print('too many indices for array')
-#                                print('iburst = {}'.format(iburst))
-#                                print('burstdata = {}'.format(burstdata))
-#                    else:
-#                        pass
                         
+                    if iburst == 0:
+                        print('\tburstdata.shape = {} burst file dims {}'.format(
+                                burstdata.shape, vdims_burst))
+                        print('\tvndims_burst = {}'.format(vndims_burst))
+                        print('\tdata.shape = {}'.format(data.shape))
+                    
+                    # TODO -- we can simplify this code my making a function object
+                    # some day when I am better at python
+                                                                                                               
                     if len(burstdata.shape) == 1:
                         try:
-                            burstcdf[varname][iburst,:] = burstdata[:]
+                            burstcdf[varname][iburst] = burstdata[:]
                         except TypeError:
                             # TypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'
                             # EPIC_time was given a fill value in the raw file.
@@ -357,6 +387,9 @@ def reshapeEPIC(*args, **kwargs):
                                 print('too many indices for array')
                                 print('iburst = {}'.format(iburst))
                                 print('burstdata = {}'.format(burstdata))
+                        except ValueError: 
+                            if iburst == 0:
+                                print('ValueError ')
                     elif len(burstdata.shape) == 2:
                         try:
                             burstcdf[varname][iburst,:] = burstdata[:,:]
@@ -372,7 +405,10 @@ def reshapeEPIC(*args, **kwargs):
                                 print('too many indices for array')
                                 print('iburst = {}'.format(iburst))
                                 print('burstdata = {}'.format(burstdata))
-                    elif vndims_burst == 3:
+                        except ValueError: 
+                            if iburst == 0:
+                                print('ValueError ')
+                    elif len(burstdata.shape) == 3:
                         try:
                             burstcdf[varname][iburst,:,:] = burstdata[:,:,:]
                         except TypeError:
@@ -384,8 +420,46 @@ def reshapeEPIC(*args, **kwargs):
                                 print('too many indices for array')
                                 print('iburst = {}'.format(iburst))
                                 print('burstdata = {}'.format(burstdata))
+                        except ValueError: 
+                            if iburst == 0:
+                                print('ValueError cannot reshape array of size 1 into shape (1,150,1,1)')
+                                # here we have shapes [time lat lon]
+                    elif len(burstdata.shape) == 4:
+                        try:
+                            burstcdf[varname][iburst,:,:,:] = burstdata[:,:,:,:]
+                        except TypeError:
+                            if iburst == 0:
+                                print('\t{} is data type {} and got a TypeError when writing'.format(
+                                    varname, cvarobj.dtype))
+                        except IndexError: # too many indices for array
+                            if iburst == 0:
+                                print('too many indices for array')
+                                print('iburst = {}'.format(iburst))
+                                print('burstdata = {}'.format(burstdata))
+                        except ValueError: 
+                            if iburst == 0:
+                                print('ValueError cannot reshape array of size 1 into shape (1,150,1,1)')
+                                # here we have shapes [time lat lon]
+                    elif len(burstdata.shape) == 5:
+                        try:
+                            burstcdf[varname][iburst,:,:,:] = burstdata[:,:,:,:,:]
+                        except TypeError:
+                            if iburst == 0:
+                                print('\t{} is data type {} and got a TypeError when writing'.format(
+                                    varname, cvarobj.dtype))
+                        except IndexError: # too many indices for array
+                            if iburst == 0:
+                                print('too many indices for array')
+                                print('iburst = {}'.format(iburst))
+                                print('burstdata = {}'.format(burstdata))
+                        except ValueError:
+                            if iburst == 0:
+                                print('got a value error')
+                            
                     else:
-                        pass
+                        if iburst == 0:
+                            print('\tnot set up to write {} dimensions to burst file'.format(
+                                    len(burstdata.shape)))
                     
                 # end of for iburst in range(nbursts):
             # end of if 'sample' not in vdims_burst:
@@ -425,6 +499,8 @@ def find_boundaries(data,edges):
         idx.append((int(s[0][0]),int(e[0][0])))
         if not (len(idx) % 100):
             print('.', end='')
+            
+    print('\n')
     
     return idx
 
@@ -435,6 +511,8 @@ def generate_expected_start_times(cdffile, dim, burst_start_offset,
     # delineate the beginning times and ending times of burts of measurements
     # cdfname = name of a continuous time series data file
     # udim = the unlimited or time dimension which we will find the indeces to reshape
+    
+    # TODO - do this from a first burst first sample time stamp
 
     cdf= nc.Dataset(cdffile,format="NETCDF4")
     
@@ -469,7 +547,7 @@ def generate_expected_start_times(cdffile, dim, burst_start_offset,
 
     return slices
 
-def save_indexes_to_file(cdffile, txtfile, edges):
+def save_indexes_to_file(cdffile, txtfile, edge_tuples):
     # write indexes to a file with the time stamps for QA/QC
     cdf = nc.Dataset(cdffile,format="NETCDF4")
 
@@ -479,10 +557,13 @@ def save_indexes_to_file(cdffile, txtfile, edges):
     with open(indexFile,'w') as outfile:
         outfile.write('Burst Indexes for {}\n'.format(cdffile))
         outfile.write('Burst, start index, end index, number of samples, start time, end time\n')
-        for x in enumerate(edges):
-            s = '{}, {},  {}, {}, {},  {}\n'.format(x[0],x[1][0],x[1][1], 
+        for x in enumerate(edge_tuples):        
+            try:
+                s = '{}, {},  {}, {}, {},  {}\n'.format(x[0],x[1][0],x[1][1], 
                                            num2date(cdf['time'][x[1][0]],tunits),
                                            num2date(cdf['time'][x[1][1]],tunits))
+            except:
+                s = '{}, , , , , \n'.format(x[0],x[1][0],x[1][1])
             outfile.write(s)
         
     cdf.close()

@@ -87,6 +87,8 @@ def EPICtime2datetime(time,time2):
     # EPICtime2datetime(time,time2)
     # convert EPIC time and time2 to python datetime object
     
+    # TODO - there is a rollover problem with this algorithm
+    
     dtos = []
     gtime = []
     for idx in range(len(time)):

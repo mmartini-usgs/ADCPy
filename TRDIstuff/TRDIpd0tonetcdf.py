@@ -109,6 +109,11 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
                 varobj = cdf.variables['time']
                 elapsed = ensData['VLeader']['dtobj']-t0 # timedelta
                 elapsed_sec = elapsed.total_seconds()
+                # TODO - suspect my EPIC_time woes may be caused here
+                # is elapsed_sec rolling over?
+                if elapsed_sec == 0:
+                    print('elapsed seconds from ensemble {} is {}'.format(ensCount,elapsed_sec))
+                    
                 varobj[cdfIdx] = elapsed_sec   
                 t1, t2 = cftime2EPICtime(elapsed_sec,cf_units)
                 varobj = cdf.variables['EPIC_time']
