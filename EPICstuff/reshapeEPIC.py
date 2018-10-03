@@ -76,6 +76,10 @@ def reshapeEPIC(*args, **kwargs):
         drop = kwargs['drop']  
     else:
         drop = None
+    if 'verbose' in kwargs.keys():  
+        verbose = kwargs['verbose']  
+    else:
+        verbose = False
     
     print('Start file conversion at ',dt.datetime.now())
 
@@ -140,12 +144,14 @@ def reshapeEPIC(*args, **kwargs):
         print('{} is data type {}'.format(cvarobj.name,cvarobj.dtype))
         try:
             fillValue = cvarobj.getncattr('_FillValue')
-            print('\tthe fill value is {}'.format(fillValue))
+            if verbose:
+                print('\tthe fill value is {}'.format(fillValue))
         except AttributeError:
             print('\tfailed to read the fill value')
             fillValue = False
                 
-        print('\tfillValue in burst file will be set to {} (if None, then False will be used)'.format(fillValue))
+        if verbose:
+            print('\tfillValue in burst file will be set to {} (if None, then False will be used)'.format(fillValue))
         
         if cvarobj.name not in drop:  # are we copying this variable?
             dtype = cvarobj.dtype
@@ -239,15 +245,16 @@ def reshapeEPIC(*args, **kwargs):
             vdims_burst = burstcdf[varname].dimensions
             vshapes_burst = burstcdf[varname].shape
             vndims_burst = len(burstcdf[varname].dimensions)
-            print('{}\tin Continuous file is data type {} shape {}'.format(
-                    varname,cvarobj.dtype,cvarobj.shape))
-            print('\tin Burst file it is data type {} shape {}'.format(
-                    bvarobj.dtype,bvarobj.shape))
+            if verbose:
+                print('{}\tin Continuous file is data type {} shape {}'.format(
+                        varname,cvarobj.dtype,cvarobj.shape))
+                print('\tin Burst file it is data type {} shape {}'.format(
+                        bvarobj.dtype,bvarobj.shape))
 
             try:
                 fillval_burst = burstcdf[varname].getncattr('_FillValue')
             except:
-                if 'EPIC' in varname:
+                if ('EPIC' in varname) and verbose:
                     # EPIC was ending up with odd fill values in the raw file
                     # this will avoid the typerror when EPIC_time is written 
                     # not sure it is the best solution, for now it works
@@ -270,35 +277,10 @@ def reshapeEPIC(*args, **kwargs):
                     ndatasamples = edges[iburst][1]-edges[iburst][0]
                     contedges[vdims_cont.index('time')] = ndatasamples
                     
-                    #print('\tburst {} is {} samples from time index {} to {}'.format(
-                    #    iburst,ndatasamples,contcorner,contedges))
-                    # coords = {'depth','lat','lon'} including lat, lon here caused problems
-                    #coords = {'depth'}
-                    #for coord in range(len(coords)):
-                    #    if coord in vdims_cont:
-                    #        contedges[vdims_cont.index(coord)] = vshapes_cont[vdims_cont.index(coord)]
                     if 'depth' in vdims_cont:
                         contedges[vdims_cont.index('depth')] = vshapes_cont[vdims_cont.index('depth')]
-                    #if 'lat' in vdims_cont:
-                    #    contedges[vdims_cont.index('lat')] = vshapes_cont[vdims_cont.index('lat')]
-                    #if 'lon' in vdims_cont:
-                    #    contedges[vdims_cont.index('lon')] = vshapes_cont[vdims_cont.index('lon')]
-
-                    # this was necessary in the MATLAB version, not sure I need it here yet
-                    '''
-                    # are we going beyond the end of the data?  If so - adjust the number of samples
-                    if contcorner[vdims_cont.index('time')]+contedges[vdims_cont.index('time')] > \
-                            len(contcdf['time']):
-                        contedges[vdims_cont.index('time')] = \
-                            len(contcdf['time'])-contcorner[vdims_cont.index('time')]
-                        print('not enough samples for burst {} - truncating'.format(iburst))
-                    # are we past the end of the file?
-                    if contcorner[vdims_cont.index('time')] > contedges[vdims_cont.index('time')]:
-                        print('end of data reached at burst {}'.format(iburst))
-                        break
-                    '''
                     
-                    if iburst == 0:
+                    if (iburst == 0) and verbose:
                         print('\tconcorner = {}, contedges = {}'.format(
                                 contcorner, contedges))
   
@@ -359,11 +341,11 @@ def reshapeEPIC(*args, **kwargs):
                     else:
                         burstdata = data
                         
-                    if 'EPIC' in varname and iburst == 0 :
+                    if ('EPIC' in varname) and (iburst == 0) and verbose :
                         print('\tdata {}'.format(data[1:10]))
                         print('\tburstdata {}'.format(burstdata[1:10]))
                         
-                    if iburst == 0:
+                    if (iburst == 0) and verbose:
                         print('\tburstdata.shape = {} burst file dims {}'.format(
                                 burstdata.shape, vdims_burst))
                         print('\tvndims_burst = {}'.format(vndims_burst))
@@ -547,6 +529,7 @@ def generate_expected_start_times(cdffile, dim, burst_start_offset,
 
     return slices
 
+# TODO -- this is not working. format string is failing
 def save_indexes_to_file(cdffile, txtfile, edge_tuples):
     # write indexes to a file with the time stamps for QA/QC
     cdf = nc.Dataset(cdffile,format="NETCDF4")
