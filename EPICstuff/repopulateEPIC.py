@@ -66,7 +66,7 @@ def repopulateEPIC(*args, **kwargs):
     print(ndims)
     nvars = len(shapedcdf.variables)
     print(nvars)
-    shapedcdf.getncattr('sensor_type')
+    #shapedcdf.getncattr('sensor_type')
     ngatts = len(shapedcdf.ncattrs())
     print(ngatts)    
     

@@ -34,6 +34,8 @@ Notes:
 # there may be burst1, avg, avg1 etc. in a Nortek file.  This may need to
 # be dealt with as separate .cdf files
 
+# 10/4/2018 MM remove valid_range as it causes too many downstream problems
+
 import sys, math
 from netCDF4 import Dataset
 from netCDF4 import num2date
@@ -84,7 +86,7 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
      
     # note that 
     # f4 = 4 byte, 32 bit float
-    maxfloat = 3.402823*10**38;
+    #maxfloat = 3.402823*10**38;
     intfill = -32768
     floatfill = 1E35
     
@@ -217,13 +219,13 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
     varobj = cdf.createVariable('Rec','u4',('time'),fill_value=intfill)
     varobj.units = "count"
     varobj.long_name = "Ensemble Count for each burst"
-    varobj.valid_range = [0, 2**23]
+    #varobj.valid_range = [0, 2**23]
     varobj[:] = data['EnsembleCount'][:]
 
     varobj = cdf.createVariable('sv','f4',('time'),fill_value=floatfill)
     varobj.units = "m s-1"
     varobj.long_name = "sound velocity (m s-1)"
-    varobj.valid_range = [1400, 1600]
+    #varobj.valid_range = [1400, 1600]
     varobj[:] = data['SpeedOfSound'][:]
     
     # get the number
@@ -276,7 +278,7 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
         varobj.units = "percent"
         varobj.long_name = "Beam %d correlation" % (i+1)
         #varobj.epic_code = 1285+i
-        varobj.valid_range = [0, 100]
+        #varobj.valid_range = [0, 100]
         varobj[:,:] = data[key][:,:]
 
     for i in range(4):
@@ -297,7 +299,7 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
     varobj.units = "degrees"
     varobj.long_name = "INST Heading"
     varobj.epic_code = 1215
-    varobj.valid_range = [0, 360]
+    #varobj.valid_range = [0, 360]
     # TODO can we tell on a Signature if a magvar was applied at deployment?
     # no metadata found in the .nc file global attributes
     #varobj.NOTE_9 = "no heading bias was applied during deployment"
@@ -308,7 +310,7 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
     varobj.units = "degrees"
     varobj.long_name = "INST Pitch"
     varobj.epic_code = 1216
-    varobj.valid_range = [-18000, 18000] # physical limit, not sensor limit
+    #varobj.valid_range = [-18000, 18000] # physical limit, not sensor limit
     varobj[:] = data[varname][:]
     
     varname = 'Roll'
@@ -316,7 +318,7 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
     varobj.units = "degrees"
     varobj.long_name = "INST Roll"
     varobj.epic_code = 1217
-    varobj.valid_range = [-18000, 18000] # physical limit, not sensor limit
+    #varobj.valid_range = [-18000, 18000] # physical limit, not sensor limit
     varobj[:] = data[varname][:]
 
     # The Signature records magnetometer data we are not converting at this time
@@ -328,7 +330,7 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
     # TODO - verify if Signature is IPTS-1990
     #  20:T  :TEMPERATURE (C)          :temp:C:f10.2:IPTS-1990 standard
     #varobj.epic_code = 28
-    varobj.valid_range = [-500, 4000]    
+    #varobj.valid_range = [-500, 4000]    
     varobj[:] = data[varname][:]
 
     varname = 'Pressure'
@@ -336,7 +338,7 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
     varobj.units = "dbar"
     varobj.long_name = "ADCP Transducer Pressure"
     varobj.epic_code = 4
-    varobj.valid_range = [0, maxfloat]
+    #varobj.valid_range = [0, maxfloat]
     varobj[:] = data[varname][:]
 
     # TODO - Signature can bottom track, and we don't have an example yet
@@ -364,7 +366,7 @@ def doNortekRawFile(infileBName, infileIName, outfileName, goodens, timetype):
             varobj = cdf.createVariable("cor5",'u2',('time','depth'),fill_value=intfill)
             varobj.units = "percent"
             varobj.long_name = "Beam 5 correlation"
-            varobj.valid_range = [0, 100]
+            #varobj.valid_range = [0, 100]
             varobj[:,:] = idata['CorrelationBeam5'][:,:]
             #varobj[:,:] = idata['Cor_Beam5'][:,:] # contour version
             

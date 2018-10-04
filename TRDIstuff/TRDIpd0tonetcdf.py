@@ -27,6 +27,7 @@ Notes:
 Programmed according to the TRDI Workhorse Commands and Output Data Format document, March 2005
 """
 
+# 10/4/2018 remove valid_range as it causes too many downstream problems
 # 1/25/2017 MM got this running on old Workhorse ADCP data
 
 import sys, struct, math
@@ -473,7 +474,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
      
     # note that 
     # f4 = 4 byte, 32 bit float
-    maxfloat = 3.402823*10**38;
+    #maxfloat = 3.402823*10**38;
     intfill = -32768
     floatfill = 1E35
     
@@ -499,7 +500,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
     varobj.units = "count"
     varobj.long_name = "Ensemble Number"
     # the ensemble number is a two byte LSB and a one byte MSB (for the rollover)
-    varobj.valid_range = [0, 2**23]
+    #varobj.valid_range = [0, 2**23]
 
     # it's not yet clear which way to go with this.  python tools like xarray 
     # and panoply demand that time be a CF defined time.
@@ -584,7 +585,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
     varobj = cdf.createVariable('sv','f4',('time'),fill_value=floatfill)
     varobj.units = "m s-1"
     varobj.long_name = "sound velocity (m s-1)"
-    varobj.valid_range = [1400, 1600]
+    #varobj.valid_range = [1400, 1600]
     
     for i in range(4):
         varname = "vel%d" % (i+1)
@@ -592,7 +593,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         varobj.units = "mm s-1"
         varobj.long_name = "Beam %d velocity (mm s-1)" % (i+1)
         varobj.epic_code = 1277+i
-        varobj.valid_range = [-32767, 32767]
+        #varobj.valid_range = [-32767, 32767]
     
     for i in range(4):
         varname = "cor%d" % (i+1)
@@ -600,7 +601,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         varobj.units = "counts"
         varobj.long_name = "Beam %d correlation" % (i+1)
         varobj.epic_code = 1285+i
-        varobj.valid_range = [0, 255]
+        #varobj.valid_range = [0, 255]
 
     for i in range(4):
         varname = "att%d" % (i+1)
@@ -608,7 +609,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         varobj.units = "counts"
         varobj.epic_code = 1281+i
         varobj.long_name = "ADCP attenuation of beam %d" % (i+1)
-        varobj.valid_range = [0, 255]
+        #varobj.valid_range = [0, 255]
 
     if ('GData' in ensData):
         for i in range(4):
@@ -617,7 +618,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
             varobj.units = "counts"
             varobj.long_name = "Percent Good Beam %d" % (i+1)
             varobj.epic_code = 1241+i
-            varobj.valid_range = [0, 100]
+            #varobj.valid_range = [0, 100]
 
     varobj = cdf.createVariable('Hdg','f4',('time'),fill_value=floatfill)
     varobj.units = "hundredths of degrees"
@@ -625,7 +626,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
     varobj.epic_code = 1215
     varobj.heading_alignment = ensData['FLeader']['Heading_Alignment_Hundredths_of_Deg']
     varobj.heading_bias = ensData['FLeader']['Heading_Bias_Hundredths_of_Deg']
-    varobj.valid_range = [0, 36000]
+    #varobj.valid_range = [0, 36000]
     if ensData['FLeader']['Heading_Bias_Hundredths_of_Deg'] == 0:
         varobj.NOTE_9 = "no heading bias was applied by EB during deployment or by wavesmon"
     else:
@@ -635,13 +636,13 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
     varobj.units = "hundredths of degrees"
     varobj.long_name = "INST Pitch"
     varobj.epic_code = 1216
-    varobj.valid_range = [-18000, 18000] # physical limit, not sensor limit
+    #varobj.valid_range = [-18000, 18000] # physical limit, not sensor limit
     
     varobj = cdf.createVariable('Roll','f4',('time'),fill_value=floatfill)
     varobj.units = "hundredths of degrees"
     varobj.long_name = "INST Roll"
     varobj.epic_code = 1217
-    varobj.valid_range = [-18000, 18000] # physical limit, not sensor limit
+    #varobj.valid_range = [-18000, 18000] # physical limit, not sensor limit
 
     varobj = cdf.createVariable('HdgSTD','f4',('time'),fill_value=floatfill)
     varobj.units = "degrees"
@@ -659,13 +660,13 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
     varobj.units = "hundredths of degrees"
     varobj.long_name = "ADCP Transducer Temperature"
     varobj.epic_code = 3017
-    varobj.valid_range = [-500, 4000]    
+    #varobj.valid_range = [-500, 4000]    
 
     varobj = cdf.createVariable('S','f4',('time'),fill_value=floatfill)
     varobj.units = "PPT"
     varobj.long_name = "SALINITY (PPT)"
     varobj.epic_code = 40
-    varobj.valid_range = [0, 40]    
+    #varobj.valid_range = [0, 40]    
 
     varobj = cdf.createVariable('xmitc','f4',('time'),fill_value=floatfill)
     varobj.units = "amps"
@@ -702,12 +703,12 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         varobj.units = "deca-pascals"
         varobj.long_name = "ADCP Transducer Pressure"
         varobj.epic_code = 4
-        varobj.valid_range = [0, maxfloat]
+        #varobj.valid_range = [0, maxfloat]
     
         varobj = cdf.createVariable('PressVar','f4',('time'),fill_value=floatfill)
         varobj.units = "deca-pascals"
         varobj.long_name = "ADCP Transducer Pressure Variance"
-        varobj.valid_range = [0, maxfloat]
+        #varobj.valid_range = [0, maxfloat]
     
     if 'BTData' in ensData: 
         # write globals attributable to BT setup
@@ -726,7 +727,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
             varobj = cdf.createVariable(varname,'u8',('time'),fill_value=intfill)
             varobj.units = "cm"
             varobj.long_name = "BT Range %d" % (i+1)
-            varobj.valid_range = [0, 65536*16777215]
+            #varobj.valid_range = [0, 65536*16777215]
 
         for i in range(4):
             varnames = ('BTWe','BTWu','BTWv','BTWd')
@@ -735,77 +736,77 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
                 varobj = cdf.createVariable(varnames[i+1],'i2',('time'),fill_value=intfill)
                 varobj.units = "mm s-1"
                 varobj.long_name = "%s, mm s-1" % longnames[i+1]
-                varobj.valid_range = [-32768, 32767]
+                #varobj.valid_range = [-32768, 32767]
                 
             else:
                 varname = "BTV%d" % (i+1)
                 varobj = cdf.createVariable(varname,'i2',('time'),fill_value=intfill)
                 varobj.units = "mm s-1"
                 varobj.long_name = "BT velocity, mm s-1 %d" % (i+1)
-                varobj.valid_range = [-32768, 32767]
+                #varobj.valid_range = [-32768, 32767]
                 
         for i in range(4):
             varname = "BTc%d" % (i+1)
             varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
             varobj.units = "counts"
             varobj.long_name = "BT correlation %d" % (i+1)
-            varobj.valid_range = [0, 255]
+            #varobj.valid_range = [0, 255]
                 
         for i in range(4):
             varname = "BTe%d" % (i+1)
             varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
             varobj.units = "counts"
             varobj.long_name = "BT evaluation amplitude %d" % (i+1)
-            varobj.valid_range = [0, 255]
+            #varobj.valid_range = [0, 255]
             
         for i in range(4):
             varname = "BTp%d" % (i+1)
             varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
             varobj.units = "percent"
             varobj.long_name = "BT percent good %d" % (i+1)
-            varobj.valid_range = [0, 100]
+            #varobj.valid_range = [0, 100]
 
         for i in range(4):
             varname = "BTRSSI%d" % (i+1)
             varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
             varobj.units = "counts"
             varobj.long_name = "BT Receiver Signal Strength Indicator %d" % (i+1)
-            varobj.valid_range = [0, 255]
+            #varobj.valid_range = [0, 255]
 
         if ensData['BTData']['Mode'] == 0: # water reference layer was used
             varobj = cdf.createVariable('BTRmin','f4',('time'),fill_value=floatfill)
             varobj.units = 'dm'
             varobj.long_name = "BT Ref. min"
-            varobj.valid_range = [0,999]
+            #varobj.valid_range = [0,999]
             varobj = cdf.createVariable('BTRnear','f4',('time'),fill_value=floatfill)
             varobj.units = 'dm'
             varobj.long_name = "BT Ref. near"
-            varobj.valid_range = [0,9999]
+            #varobj.valid_range = [0,9999]
             varobj = cdf.createVariable('BTRfar','f4',('time'),fill_value=floatfill)
             varobj.units = 'dm'
             varobj.long_name = "BT Ref. far"
-            varobj.valid_range = [0,9999]
+            #varobj.valid_range = [0,9999]
                 
             for i in range(4):
                 varname = "BTRv%d" % (i+1)
                 varobj = cdf.createVariable(varname,'i2',('time'),fill_value=intfill)
                 varobj.units = "mm s-1"
                 varobj.long_name = "BT Ref. velocity, mm s-1 %d" % (i+1)
-                varobj.valid_range = [-32768, 32767]
+                #varobj.valid_range = [-32768, 32767]
 
             for i in range(4):
                 varname = "BTRc%d" % (i+1)
                 varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
                 varobj.units = "counts"
                 varobj.long_name = "BT Ref. correlation %d" % (i+1)
-                varobj.valid_range = [0, 255]
+                #varobj.valid_range = [0, 255]
                     
             for i in range(4):
                 varname = "BTRi%d" % (i+1)
                 varobj = cdf.createVariable(varname,'u2',('time'),fill_value=intfill)
                 varobj.units = "counts"
                 varobj.long_name = "BT Ref. intensity %d" % (i+1)
-                varobj.valid_range = [0, 255]
+                #varobj.valid_range = [0, 255]
                 
             for i in range(4):
                 varname = "BTRp%d" % (i+1)
@@ -813,7 +814,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
                 varobj.units = "percent"
                 varobj.long_name = "BT Ref. percent good %d" % (i+1)
                 varobj.epic_code = 1269+i
-                varobj.valid_range = [0, 100]
+                #varobj.valid_range = [0, 100]
         
         
     
@@ -828,20 +829,20 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
             varobj = cdf.createVariable("vel5",'f4',('time','depth'),fill_value=floatfill)
             varobj.units = "mm s-1"
             varobj.long_name = "Beam 5 velocity (mm s-1)"
-            varobj.valid_range = [-32767, 32767]
+            #varobj.valid_range = [-32767, 32767]
             varobj = cdf.createVariable("cor5",'u2',('time','depth'),fill_value=intfill)
             varobj.units = "counts"
             varobj.long_name = "Beam 5 correlation"
-            varobj.valid_range = [0, 255]
+            #varobj.valid_range = [0, 255]
             varobj = cdf.createVariable("att5",'u2',('time','depth'),fill_value=intfill)
             varobj.units = "counts"
             varobj.long_name = "ADCP attenuation of beam 5"
-            varobj.valid_range = [0, 255]
+            #varobj.valid_range = [0, 255]
             if ('VBeamGData' in ensData):
                 varobj = cdf.createVariable("PGd5",'u2',('time','depth'),fill_value=intfill)
                 varobj.units = "counts"
                 varobj.long_name = "Percent Good Beam 5"
-                varobj.valid_range = [0, 100]
+                #varobj.valid_range = [0, 100]
             else:
                 cdf.TRDI_VBeam_note1 = 'Vertical beam data found without Percent Good'
         else:
@@ -860,11 +861,11 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         varobj = cdf.createVariable("Dp",'f4',('time'),fill_value=floatfill)
         varobj.units = "Deg."
         varobj.long_name = "Peak Wave Direction (Deg.)"
-        varobj.valid_range = [0, 360]
+        #varobj.valid_range = [0, 360]
         varobj = cdf.createVariable("Dm",'f4',('time'),fill_value=floatfill)
         varobj.units = "Deg."
         varobj.long_name = "Mea Peak Wave Direction (Deg.)"
-        varobj.valid_range = [0, 360]
+        #varobj.valid_range = [0, 360]
         varobj = cdf.createVariable("SHmax",'f4',('time'),fill_value=floatfill)
         varobj.units = "m"
         varobj.long_name = "Maximum Wave Height (m)"

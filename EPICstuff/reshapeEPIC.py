@@ -80,6 +80,10 @@ def reshapeEPIC(*args, **kwargs):
         verbose = kwargs['verbose']  
     else:
         verbose = False
+    if 'atts2drop' in kwargs.keys():
+        atts2drop = kwargs['atts2drop']
+    else:
+        atts2drop = {}
     
     print('Start file conversion at ',dt.datetime.now())
 
@@ -178,7 +182,8 @@ def reshapeEPIC(*args, **kwargs):
             vatts = {}
             for attr in cvarobj.ncattrs():
                 #print('{} = {}'.format(attr,getattr(contcdf,attr)))
-                vatts[attr] = getattr(cvarobj,attr)
+                if attr not in atts2drop:
+                    vatts[attr] = getattr(cvarobj,attr)
     
             try:
                 varobj.setncatts(vatts)
