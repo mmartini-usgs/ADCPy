@@ -28,9 +28,6 @@ this means that if the number of samples per burst is inconsistent, or if
 there are gaps in time, the end of a burst may be fill_value, including
 time values
 
-TODO - write a second tool that distributes the samples according to their 
-time stamps
-
 Marinna Martini for the USGS in Woods Hole, 9/20/2018
 originally coded for MATLAB as reshapeEPIC
 https://cmgsoft.repositoryhosting.com/trac/cmgsoft_m-cmg/browser/trunk/MMstuff/reshapeEPIC.m
@@ -288,7 +285,7 @@ def reshapeEPIC(*args, **kwargs):
                     if (iburst == 0) and verbose:
                         print('\tconcorner = {}, contedges = {}'.format(
                                 contcorner, contedges))
-  
+                          
                     # get the data, and this will be contingent on the number of dims
                     if vndims_cont == 1:
                         data = contcdf[varname][int(contcorner[0]):int(contcorner[0])+int(contedges[0])]
@@ -500,6 +497,7 @@ def generate_expected_start_times(cdffile, dim, burst_start_offset,
     # udim = the unlimited or time dimension which we will find the indeces to reshape
     
     # TODO - do this from a first burst first sample time stamp
+    print('the file we are looking up times in is {}'.format(cdffile))
 
     cdf= nc.Dataset(cdffile,format="NETCDF4")
     
@@ -525,7 +523,6 @@ def generate_expected_start_times(cdffile, dim, burst_start_offset,
     print('end times {} such as {}...'.format(len(burst_end_times),burst_end_times[0:5]))
 
     print('the last time is {} seconds from the start of the experiment'.format(cdf['time'][-1]))
-    print('looking up the boundaries... this take about three minutes')
     # it turns out later to be convenient to have this as a list of tuples of start and end
     slices = list(map(lambda s,e: (s,e), burst_start_times, burst_end_times))
     print('edge tuples {} such as {}...'.format(len(slices),slices[0:5]))

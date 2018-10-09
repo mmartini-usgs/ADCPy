@@ -332,7 +332,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
         infile.seek(bookmark)
         ens = infile.read(ensLen)
         
-    else:
+    else:  # while len(ens) > 0:
         print('end of file reached')
         
     if ensCount < maxens:

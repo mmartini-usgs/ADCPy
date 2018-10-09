@@ -59,6 +59,9 @@ Created on Tue May 16 13:33:31 2017
 
 @author: mmartini
 """
+
+# 10/9/2018 MM fix a very silly unit mistake
+
 import os
 import sys
 import numpy as np 
@@ -191,12 +194,12 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     # check units of current velocity and convert to cm/s
     vunits = rawcdf['vel1'].units
     vconvconst = 1 # when in doubt, do nothing
-    if ('mm s-1' in vunits) | ('mm/s' in vunits):
+    if (vunits == 'mm s-1') | (vunits == 'mm/s'):
         vconvconst = 0.1 # mm/s to cm/s
-        print('Velocity in mm s-1 will be converted to cm s-1')
-    if ('m s-1' in vunits) | ('m/s' in vunits):
+    elif (vunits == 'm s-1') | (vunits == 'm/s'):
         vconvconst = 100 # m/s to cm/s
-        print('Velocity in m s-1 will be converted to cm s-1')
+
+    print('Velocity in {} will be converted using a multiplier of {}'.format(vunits,vconvconst))
 
     if 'vel5' in rawvars:
         nc['Wvert'][:] = rawcdf.variables['vel5'][s:e,:] * vconvconst 
