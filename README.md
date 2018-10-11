@@ -7,7 +7,7 @@ Written by Marinna Martini, 1/12/2017
 I used this guide to set up this project:
 http://docs.python-guide.org/en/latest/writing/structure/
 
-Use at  your own risk - this is a work in progress and a python learning project.
+Use at  your own risk - this is a work in progress and a python learning project (https://github.com/mmartini-usgs/ADCPy/wiki).
 
 Note that a 3.5 GB, single ping Workhorse ADCP .pd0 file with 3 Million ensembles will take 4-5 hours to convert.
 
