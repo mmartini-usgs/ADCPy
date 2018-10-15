@@ -544,6 +544,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
             ensData['VLeader']['Hundredths']/100)
         varobj.standard_name = "time"
         varobj.axis = "T"
+        varobj.type = "UNEVEN"
         # we include time and time2 for EPIC compliance
         # this statement resulted in a fill value of -1??
         #varobj = cdf.createVariable('EPIC_time','u4',('time'))

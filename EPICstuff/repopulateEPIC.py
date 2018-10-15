@@ -72,7 +72,7 @@ def repopulateEPIC(*args, **kwargs):
     
     newcdf = nc.Dataset(newFile, mode="w", clobber=True, format='NETCDF4')
     
-    newcdf.set_fill_on()
+    newcdf.set_fill_off()
     
     # copy the global attributes
     # first get a dict of them so that we can iterate
@@ -93,11 +93,13 @@ def repopulateEPIC(*args, **kwargs):
     dim = 'sample' 
     for var in shapedcdf.variables.items():
         varobj = var[1]
-        print('{} is data type {}'.format(varobj.name,varobj.dtype))
         try:
             fillValue = varobj.getncattr('_FillValue')
         except AttributeError:
-            fillValue = None
+            fillValue = False # do not use None here!!!
+            
+        print('{} is data type {} with fill {}'.format(varobj.name,varobj.dtype,
+              fillValue))
         
         if varobj.name not in drop:  # are we copying this variable?
             if varobj.name == 'time':  # is this time which we need to drop a dimension?
@@ -163,6 +165,11 @@ def repopulateEPIC(*args, **kwargs):
             if ('time' in svar[1].dimensions) and ('sample' in svar[1].dimensions):
                 print('\tdistributing samples, iterating through bursts')
                 
+                try:
+                    fillValue = svar[1].getncattr('_FillValue')
+                except AttributeError:
+                    fillValue = None
+                    
                 for iburst in range(nbursts):
     
                     # get the data
@@ -185,10 +192,12 @@ def repopulateEPIC(*args, **kwargs):
                     # set up the index using the time stamps
                     t = shapedcdf['time'][iburst,:]
                     tidx = np.array(t-t[0])*sample_rate
+                    # incoming data is represented as NaN, how we find them
                     tidxgood = ~np.isnan(tidx)
     
                     # reset the new container, same shape as old data
-                    newdata = np.full(data.shape,np.nan)
+                    #newdata = np.full(data.shape,np.nan) # don't use NaN!
+                    newdata = np.full(data.shape,fillValue)
                     
                     # need an integer representation of the indeces
                     # to make this assignment work:  newdata[idxasint] = data[tidxgood]
@@ -232,6 +241,8 @@ def repopulateEPIC(*args, **kwargs):
                 
     shapedcdf.close()
     newcdf.close()
+    
+    print('Finished writing new file {}'.format(newFile))
     
 
 if __name__ == "__main__":

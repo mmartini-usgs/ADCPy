@@ -260,7 +260,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         nc.WATER_DEPTH_NOTE = nc.WATER_DEPTH_source
         nc.nominal_sensor_depth = nc.WATER_DEPTH-settings['transducer_offset_from_bottom']
         nc.nominal_sensor_depth_note = "inst_depth = (water_depth - inst_height); nominal depth below surface, meters"
-        varnames = ['P_1','bindist','depth']
+        varnames = ['bindist','depth']
         # WATER_DEPTH_datum is not used in this circumstance.
     else:
         print('Site WATER_DEPTH given is %f' % water_depth)
@@ -408,8 +408,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
                 if ensf == 0:
                     print('%d of %d ensembles read' % (ncidx, nens))
             
-    # minima and maxima to be added as a separate operation after averaging
-
+    nc.transform = settings['transformation'].upper()
+    
     print('closing files at %s' % (dt.datetime.now()))
 
     rawcdf.close()

@@ -149,7 +149,7 @@ def reshapeEPIC(*args, **kwargs):
                 print('\tthe fill value is {}'.format(fillValue))
         except AttributeError:
             print('\tfailed to read the fill value')
-            fillValue = False
+            fillValue = False # do not use None here!!!
                 
         if verbose:
             print('\tfillValue in burst file will be set to {} (if None, then False will be used)'.format(fillValue))
@@ -537,18 +537,18 @@ def save_indexes_to_file(cdffile, txtfile, edge_tuples):
     cdf = nc.Dataset(cdffile,format="NETCDF4")
 
     tunits = cdf['time'].units
-    s = cdffile.split('.')
-    indexFile = s[0]+'indeces.txt'
+    indexFile = cdffile.split('.')[0]+'indeces.txt'
     with open(indexFile,'w') as outfile:
         outfile.write('Burst Indexes for {}\n'.format(cdffile))
         outfile.write('Burst, start index, end index, number of samples, start time, end time\n')
-        for x in enumerate(edge_tuples):        
+        for x in enumerate(edge_tuples):
+            t0 = num2date(cdf['time'][x[1][0]],tunits)
+            t1 = num2date(cdf['time'][x[1][1]],tunits)
             try:
-                s = '{}, {},  {}, {}, {},  {}\n'.format(x[0],x[1][0],x[1][1], 
-                                           num2date(cdf['time'][x[1][0]],tunits),
-                                           num2date(cdf['time'][x[1][1]],tunits))
+                s = '{}, {},  {}, {}, {}, {}\n'.format(x[0],x[1][0],x[1][1],
+                     x[1][1]-x[1][0],t0,t1)
             except:
-                s = '{}, , , , , \n'.format(x[0],x[1][0],x[1][1])
+                s = '{}, {}, {}, , , \n'.format(x[0],x[1][0],x[1][1])
             outfile.write(s)
         
     cdf.close()
