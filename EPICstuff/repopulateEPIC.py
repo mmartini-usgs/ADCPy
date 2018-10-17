@@ -28,6 +28,11 @@ Created on Wed Oct  3 15:21:53 2018
 @author: mmartini
 """
 
+"""
+10/15/2018 MM was using np.nan to pre-fill arrays and this was causing 
+NaNs in final output, a problem for CF.  Replace np.nan with _FillValue
+"""
+
 import os
 import sys
 import datetime as dt
