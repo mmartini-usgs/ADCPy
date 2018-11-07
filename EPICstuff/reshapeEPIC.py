@@ -488,6 +488,18 @@ def find_boundaries(data,edges):
     
     return idx
 
+def find_first_masked_value(x):
+    '''
+    helper function to find the first occurrence of a masked value in a numpy masked array
+    returns None if no masked values are found
+    '''
+    for tpl in enumerate(x):
+        #print(type(tpl[1]))
+        if type(tpl[1]) == np.ma.core.MaskedConstant:
+            #print(tpl[0])
+            return(tpl[0])
+    
+    return None
 
 def generate_expected_start_times(cdffile, dim, burst_start_offset, 
                                   burst_interval, burstlength, sample_rate):
@@ -507,9 +519,26 @@ def generate_expected_start_times(cdffile, dim, burst_start_offset,
         print('{} not found in {} file, aborting'.format(dim, cdffile))
         cdf.close()
 
+    print('loading the time variable data')
+    t = cdf['time'][:]
+    # check for masked/bad values
+    good_times = np.ma.masked_invalid(t)
+    print('there are {} times of which {} are good, searching for the first masked time'.format(
+        len(t),good_times.count()))
+    start_of_bad = find_first_masked_value(t)
+    if start_of_bad == None:
+        print('all times are good!')
+    else:
+        print('masked times start after {}'.format(num2date(t[start_of_bad-1],cdf['time'].units)))
+
     # get the number of bursts based on the elapsed time
-    tfirst = num2date(cdf['time'][1],cdf['time'].units)
-    tlast = num2date(cdf['time'][-1],cdf['time'].units)
+    print('len t = {} {} {} to {}'.format(len(t),type(t),t[0],t[-1]))
+    tfirst = num2date(t[0],cdf['time'].units)
+    if start_of_bad == None:
+        tlast = num2date(t[-1],cdf['time'].units)
+    else:
+        tlast = num2date(t[start_of_bad-1],cdf['time'].units)
+        
     nbursts = int((tlast-tfirst).total_seconds() / burst_interval)
     
     burst_start_times = []
@@ -530,6 +559,7 @@ def generate_expected_start_times(cdffile, dim, burst_start_offset,
     cdf.close()
 
     return slices
+
 
 # TODO -- this is not working. format string is failing
 def save_indexes_to_file(cdffile, txtfile, edge_tuples):

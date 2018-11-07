@@ -29,10 +29,8 @@ During rotations:
 -- 3 beam solution
 
 Post processing cleanup things to implement
--- trim to surface, by following surface or by bin
--- trim in time
 -- swap between EPIC and CF time base
 -- post resample, shift time base to center of burst (resample default is probably beginning of hour or time interval)
 
-For wave processing
--- reshape into bursts
+Efficiency
+-- read in buffers of data.  Since the unpacking module is the first thing I wrote in python, it is inefficient because it reads by the byte.  Change this to read with bigger buffers - though this may not be possible if there a multiple data types in each file with unknown sampling schemes.  Dolfyn (https://github.com/lkilcher/dolfyn) has reading modules that do most, but not all of the data reading this package needs.  Might be a good model for an update.

@@ -321,13 +321,19 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
         #   header length - we are done
         #   need to read the header from the file to know the ensemble size
         Header = readTRDIHeader(infile)
+
+        if Header == None:
+            # we presume this is the end of the file, since we don't have header info
+            print('end of file reached with incomplete header')
+            break
+            
         if Header['sourceID'] != b'\x7f':
             print('non-currents ensemble found at %d' % bookmark)
         
         if ensLen != Header['nbytesperens']+2:
             ensLen = Header['nbytesperens']+2 # update to what we have
         
-        # TODO - fix this so that we aren't going back and forth
+        # TODO - fix this so that we aren't going back and forth, it is probably really slow
         # go back to where this ensemble started before we checked the header
         infile.seek(bookmark)
         ens = infile.read(ensLen)
@@ -955,11 +961,21 @@ def bitstrBE(byte): # make a bit string from big endian byte
     return bits
 
 # read header directly from a file pointer
+# tests for end of file are here
 def readTRDIHeader(infile):
     HeaderData = {}
-    HeaderData['headerID'] = infile.read(1)
-    HeaderData['sourceID'] = infile.read(1)
-    HeaderData['nbytesperens'] = struct.unpack('<H',infile.read(2))[0]
+    try:
+        HeaderData['headerID'] = infile.read(1)
+    except:
+        return None
+    try:
+        HeaderData['sourceID'] = infile.read(1)
+    except:
+        return None
+    try:
+        HeaderData['nbytesperens'] = struct.unpack('<H',infile.read(2))[0]
+    except:
+        return None
     infile.read(1) # spare, skip it
     HeaderData['ndatatypes'] = infile.read(1)[0] # remember, bytes objects are arrays
     offsets = [0]*HeaderData['ndatatypes'] # predefine a list of ints to fill
