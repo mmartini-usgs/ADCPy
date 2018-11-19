@@ -16,6 +16,8 @@ Time values that are not unique are still being output for very fast sampled tim
 
 With some data sets, when time is written to netCDF, there are invalid values.  This seems to happen if Inf is used as the last ensemble to read, with the intent to read the whole file.  In these cases it is best to use an explicit ensemble count. 
 
+Provide test data sets and unit tests
+
 EPIC time
 -- is computing bad dates, I have been unable to find the problem.
 -- needs to be removed.  It is an impediment for xarray and probably incompatible with stglib
