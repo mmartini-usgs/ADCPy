@@ -4,7 +4,14 @@ code to prepare large amounts of ADCP data from the raw binary for use with xarr
 
 Written by Marinna Martini, 1/12/2017
 
+<<<<<<< HEAD
 Use at  your own risk - this is a work in progress and a python learning project.
+=======
+I used this guide to set up this project:
+http://docs.python-guide.org/en/latest/writing/structure/
+
+Use at  your own risk - this is a work in progress and a python learning project (https://github.com/mmartini-usgs/ADCPy/wiki).
+>>>>>>> 05c3580c8e137cbf525ce087df7b63b437b20538
 
 As the code stands now, a 3.5 GB, single ping Workhorse ADCP .pd0 file with 3 Million ensembles will take 4-5 hours to convert.
 

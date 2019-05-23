@@ -84,6 +84,10 @@ def cftime2EPICtime(timecount, timeunits):
     return time, time2
 
 def EPICtime2datetime(time,time2):
+    # EPICtime2datetime(time,time2)
+    # convert EPIC time and time2 to python datetime object
+    
+    # TODO - there is a rollover problem with this algorithm
     
     dtos = []
     gtime = []
@@ -364,6 +368,40 @@ def catEPIC(datafiles, outfile):
     # TODO update history
     
     ncid_out.close()
+	
+def check_FillValue_encoding(ds):
+    # restore encoding to what it needs to be for EPIC and CF compliance
+    # input
+    # ds = xarray Dataset whose variables' encoding will be examined for the correct _FillValue
+    # output 
+    # ds = Dataset with corrected encoding
+    # encoding_dict = encoding that can be used with to_netcdf
+    encoding_dict = {}
+    
+    for var in ds.variables.items():
+        encoding_dict[var[0]] = ds[var[0]].encoding
+        
+        # is it a coordinate?
+        if var[0] in ds.coords:
+            # coordinates do not have a _FillValue
+            if '_FillValue' in var[1].encoding:
+                encoding_dict[var[0]]['_FillValue'] = False
+        else:
+            # _FillValue cannot be NaN and must match the data type
+            # so just make sure it matches the data type.
+            # xarray changes ints to floats, not sure why yet
+            if ('_FillValue' in var[1].encoding):
+                if np.isnan(var[1].encoding['_FillValue']):
+                    print('NaN found in _FillValue, correcting')
+                    
+                if var[1].encoding['dtype'] in {'float32','float64'}:
+                    var[1].encoding['_FillValue'] = 1E35
+                    encoding_dict[var[0]]['_FillValue'] = 1E35
+                elif var[1].encoding['dtype'] in {'int32','int64'}:
+                    var[1].encoding['_FillValue'] = 32768
+                    encoding_dict[var[0]]['_FillValue'] = 32768
+            
+    return ds, encoding_dict
             
     
 def __main():

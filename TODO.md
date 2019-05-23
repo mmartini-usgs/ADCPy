@@ -10,13 +10,18 @@ It is possible for the 5th beam of a V or Signature to have a different number o
 
 There may be a case where there is only wave data in a Velocity output file.  The program will probably not handle this well.
 
-Learn how to impliment and output a log file.
+Learn how to implement and output a log file.
 
-Time values that are not unique are still being output for very fast sampled time series or where there are bottom track pings or other combined sampling.  This needs to be sorted out, possibly by implmenting groups.
+Time values that are not unique are still being output for very fast sampled time series or where there are bottom track pings or other combined sampling.  This needs to be sorted out, possibly by implementing groups.
 
 With some data sets, when time is written to netCDF, there are invalid values.  This seems to happen if Inf is used as the last ensemble to read, with the intent to read the whole file.  In these cases it is best to use an explicit ensemble count. 
 
-Code does not end gracefully if data stops with an incomplete ensemble.
+Provide test data sets and unit tests
+
+EPIC time
+-- is computing bad dates, I have been unable to find the problem.
+-- needs to be removed.  It is an impediment for xarray and probably incompatible with stglib
+-- CF time is OK for most uses, including tools such as ncbrowse, panoply and MATLAB
 
 Help docstrings need to be improved
 
@@ -29,10 +34,7 @@ During rotations:
 -- 3 beam solution
 
 Post processing cleanup things to implement
--- trim to surface, by following surface or by bin
--- trim in time
--- swap between EPIC and CF time base
 -- post resample, shift time base to center of burst (resample default is probably beginning of hour or time interval)
 
-For wave processing
--- reshape into bursts
+Efficiency
+-- read in buffers of data.  Since the unpacking module is the first thing I wrote in python, it is inefficient because it reads by the byte.  Change this to read with bigger buffers - though this may not be possible if there a multiple data types in each file with unknown sampling schemes.  Dolfyn (https://github.com/lkilcher/dolfyn) has reading modules that do most, but not all of the data reading this package needs.  Might be a good model for an update.
