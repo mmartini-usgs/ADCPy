@@ -30,7 +30,9 @@ Programmed according to the TRDI Workhorse Commands and Output Data Format docum
 # 10/4/2018 remove valid_range as it causes too many downstream problems
 # 1/25/2017 MM got this running on old Workhorse ADCP data
 
-import sys, struct, math
+import sys
+import struct
+import math
 import numpy as np 
 from netCDF4 import Dataset
 import datetime as dt
@@ -39,13 +41,14 @@ from EPICstuff.EPICmisc import ajd
 
 def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
 
-	 # TODO figure out a better way to handle this situation
-	 # need this check in case this function is used as a stand alone function
+	# TODO figure out a better way to handle this situation
+	# need this check in case this function is used as a stand alone function
     
     # this is necessary so that this function does not change the value
     # in the calling function
+
     ens2process = goodens[:]
-    verbose = True # diagnostic, True = turn on output, False = silent
+    verbose = True  # diagnostic, True = turn on output, False = silent
     
     maxens, ensLen, ensData, dataStartPosn = analyzepd0file(pd0File, verbose)
     
@@ -53,7 +56,7 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
     
     infile.seek(dataStartPosn)
     
-    if ens2process[1] < 0:
+    if (ens2process[1] < 0) or ens2process[1] == np.inf:
         ens2process[1] = maxens
            
     # we are good to go, get the output file ready
@@ -475,7 +478,8 @@ def parseTRDIensemble(ensbytes, verbose):
         ensError = 'checksum failure'
         
     return ensData, ensError
-    
+
+
 def setupCdf(fname, ensData, gens, serialnum, timetype):
      
     # note that 
@@ -483,7 +487,7 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
     #maxfloat = 3.402823*10**38;
     intfill = -32768
     floatfill = 1E35
-    
+
     nens = gens[1]-gens[0]-1
     print('creating netCDF file %s with %d records' % (fname, nens))
     
@@ -533,7 +537,8 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
         varobj.units = "msec since 0:00 GMT"
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"    
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"
+        cf_units = ""
     else:
         # cf_time for cf compliance and use by python packages like xarray
         # if f8, 64 bit is not used, time is clipped

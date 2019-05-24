@@ -155,6 +155,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     
     for key in varlist:
         varobj = nc.variables[varlist[key]]
+        # TODO: this fails if input file is EPIC and settings['timetype'] is CF, detect file and not rely on user
         varobj[:] = rawcdf.variables[key][s:e]+toffset 
         
     # TRDI instruments have heading, pitch, roll and temperature in hundredths of degrees
