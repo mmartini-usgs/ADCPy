@@ -7,12 +7,16 @@ As a script:
 
 python TRDIpd0tonetcdf.py [path] pd0File cdfFile
 
+or dopd0file(pd0File, cdfFile, goodens, serialnum, timetype, delta_t_to_use)
+
 where:
-    path         is a path to prepend to the following
-    pd0File      is path of raw PD0 format input file with current ensembles
-    cdfFile      is path of a netcdf4 EPIC compliant output file
-    start        ensemble at which to start exporting
-    end          ensemble at which to stop exporting
+    path            is a path to prepend to the following
+    pd0File         is path of raw PD0 format input file with current ensembles
+    cdfFile         is path of a netcdf4 EPIC compliant output file
+    goodens         [start, end]  ensembles to export.  end = -1 for all ensembles in file
+    serialnum       serial number of the instrument, a string
+    timetype        "CF" for CF conventions, "EPIC" for EPIC conventions
+    delta_t_to_use  time between ensembles, in seconds, a string.  15 min profiles would be 900
 
 note that file names and paths may not include spaces
     
@@ -39,11 +43,12 @@ import datetime as dt
 from EPICstuff.EPICmisc import cftime2EPICtime
 from EPICstuff.EPICmisc import ajd
 
-def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
 
-	# TODO figure out a better way to handle this situation
-	# need this check in case this function is used as a stand alone function
-    
+def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype, delta_t_to_use):
+
+    # TODO figure out a better way to handle this situation
+    # need this check in case this function is used as a stand alone function
+
     # this is necessary so that this function does not change the value
     # in the calling function
 
@@ -61,14 +66,14 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
            
     # we are good to go, get the output file ready
     print('Setting up netCDF file %s' % cdfFile)
-    cdf, cf_units = setupCdf(cdfFile, ensData, ens2process, serialnum, timetype)
+    cdf, cf_units = setupCdf(cdfFile, ensData, ens2process, serialnum, timetype, delta_t_to_use)
     # we want to save the time stamp from this ensemble since it is the
     # time from which all other times in the file will be relative to
     t0 = ensData['VLeader']['dtobj']
 
     cdfIdx = 0
     ensCount = 0
-    verbose = True # diagnostic, True = turn on output, False = silent
+    verbose = False  # diagnostic, True = turn on output, False = silent
     nslantbeams = 4
         
     # priming read - for the while loop
@@ -87,10 +92,9 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
     infile.seek(bookmark)
     ens = infile.read(ensLen)   
         
-    verbose = 0
     while len(ens) > 0:
-        #print('-- ensemble %d length %g, file position %g' % (ensCount, len(ens), infile.tell()))
-        #print(ensData['Header'])        
+        # print('-- ensemble %d length %g, file position %g' % (ensCount, len(ens), infile.tell()))
+        # print(ensData['Header'])
         ensData, ensError = parseTRDIensemble(ens, verbose)
         
         if (ensError == 'None') and (ensCount >= ens2process[0]):
@@ -299,12 +303,12 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
             print('stopping at estimated end of file ensemble %d' % ens2process[1])
             break        
         
-        #if maxens < 100:  n=10
-        #elif (maxens > 100) and (maxens < 1000): n=100
-        #elif (maxens > 1000) and (maxens < 10000): n=1000
-        #elif (maxens > 10000) and (maxens < 100000): n=10000
-        #elif (maxens > 100000) and (maxens < 1000000): n=100000
-        #else: n = 1000000
+        # if maxens < 100:  n=10
+        # elif (maxens > 100) and (maxens < 1000): n=100
+        # elif (maxens > 1000) and (maxens < 10000): n=1000
+        # elif (maxens > 10000) and (maxens < 100000): n=10000
+        # elif (maxens > 100000) and (maxens < 1000000): n=100000
+        # else: n = 1000000
         n = 10000
         
         ensf, ensi = math.modf(ensCount/n)
@@ -353,6 +357,8 @@ def dopd0file(pd0File, cdfFile, goodens, serialnum, timetype):
     cdf.close()
     
     print('%d ensembles read, %d records written' % (ensCount, cdfIdx))
+
+    return ensCount, cdfIdx, ensError
     
     
 def matrixTranspose( matrix ):
@@ -480,11 +486,11 @@ def parseTRDIensemble(ensbytes, verbose):
     return ensData, ensError
 
 
-def setupCdf(fname, ensData, gens, serialnum, timetype):
+def setupCdf(fname, ensData, gens, serialnum, timetype, delta_t_to_use):
      
     # note that 
     # f4 = 4 byte, 32 bit float
-    #maxfloat = 3.402823*10**38;
+    # maxfloat = 3.402823*10**38;
     intfill = -32768
     floatfill = 1E35
 
@@ -494,36 +500,38 @@ def setupCdf(fname, ensData, gens, serialnum, timetype):
     cdf = Dataset(fname, "w", clobber=True, format="NETCDF4")
     
     # dimensions, in EPIC order
-    cdf.createDimension('time',nens)
-    cdf.createDimension('depth',ensData['FLeader']['Number_of_Cells'])
-    cdf.createDimension('lat',1)
-    cdf.createDimension('lon',1)
+    cdf.createDimension('time', nens)
+    cdf.createDimension('depth', ensData['FLeader']['Number_of_Cells'])
+    cdf.createDimension('lat', 1)
+    cdf.createDimension('lon', 1)
     
     # write global attributes
     cdf.history = "translated to netCDF by TRDIpd0tonetcdf.py"
     cdf.sensor_type = "TRDI"
     cdf.serial_number = serialnum
+    cdf.DELTA_T = delta_t_to_use
+    cdf.sample_rate = ensData['FLeader']['Time_Between_Ping Groups']
     
     writeDict2atts(cdf, ensData['FLeader'], "TRDI_")
     
-    varobj = cdf.createVariable('Rec','u4',('time'),fill_value=intfill)
+    varobj = cdf.createVariable('Rec', 'u4', 'time', fill_value=intfill)
     varobj.units = "count"
     varobj.long_name = "Ensemble Number"
     # the ensemble number is a two byte LSB and a one byte MSB (for the rollover)
-    #varobj.valid_range = [0, 2**23]
+    # varobj.valid_range = [0, 2**23]
 
     # it's not yet clear which way to go with this.  python tools like xarray 
     # and panoply demand that time be a CF defined time.
     # USGS CMG MATLAB tools need time and time2
-    if timetype=='EPIC':
+    if timetype == 'EPIC':
         # we include cf_time for cf compliance and use by python packages like xarray
         # if f8, 64 bit is not used, time is clipped
         # for ADCP fast sampled, single ping data, need millisecond resolution
-        varobj = cdf.createVariable('cf_time','f8',('time'))
+        varobj = cdf.createVariable('cf_time', 'f8', 'time')
         # for cf convention, always assume UTC for now, and use the UNIX Epoch as the reference
         varobj.units = "seconds since %d-%d-%d %d:%d:%f 0:00" % (ensData['VLeader']['Year'],
-            ensData['VLeader']['Month'],ensData['VLeader']['Day'],ensData['VLeader']['Hour'],
-            ensData['VLeader']['Minute'],ensData['VLeader']['Second']+
+            ensData['VLeader']['Month'], ensData['VLeader']['Day'],ensData['VLeader']['Hour'],
+            ensData['VLeader']['Minute'], ensData['VLeader']['Second']+
             ensData['VLeader']['Hundredths']/100)
         varobj.standard_name = "time"
         varobj.axis = "T"    
@@ -1598,60 +1606,62 @@ def parseTRDIBottomTrack(bstream, offset, nbeams):
     for ibeam in range(nbeams):
         data['BT_PGd'][ibeam] = bstream[offset+ibyte]
         ibyte = ibyte+1
-    data['Ref_Layer_Min'] = struct.unpack('<H',bstream[offset+44:offset+46])[0]
-    data['Ref_Layer_Near'] = struct.unpack('<H',bstream[offset+46:offset+48])[0]
-    data['Ref_Layer_Far'] = struct.unpack('<H',bstream[offset+48:offset+50])[0]
-    data['Ref_Layer_Vel'] = np.ones((nbeams),dtype=float) * 1e35
+    data['Ref_Layer_Min'] = struct.unpack('<H', bstream[offset+44:offset+46])[0]
+    data['Ref_Layer_Near'] = struct.unpack('<H', bstream[offset+46:offset+48])[0]
+    data['Ref_Layer_Far'] = struct.unpack('<H', bstream[offset+48:offset+50])[0]
+    data['Ref_Layer_Vel'] = np.ones((nbeams), dtype=float) * 1e35
     ibyte = 50
     for ibeam in range(nbeams):
-        data['Ref_Layer_Vel'][ibeam] = struct.unpack('<h',bstream[offset+ibyte:offset+ibyte+2])[0]
+        data['Ref_Layer_Vel'][ibeam] = struct.unpack('<h', bstream[offset+ibyte:offset+ibyte+2])[0]
         ibyte = ibyte+2
-    data['Ref_Layer_Corr'] = np.ones((nbeams),dtype=int) * -32768
+    data['Ref_Layer_Corr'] = np.ones(nbeams, dtype=int) * -32768
     ibyte = 58
     for ibeam in range(nbeams):
         data['Ref_Layer_Corr'][ibeam] = bstream[offset+ibyte]
         ibyte = ibyte+1
-    data['Ref_Layer_Amp'] = np.ones((nbeams),dtype=int) * -32768
+    data['Ref_Layer_Amp'] = np.ones(nbeams, dtype=int) * -32768
     ibyte = 62
     for ibeam in range(nbeams):
         data['Ref_Layer_Amp'][ibeam] = bstream[offset+ibyte]
         ibyte = ibyte+1
-    data['Ref_Layer_PGd'] = np.ones((nbeams),dtype=int) * -32768
+    data['Ref_Layer_PGd'] = np.ones(nbeams, dtype=int) * -32768
     ibyte = 66
     for ibeam in range(nbeams):
         data['Ref_Layer_PGd'][ibeam] = bstream[offset+ibyte]
         ibyte = ibyte+1
-    data['BT_Max_Depth'] = struct.unpack('<H',bstream[offset+70:offset+72])[0]
-    data['RSSI_Amp'] = np.ones((nbeams),dtype=int) * -32768
+    data['BT_Max_Depth'] = struct.unpack('<H', bstream[offset+70:offset+72])[0]
+    data['RSSI_Amp'] = np.ones(nbeams, dtype=int) * -32768
     ibyte = 72
     for ibeam in range(nbeams):
         data['RSSI_Amp'][ibeam] = bstream[offset+ibyte]
         ibyte = ibyte+1
     data['GAIN'] = bstream[offset+76]
-    data['BT_Range_MSB'] = np.ones((nbeams),dtype=int) * -32768
+    data['BT_Range_MSB'] = np.ones(nbeams, dtype=int) * -32768
     ibyte = 77
     for ibeam in range(nbeams):
         data['BT_Range_MSB'][ibeam] = bstream[offset+ibyte]
         ibyte = ibyte+1
-    data['BT_Range'] = np.ones((nbeams),dtype=int) * -32768    
+    data['BT_Range'] = np.ones(nbeams, dtype=int) * -32768
     for ibeam in range(nbeams):
         data['BT_Range'][ibeam] = data['BT_Range_LSB'][ibeam]+(data['BT_Range_MSB'][ibeam]<<16)
 
     return data
-    
+
+
 def __computeChecksum(ensemble):
     """Compute a checksum from header, length, and ensemble"""
     cs = 0    
     for byte in range(len(ensemble)-2):
         cs += ensemble[byte]
     return cs & 0xffff
-    
+
+
 # these date conversion functions came from
 # http://stackoverflow.com/questions/31142181/calculating-julian-date-in-python/41769526#41769526
 # AND OLD rps matlab code
 def julian(year,month,day,hour,mn,sec,hund):
     # from julian.m and hms2h.m
-    # conver hours, minutes and seconds to decimal hours
+    # convert hours, minutes and seconds to decimal hours
     decimalsec = sec+hund/100
     decimalhrs = hour+mn/60+decimalsec/3600
     mo=month+9
@@ -1673,6 +1683,7 @@ def julian(year,month,day,hour,mn,sec,hund):
     j=j+decimalhrs/24
     
     return j
+
 # moved to EPICstuff.py
 """
 def jdn(dto):
@@ -1760,9 +1771,9 @@ def analyzepd0file(pd0File, verbose=False):
     
     while infile.tell() < 3000:
         b1 = infile.read(1)
-        if ( b1 == b'\x7f'):
+        if b1 == b'\x7f':
             b2 = infile.read(1)
-            if (b2 == b'\x7f'):
+            if b2 == b'\x7f':
                 break
     else:
         print('Desired TRDI 7f7f ID not found within 3 kB from beginning of the file')
@@ -1789,8 +1800,8 @@ def analyzepd0file(pd0File, verbose=False):
     # for this we need to estimate how many ensembles we will be reading
     # for some reason, sys.getsizeof(infile) does not report the true length 
     # of the input file, so we will go to the end and see how far we have gone
-    # there is aproblem though.  WHile TRDI's documentation says the V Series 
-    # Sytem Configuration data is always sent, this is not the case, so reading
+    # there is a problem though.  While TRDI's documentation says the V Series
+    # System Configuration data is always sent, this is not the case, so reading
     # only the first ensemble will not give the ensemble size typical over the
     # entire file
     # rewind and read this several ensembles because further in the ensemble
@@ -1809,13 +1820,13 @@ def analyzepd0file(pd0File, verbose=False):
         ensData, ensError = parseTRDIensemble(infile.read(ensLen), verbose)
         if ensError != 'None':
             print('problem reading the first ensemble: ' + ensError)
-            #infile.close()
-            #sys.exit(1)
+            # infile.close()
+            # sys.exit(1)
         
         if i == 0:
             firstEnsData = ensData
         print('ensemble %d has %d bytes and %d datatypes' % (ensData['VLeader']['Ensemble_Number'], 
-            ensData['Header']['nbytesperens'],ensData['Header']['ndatatypes']))
+            ensData['Header']['nbytesperens'], ensData['Header']['ndatatypes']))
         nbytesperens[i] = ensData['Header']['nbytesperens']+2
         ndatatypes[i] = ensData['Header']['ndatatypes']
         
@@ -1837,16 +1848,19 @@ def analyzepd0file(pd0File, verbose=False):
     print('ensemble length = %g' % ensLen)
     print('estimating %g ensembles in file' % maxens)
     
-    #return maxens, ensLen, ensData, startofdata
+    # return maxens, ensLen, ensData, startofdata
     return maxens, ensLen, firstEnsData, startofdata
-    
+
+
 def __main():
-# TODO add - and -- types of command line arguments
+
+    # TODO add - and -- types of command line arguments
     print('%s running on python %s' % (sys.argv[0], sys.version))
-	
+
     if len(sys.argv) < 2:
-        print("%s useage:" % sys.argv[0])
-        print("TRDIpd0tonetcdf infilename outfilename [startingensemble endingensemble]" )
+        print("%s usage:" % sys.argv[0])
+        print("TRDIpd0tonetcdf infilename outfilename [startingensemble endingensemble] " )
+        print("[serialnum] [timetype] [delta_t_to_use] " )
         sys.exit(1)
     
     try:
@@ -1866,8 +1880,8 @@ def __main():
     try:
         goodens = [int(sys.argv[3]), int(sys.argv[4])]
     except:
-        print('No starting and ending ensembles specfied, processing entire file')
-        goodens = [0,-1]
+        print('No starting and ending ensembles specified, processing entire file')
+        goodens = [0, -1]
         
     try:
         serialnum = sys.argv[5]
@@ -1881,10 +1895,16 @@ def __main():
         print('Time type will be CF')
         timetype = "CF"      
     
-    print('Start file conversion at ',dt.datetime.now())
-    dopd0file(infileName, outfileName, goodens, serialnum, timetype)
+    try:
+        delta_t_to_use = sys.argv[7]
+    except:
+        print('delta_t_to_use will be NONE')
+        delta_t_to_use = "NONE"
+
+    print('Start file conversion at ', dt.datetime.now())
+    dopd0file(infileName, outfileName, goodens, serialnum, timetype, delta_t_to_use)
     
-    print('Finished file conversion at ',dt.datetime.now())
+    print('Finished file conversion at ', dt.datetime.now())
 
     
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ import numpy as np
 
 pd0File = "9991wh000.000"
 serialnum = "473"
+delta_t_to_use = "900"  # seconds, as a string
 # timetype = "CF"  # the time variable will have a CF time format
 timetype = "EPIC"  # there will be time and time2, and cf_time variables
 
@@ -42,5 +43,6 @@ print("----")
 print("Start file conversion at", dt.datetime.now())
 # when using this module this way, the start and end ensembles are required.
 # use Inf to indicate all ensembles.
-pd0.dopd0file(pd0File,cdfFile, goodens, serialnum, timetype)
+ensCount, cdfIdx, ensError = pd0.dopd0file(pd0File, cdfFile, goodens, serialnum, timetype, delta_t_to_use)
 print("Finished file conversion at", dt.datetime.now())
+print("Ensemble error = {}".format(ensError))
