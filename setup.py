@@ -1,40 +1,29 @@
 # this setup modelled on 
 # https://github.com/pypa/sampleproject/blob/master/setup.py
-from setuptools import setup, find_packages
-from os import path
-
-here = path.abspath(path.dirname(__file__))
+import setuptools
 
 # Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
-    readme = f.read()
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
-with open('LICENSE.md') as f:
-    license = f.read()
-
-setup(
+setuptools.setup(
     name='ADCPy',
-    version='0.0.0',
-	# TODO implement versioneer here
-	# version=versioneer.get_version(),
-    # cmdclass=versioneer.get_cmdclass(),
-    description=('code to work with ADCP data from the raw binary' 
-	    ' in python 3x, a learning project'),
-    long_description=readme, # read from README.md above
-    long_description_content_type='text/markdown',
-    url='https://github.com/mmartini-usgs/ADCPy',
+    version='0.0.2',
     author='Marinna Martini',
     author_email='mmartini@usgs.gov',
-	license='Public domain',
-    classifiers=['Development Status :: 3 - Alpha',
+    description='read ADCP data from TRDI and Nortek instruments',
+    long_description=long_description, # read from README.md above
+    long_description_content_type='text/markdown',
+    url='https://github.com/mmartini-usgs/ADCPy',
+    packages=setuptools.find_packages(exclude=('tests', 'docs')),
+    classifiers=['Programming Language :: Python :: 3',
+                 'License :: Public Domain',
+                 'Operating System :: OS Independent',
+                 'Development Status :: 3 - Alpha',
                  'Intended Audience :: Science/Research',
-                 'Programming Language :: Python',
-                 'Programming Language :: Python :: 3.7'
-				 ],
-    keywords='acoustic doppler profiler ADCP',  
-    packages=find_packages(exclude=('tests', 'docs')),
-	python_requires='>=3.5',
-	# install_requires=['peppercorn'],  # Optional, here as a reminder
+                 ],
+    python_requires='>=3.5',
+    keywords='acoustic doppler profiler ADCP',
 )
 
 
