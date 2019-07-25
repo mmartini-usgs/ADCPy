@@ -36,8 +36,8 @@ install:
   - pip install --no-deps -e .
 
 script: pytest
-  - which python
-  - python --version
+  # - which python
+  # - python --version
   # - python -m unittest discover stglib/tests
   # this is what ran and passed in my python environment
   # pytest is included with the base conda installation
