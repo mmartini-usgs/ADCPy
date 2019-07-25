@@ -10,6 +10,10 @@ python:
   - "3.6"
   - "3.7"
 
+before_install:
+  - "pip install -U pip"
+  - "export PYTHONPATH=$PYTHONPATH:$(pwd)"
+
 install:
   - sudo apt-get update
   # We do this conditionally because it saves us some downloading if the
@@ -29,7 +33,7 @@ install:
   - conda env create -n test-environment -f requirements-test.yml
   - source activate test-environment
   # - pip install --no-deps -e .
-  - pip install --no-deps -e ~/ADCPy
+  - pip install --no-deps -e .
 
 script:
   - which python
