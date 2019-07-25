@@ -411,7 +411,7 @@ def parseTRDIensemble(ensbytes, verbose):
             if verbose: print('Variable Leader found at %g' % offset)
             ensData['VLeader'] = parseTRDIVariableLeader(ensbytes, offset)
             #print(VLeader)
-        elif val == 256: #raw == b'\x00\x01': 256
+        elif val == 256:  # raw == b'\x00\x01': 256
             if verbose: print('Velocity found at %g' % offset)
             ensData['VData'] = parseTRDIVelocity(ensbytes, offset, ncells, nbeams)
         elif val == 512: #raw == b'\x00\x02': 

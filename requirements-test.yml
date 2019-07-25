@@ -1,0 +1,8 @@
+# conda environment setup for travis-CI environment
+# intended for any python version 3x
+name: test-environment
+channels:
+  - conda-forge
+dependencies:
+  - numpy
+  - netCDF4
