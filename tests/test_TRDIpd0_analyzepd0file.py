@@ -10,7 +10,8 @@ import pytest
 def trdipd0_analyzepd0file():
     import TRDIstuff.TRDIpd0tonetcdf as TRDIpd0
     # this is a test data file, very simple ADCP file
-    pd0file = '9991wh000.000'
+    # we assume that the travis testing will be run from the root ADCPy directory
+    pd0file = r"./tests/9991wh000.000"
     # this command will display basics about the raw binary data
     maxens, enslen, ensdata, startofdata = TRDIpd0.analyzepd0file(pd0file)
     return maxens, enslen, ensdata, startofdata

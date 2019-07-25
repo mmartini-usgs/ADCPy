@@ -28,14 +28,14 @@ install:
   # Replace dep1 dep2 ... with your dependencies
   - conda env create -n test-environment -f requirements-test.yml
   - source activate test-environment
-  - pwd
-  - pip install --no-deps -e .
+  # - pip install --no-deps -e .
+  - pip install --no-deps -e ~/ADCPy
 
-script: pytest
-  # - which python
-  # - python --version
+script:
+  - which python
+  - python --version
   # - python -m unittest discover stglib/tests
   # this is what ran and passed in my python environment
   # pytest is included with the base conda installation
-  # the travis docs indicate that if pytest is indeicates on the script: line, this is not needed?
-  # - pytest test_TRDIpd0_analyzepd0file.py
+  # the travis docs indicate that if pytest is indicates on the script: line, this is not needed?
+  - pytest test_TRDIpd0_analyzepd0file.py
