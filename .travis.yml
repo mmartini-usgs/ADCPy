@@ -1,6 +1,9 @@
 # here we are following this example
 # https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/use-conda-with-travis-ci.html
 
+notifications:
+  email: false
+
 language: python
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
@@ -25,6 +28,7 @@ install:
   # Replace dep1 dep2 ... with your dependencies
   - conda env create -n test-environment -f requirements-test.yml
   - source activate test-environment
+  - pwd
   - pip install --no-deps -e .
 
 script: pytest
