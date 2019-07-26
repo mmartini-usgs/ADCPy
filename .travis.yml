@@ -42,4 +42,4 @@ script:
   # this is what ran and passed in my python environment
   # pytest is included with the base conda installation
   # the travis docs indicate that if pytest is indicates on the script: line, this is not needed?
-  - pytest test_TRDIpd0_analyzepd0file.py
+  - pytest ./tests/test_TRDIpd0_analyzepd0file.py
