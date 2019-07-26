@@ -1,0 +1,6 @@
+check-manifest
+pytest
+pytest-cov
+pytest-xdist
+twine
+wheel
