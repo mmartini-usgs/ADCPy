@@ -5,10 +5,10 @@ notifications:
   email: false
 
 language: python
-python:
-  # We don't actually use the Travis Python, but this keeps it organized.
-  - "3.6"
-  - "3.7"
+matrix:
+  include:
+  - env: CONDA_ENV=py36
+  - env: CONDA_ENV=py37
 
 before_install:
   - "pip install -U pip"

@@ -66,9 +66,9 @@ import os
 import sys
 import numpy as np 
 #from math import floor
-#import netCDF4 as nc4
+#import netcdf4 as nc4
 from netCDF4 import Dataset
-#from netCDF4 import num2date
+#from netcdf4 import num2date
 import netCDF4 as netcdf
 import datetime as dt
 from datetime import datetime

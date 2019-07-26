@@ -37,8 +37,11 @@ Programmed according to the TRDI Workhorse Commands and Output Data Format docum
 import sys
 import struct
 import math
-import numpy as np 
-from netCDF4 import Dataset
+import numpy as np
+# this line works in my local environment, fails in Travis
+# from netCDF4 import Dataset
+# testing this line at Travis
+from netcdf4 import Dataset
 import datetime as dt
 from EPICstuff.EPICmisc import cftime2EPICtime
 from EPICstuff.EPICmisc import ajd
