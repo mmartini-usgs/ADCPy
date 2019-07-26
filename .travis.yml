@@ -5,14 +5,10 @@ notifications:
   email: false
 
 language: python
-matrix:
-  include:
-  - env: CONDA_ENV=py36
-  - env: CONDA_ENV=py37
 
-#before_install:
-#  - "pip install -U pip"
-#  - "export PYTHONPATH=$PYTHONPATH:$(pwd)"
+before_install:
+  - "pip install -U pip"
+  - "export PYTHONPATH=$PYTHONPATH:$(pwd)"
 
 install:
   - sudo apt-get update
@@ -30,16 +26,8 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  #- conda env create -n test-environment -f requirements-test.yml
-  - conda env create -n test-environment -f requirements-$CONDA_ENV.yml
+  - conda env create -n test-environment -f requirements-test.yml
   - source activate test-environment
   - pip install --no-deps -e .
 
 script: pytest
-  # - which python
-  # - python --version
-  # - python -m unittest discover stglib/tests
-  # this is what ran and passed in my python environment
-  # pytest is included with the base conda installation
-  # the travis docs indicate that if pytest is indicates on the script: line, this is not needed?
-  #- pytest ./tests/test_TRDIpd0_analyzepd0file.py
