@@ -4,14 +4,16 @@
 # these tests are designed to follow the example here
 # http://doc.pytest.org/en/latest/fixture.html
 import pytest
+from pathlib import Path
 
+here = Path(__file__).parent
 
 @pytest.fixture
 def trdipd0_analyzepd0file():
     import TRDIstuff.TRDIpd0tonetcdf as TRDIpd0
     # this is a test data file, very simple ADCP file
     # we assume that the travis testing will be run from the root ADCPy directory
-    pd0file = r"./9991wh000.000"
+    pd0file = here.joinpath("9991wh000.000")
     # this command will display basics about the raw binary data
     maxens, enslen, ensdata, startofdata = TRDIpd0.analyzepd0file(pd0file)
     return maxens, enslen, ensdata, startofdata
