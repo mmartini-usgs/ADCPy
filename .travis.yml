@@ -1,33 +1,44 @@
-# here we are following this example
-# https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/use-conda-with-travis-ci.html
-
 notifications:
   email: false
 
-language: python
+language: minimal
+
+matrix:
+  fast_finish: true
+  include:
+    - name: "python-3.6"
+      env: PY=3.6
+    - name: "python-3.7"
+      env: PY=3.7
+    - name: "tarball"
+      env: PY=3.7
 
 before_install:
-  - "pip install -U pip"
-  - "export PYTHONPATH=$PYTHONPATH:$(pwd)"
+  # Install miniconda and create TEST env.
+  - |
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+    bash miniconda.sh -b -p $HOME/miniconda
+    export PATH="$HOME/miniconda/bin:$PATH"
+    conda config --set always_yes yes --set changeps1 no --set show_channel_urls true
+    conda update --quiet conda
+    conda config --add channels conda-forge --force
+    conda config --set channel_priority strict
+    conda config --set safety_checks disabled
+    conda create --name TEST python=$PY --file requirements.txt --file requirements-dev.txt
+    source activate TEST
+    conda info --all
 
 install:
-  - sudo apt-get update
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  # was in stglib, I don't know why
-  # - conda config --add channels conda-forge
-  # Useful for debugging any issues with conda
-  - conda info -a
+  - pip install -e . --no-deps --force-reinstall
 
-  # Replace dep1 dep2 ... with your dependencies
-  - conda env create -n test-environment -f requirements-test.yml
-  - source activate test-environment
-  - pip install --no-deps -e .
+script:
+  - if [[ $TRAVIS_JOB_NAME == python-* ]]; then
+      cp -r tests/ /tmp ;
+      pushd /tmp && pytest -n 2 -rxs tests && popd ;
+    fi
 
-script: pytest
+  - if [[ $TRAVIS_JOB_NAME == 'tarball' ]]; then
+      pip wheel . -w dist --no-deps ;
+      check-manifest --verbose ;
+      twine check dist/* ;
+    fi
