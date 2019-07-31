@@ -1,8 +1,11 @@
+# this setup for Travis recommended by a the conda-forge maintainer ocefpaf
 notifications:
   email: false
 
 language: minimal
 
+# this build matrix will set up parallel jobs
+# https://docs.travis-ci.com/user/build-matrix/
 matrix:
   fast_finish: true
   include:
@@ -34,6 +37,10 @@ install:
 script:
   - if [[ $TRAVIS_JOB_NAME == python-* ]]; then
       cp -r tests/ /tmp ;
+      # the pytest call invokes the following:
+      # -n is the pytest-xdist parameter for number of parallel CPUs to use, speeds things up
+      # -rxs ia a report of xfailed, skipped
+      # with &&, subsequent commands only run if prior executes are successful
       pushd /tmp && pytest -n 2 -rxs tests && popd ;
     fi
 
