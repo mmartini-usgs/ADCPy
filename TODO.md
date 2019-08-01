@@ -1,3 +1,9 @@
+Currently in work:
+- preparing this package for pypi
+- improving docstrings
+- writing tests
+- bringing code up to PEP8 standards
+
 Known issues:
 
 Have posted a fix for the following, will be testing on further data sets:  Still having trouble converting between time formats in python.  EPIC time therefore is not correct.  The problem has something to do with if EPIC_time are stored as u2 or u4.  In one case, the EPIC time is good until about 1/3 of the way through a long time series, and then for no apparent reason, jumps ahead about 6 months.  Need to discuss this with someone who knows more about netCDF data types as they are treated in python than I do.
