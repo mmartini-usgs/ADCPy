@@ -152,15 +152,15 @@ def reshapeEPIC(*args, **kwargs):
         cvarobj = cvar[1]
         print('{} is data type {}'.format(cvarobj.name, cvarobj.dtype))
         try:
-            fillValue = cvarobj.getncattr('_FillValue')
+            var_fill_value = cvarobj.getncattr('_FillValue')
             if verbose:
-                print('\tthe fill value is {}'.format(fillValue))
+                print('\tthe fill value is {}'.format(var_fill_value))
         except AttributeError:
             print('\tfailed to read the fill value')
-            fillValue = False  # do not use None here!!!
+            var_fill_value = False  # do not use None here!!!
                 
         if verbose:
-            print('\tfillValue in burst file will be set to {} (if None, then False will be used)'.format(fillValue))
+            print('\t_FillValue in burst file will be set to {} (if None, then False will be used)'.format(var_fill_value))
         
         if cvarobj.name not in drop:  # are we copying this variable?
             dtype = cvarobj.dtype
@@ -176,11 +176,11 @@ def reshapeEPIC(*args, **kwargs):
                         print('\tappending sample in {}'.format(cvarobj.name))
     
                 varobj = burstcdf.createVariable(cvarobj.name, dtype, tuple(vdims_burst), 
-                                                 fill_value=fillValue)
+                                                 fill_value=var_fill_value)
             else:
                 # for a normal copy, no reshape
                 varobj = burstcdf.createVariable(cvarobj.name, dtype, cvarobj.dimensions, 
-                                                 fill_value=fillValue)
+                                                 fill_value=var_fill_value)
                 
             # copy the variable attributes
             # first get a dict of them so that we can iterate
@@ -196,11 +196,15 @@ def reshapeEPIC(*args, **kwargs):
                 print('AttributeError for {}'.format(cvarobj.name))
 
     # not a coordinate but a fill value of None might cause problems
+    # noinspection PyRedundantParentheses
     burstcdf.createVariable('burst', 'uint16', ('time'), fill_value=False)
     # these are coordinates and thus cannot have fill as their values
+    # noinspection PyRedundantParentheses
     varobj = burstcdf.createVariable('sample', 'uint16', ('sample'), fill_value=False)
     varobj.units = "count"
+    # noinspection PyBroadException
     try:
+        # noinspection PyRedundantParentheses
         burstcdf.createVariable('depth', 'float32', ('depth'), fill_value=False)
     except:
         pass  # likely depth was already set up if this happens
@@ -262,6 +266,7 @@ def reshapeEPIC(*args, **kwargs):
                 print('\tin Burst file it is data type {} shape {}'.format(
                         bvarobj.dtype, bvarobj.shape))
 
+            # noinspection PyBroadException
             try:
                 fillval_burst = burstcdf[varname].getncattr('_FillValue')
             except:
@@ -476,7 +481,7 @@ def reshapeEPIC(*args, **kwargs):
 
 
 # utility functions for creating and managing indexes
-# make a function to identify the indeces
+# make a function to identify the indices
 # and this is where tuples are nice
 def find_boundaries(data, edges):
     # using a list of start and end timestamps (edges) that
@@ -516,7 +521,8 @@ def find_first_masked_value(x):
     return None
 
 
-def generate_expected_start_times(cdffile, dim, burst_start_offset, 
+# noinspection PyShadowingNames
+def generate_expected_start_times(cdffile, dim, burst_start_offset,
                                   burst_interval, burst_length, sample_rate):
     # generate a regular and recurring set of start and end timestamps that
     # delineate the beginning times and ending times of burts of measurements
@@ -553,7 +559,8 @@ def generate_expected_start_times(cdffile, dim, burst_start_offset,
         tlast = num2date(t[-1], cdf['time'].units)
     else:
         tlast = num2date(t[start_of_bad-1], cdf['time'].units)
-        
+
+    # noinspection PyShadowingNames
     nbursts = int((tlast-tfirst).total_seconds() / burst_interval)
     
     burst_start_times = []
@@ -577,7 +584,7 @@ def generate_expected_start_times(cdffile, dim, burst_start_offset,
 
 
 # TODO -- this is not working. format string is failing
-def save_indexes_to_file(cdffile, txtfile, edge_tuples):
+def save_indexes_to_file(cdffile, edge_tuples):
     # write indexes to a file with the time stamps for QA/QC
     cdf = nc.Dataset(cdffile, format="NETCDF4")
 
@@ -589,6 +596,7 @@ def save_indexes_to_file(cdffile, txtfile, edge_tuples):
         for x in enumerate(edge_tuples):
             t0 = num2date(cdf['time'][x[1][0]], tunits)
             t1 = num2date(cdf['time'][x[1][1]], tunits)
+            # noinspection PyBroadException
             try:
                 s = '{}, {},  {}, {}, {}, {}\n'.format(x[0], x[1][0], x[1][1],
                                                        x[1][1]-x[1][0], t0, t1)
