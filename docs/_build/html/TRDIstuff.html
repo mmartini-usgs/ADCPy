@@ -1,0 +1,619 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>TRDI ADCP tools &#8212; ADCPy  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installing ADCPy" href="install.html" />
+    <link rel="prev" title="Generic tools" href="EPICstuff.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-TRDIstuff.TRDIpd0tonetcdf">
+<span id="trdi-adcp-tools"></span><h1>TRDI ADCP tools<a class="headerlink" href="#module-TRDIstuff.TRDIpd0tonetcdf" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="trdipd0tonetcdf">
+<h2>TRDIpd0tonetcdf<a class="headerlink" href="#trdipd0tonetcdf" title="Permalink to this headline">¶</a></h2>
+<p>Convert full profile ADCP data ensembles currents to a netCDF4 file.
+If you have a file with wave packets data, the splitter must be run first.</p>
+<p>Usage:</p>
+<blockquote>
+<div><p>As a script
+python TRDIpd0tonetcdf.py [path] pd0File cdfFile</p>
+<blockquote>
+<div><p>path            is a path to prepend to the following
+pd0File         is path of raw PD0 format input file with current ensembles
+cdfFile         is path of a netcdf4 EPIC compliant output file</p>
+</div></blockquote>
+<p>note that file names and paths may not include spaces</p>
+</div></blockquote>
+<p>Reference:
+RD Instruments data format documentation “Workhorse Commands and Output Data Format” June 2018</p>
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.bitstrBE">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">bitstrBE</code><span class="sig-paren">(</span><em class="sig-param">byte</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.bitstrBE" title="Permalink to this definition">¶</a></dt>
+<dd><p>make a bit string from big endian byte</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>byte</strong> (<em>byte</em>) – a byte</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a string of ones and zeros, the bbits in the byte</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.bitstrLE">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">bitstrLE</code><span class="sig-paren">(</span><em class="sig-param">byte</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.bitstrLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>make a bit string from little endian byte</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>byte</strong> (<em>byte</em>) – a byte</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a string of ones and zeros, the bits in the byte</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.dopd0file">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">dopd0file</code><span class="sig-paren">(</span><em class="sig-param">pd0File</em>, <em class="sig-param">cdfFile</em>, <em class="sig-param">goodens</em>, <em class="sig-param">serialnum</em>, <em class="sig-param">timetype</em>, <em class="sig-param">delta_t_to_use</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.dopd0file" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert from binary pd0 format to netcdf</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pd0File</strong> (<em>str</em>) – is path of raw PD0 format input file with current ensembles</p></li>
+<li><p><strong>cdfFile</strong> (<em>str</em>) – is path of a netcdf4 EPIC compliant output file</p></li>
+<li><p><strong>goodens</strong> (<em>list</em>) – [start, end] ensembles to export.  end = -1 for all ensembles in file</p></li>
+<li><p><strong>serialnum</strong> (<em>str</em>) – serial number of the instrument</p></li>
+<li><p><strong>timetype</strong> (<em>str</em>) – “CF” for CF conventions, “EPIC” for EPIC conventions</p></li>
+<li><p><strong>delta_t_to_use</strong> (<em>str</em>) – time between ensembles, in seconds.  15 min profiles would be 900</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>count of ensembles read, ending index of netCDF file, error type if file could not be read</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.julian">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">julian</code><span class="sig-paren">(</span><em class="sig-param">year</em>, <em class="sig-param">month</em>, <em class="sig-param">day</em>, <em class="sig-param">hour</em>, <em class="sig-param">mn</em>, <em class="sig-param">sec</em>, <em class="sig-param">hund</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.julian" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert hours, minutes and seconds to decimal hours</p>
+<dl class="simple">
+<dt>reference:</dt><dd><p><a class="reference external" href="http://stackoverflow.com/questions/31142181/calculating-julian-date-in-python/41769526#41769526">http://stackoverflow.com/questions/31142181/calculating-julian-date-in-python/41769526#41769526</a>
+and R. Signell’s old matlab conversion code julian.m and hms2h.m</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>year</strong> (<em>int</em>) – </p></li>
+<li><p><strong>month</strong> (<em>int</em>) – </p></li>
+<li><p><strong>day</strong> (<em>int</em>) – </p></li>
+<li><p><strong>hour</strong> (<em>int</em>) – </p></li>
+<li><p><strong>mn</strong> (<em>int</em>) – </p></li>
+<li><p><strong>sec</strong> (<em>int</em>) – </p></li>
+<li><p><strong>hund</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>julian day</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.matrixTranspose">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">matrixTranspose</code><span class="sig-paren">(</span><em class="sig-param">matrix</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.matrixTranspose" title="Permalink to this definition">¶</a></dt>
+<dd><p>transpose the rotation matrix</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIBottomTrack">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIBottomTrack</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIBottomTrack" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the bottom track data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>bottom track data as a dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDICorrelation">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDICorrelation</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDICorrelation" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the correlation data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+<li><p><strong>ncells</strong> (<em>int</em>) – number of cells in the profile</p></li>
+<li><p><strong>nbeams</strong> (<em>int</em>) – number of acoustic beams</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>correlation data as a beam x cell numpy array of ints</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIFixedLeader">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIFixedLeader</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIFixedLeader" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the Fixed Leader section of data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dictionary of readable fixed leader data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIHeader">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIHeader</code><span class="sig-paren">(</span><em class="sig-param">bstream</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIHeader" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the TRDI header data for the number of data types and byte offsets to each</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>bstream</strong> (<em>bytes</em>) – the raw binary header information</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dictionary of readable header data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIIntensity">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIIntensity</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIIntensity" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the intensity data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+<li><p><strong>ncells</strong> (<em>int</em>) – number of cells in the profile</p></li>
+<li><p><strong>nbeams</strong> (<em>int</em>) – number of acoustic beams</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>intensity data as a beam x cell numpy array of ints</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIPercentGood">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIPercentGood</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIPercentGood" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the Percent Good data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+<li><p><strong>ncells</strong> (<em>int</em>) – number of cells in the profile</p></li>
+<li><p><strong>nbeams</strong> (<em>int</em>) – number of acoustic beams</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>percent good data as a beam x cell numpy array of ints</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVBeamLeader">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVBeamLeader</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVBeamLeader" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the TRDI V beam leader data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dict of readable beam leader settings</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVEventLog">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVEventLog</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVEventLog" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the event log data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>event log data as a dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVPingSetup">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVPingSetup</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVPingSetup" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the TRDI V ping setup data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dict of readable ping setup settings</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVSysConfig">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVSysConfig</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVSysConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the TRDI V system configuration data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dict of readable system configuration settings</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVariableLeader">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVariableLeader</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVariableLeader" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the Variable Leader section of data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dictionary of readable variable leader data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVelocity">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVelocity</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVelocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the velocity data, each velocity value is stored as a two byte, twos complement integer [-32768 to 32767]
+with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad velocity value</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+<li><p><strong>ncells</strong> (<em>int</em>) – number of cells in the profile</p></li>
+<li><p><strong>nbeams</strong> (<em>int</em>) – number of acoustic beams</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>velocity data as a beam x cell numpy array of ints</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertCorrelation">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVertCorrelation</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertCorrelation" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the vertical beam correlation data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+<li><p><strong>ncells</strong> (<em>int</em>) – number of cells in the profile</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>vertical beam correlation data as a numpy array of ints</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertIntensity">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVertIntensity</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertIntensity" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the vertical beam intensity data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+<li><p><strong>ncells</strong> (<em>int</em>) – number of cells in the profile</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>vertical beam intensity data as a numpy array of ints</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertPercentGood">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVertPercentGood</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertPercentGood" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the vertical beam percent good data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+<li><p><strong>ncells</strong> (<em>int</em>) – number of cells in the profile</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>vertical beam percent good data as a numpy array of ints</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertVelocity">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVertVelocity</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertVelocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the vertical beam velocity data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+<li><p><strong>ncells</strong> (<em>int</em>) – number of cells in the profile</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>vertical beam velocity data as a numpy array of ints</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIWaveParameters">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIWaveParameters</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIWaveParameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the wave parameters (wave statistics)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>wave data as a dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIWaveSeaSwell">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIWaveSeaSwell</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIWaveSeaSwell" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the wave sea swell parameters (wave statistics)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>wave sea swell data as a dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIensemble">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIensemble</code><span class="sig-paren">(</span><em class="sig-param">ensbytes</em>, <em class="sig-param">verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIensemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert the binary data for one ensemble to a dictionary of readable data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ensbytes</strong> (<em>binary</em>) – the raw binary data for the ensemble</p></li>
+<li><p><strong>verbose</strong> – print out the data as it is converted</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dictionary of the data, a string describing any errors</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIxformMatrix">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIxformMatrix</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIxformMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the transformation matrix data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+<li><p><strong>nbeams</strong> (<em>int</em>) – number of acoustic beams</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>transformation matrix data as a beam x 3 numpy array of ints</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.readTRDIHeader">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">readTRDIHeader</code><span class="sig-paren">(</span><em class="sig-param">infile</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.readTRDIHeader" title="Permalink to this definition">¶</a></dt>
+<dd><p>read the TRDI header bytes directly from a file pointer position and test for end of file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>infile</strong> – pointer to a file open for reading</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dictionary of the TRDI Header data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.setupCdf">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">setupCdf</code><span class="sig-paren">(</span><em class="sig-param">fname</em>, <em class="sig-param">ensData</em>, <em class="sig-param">gens</em>, <em class="sig-param">serialnum</em>, <em class="sig-param">timetype</em>, <em class="sig-param">delta_t_to_use</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.setupCdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>create the netcdf output file, define dimensions and variables</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fname</strong> (<em>str</em>) – path and name of netcdf file</p></li>
+<li><p><strong>ensData</strong> (<em>dict</em>) – data from the first ensemble to be read</p></li>
+<li><p><strong>gens</strong> (<em>tuple</em>) – start and end ensemble indices</p></li>
+<li><p><strong>serialnum</strong> (<em>str</em>) – instrument serial number</p></li>
+<li><p><strong>timetype</strong> (<em>str</em>) – indicate if “EPIC” or “CF” timebase should be written for “time”</p></li>
+<li><p><strong>delta_t_to_use</strong> (<em>str</em>) – time between ensembles</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>netcdf file object, string describing the time units for CF time</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.writeDict2atts">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">writeDict2atts</code><span class="sig-paren">(</span><em class="sig-param">cdfobj</em>, <em class="sig-param">d</em>, <em class="sig-param">tag</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.writeDict2atts" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a dictionary to netCDF attributes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cdfobj</strong> – netcdf file object</p></li>
+<li><p><strong>d</strong> (<em>dict</em>) – dictionary of attribute names and values</p></li>
+<li><p><strong>tag</strong> (<em>str</em>) – an identifier to prepend to the attribute name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the dictionary d with any strings that can be changed to numbers, as numbers</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ADCPy</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="EPICstuff.html">Generic tools</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">TRDI ADCP tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#trdipd0tonetcdf">TRDIpd0tonetcdf</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installing ADCPy</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="EPICstuff.html" title="previous chapter">Generic tools</a></li>
+      <li>Next: <a href="install.html" title="next chapter">Installing ADCPy</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Marinna Martini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/TRDIstuff.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
