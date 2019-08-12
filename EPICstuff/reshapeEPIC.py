@@ -1,45 +1,32 @@
 # -*- coding: utf-8 -*-
 """
-reshapeEPIC apportion a continuous time series file into bursts (e.g. reshape)
+reshapeEPIC
+===========
 
-function issue_flags = reshapeEPIC(cont_file, burst_file, burst_length, ...
-    dim=None, edges=None, drop=None)
+apportion a continuous time series file into bursts (e.g. reshape)
 
-the expected dimensions are [time, depth, lat, lon] for continuous EPIC
-we are reshaping to [time, sample, depth, lat, lon]
-for ADCP files, beams are expressed as variables vel1, vel2, ... veln
 
-NOTE:  if there is a shape problem then the data file might not be
-properly understood.  It might be that this code won't work
-this problem will become evident if an error is produced and operation
-returns to the keyboard in debug mode.  If this happens, check the shapes
-of the variables.
+Notes:
+    * the expected dimensions are [time, depth, lat, lon] for continuous data in EPIC
+    * we are reshaping to [time, sample, depth, lat, lon]
+    * for ADCP files, beams are expressed as variables vel1, vel2, ... veln
+    * if there is a shape problem then the data file might not be properly understood.
 
-WARNING:  time may not be monotonically increasing within bursts (e.g.
-along the sample dimension)
-this means that if the number of samples per burst is inconsistent, or if
-there are gaps in time, the end of a burst may be fill_value, including
-time values
+    It might be that this code won't work, this problem will become evident if an error is produced and operation
+    returns to the keyboard in debug mode.  If this happens, check the shapes of the variables.
 
-Marinna Martini for the USGS in Woods Hole, 9/20/2018
-originally coded for MATLAB as reshapeEPIC
-https://cmgsoft.repositoryhosting.com/trac/cmgsoft_m-cmg/browser/trunk/MMstuff/reshapeEPIC.m
+    WARNING:  time may not be monotonically increasing within bursts (e.g. along the sample dimension)
+    this means that if the number of samples per burst is inconsistent, or if
+    there are gaps in time, the end of a burst may be fill_value, including time values
 
-Created on Thu Sep 20 14:52:42 2018
+    Marinna Martini for the USGS in Woods Hole, 9/20/2018
+    originally coded for MATLAB as reshapeEPIC
+    https://cmgsoft.repositoryhosting.com/trac/cmgsoft_m-cmg/browser/trunk/MMstuff/reshapeEPIC.m
 
-@author: mmartini
-https://github.com/mmartini-usgs
+    Created on Thu Sep 20 14:52:42 2018
 
-Parameters:
-cont_file (str): name of netCDF file with continuous data
-burst_file (str): name of file to store the reshaped data, attributes will be copied
-burst_length (int):  maximum number of samples in each burst
-dim (str): name of dimension along which we will split the data, usually 'time' or 'Rec'
-edges (list of tuples): [(start0, end0), (start1, end1), ...] of edges defining the edges of each burst
-drop (set of str): set of variable names to omit from the output file
-
-Returns:
-issue_flags (dict): dictionary of problem types and status
+    @author: mmartini
+    https://github.com/mmartini-usgs
 
 """
 
@@ -54,7 +41,23 @@ import math
 
 # noinspection PyUnboundLocalVariable
 def reshapeEPIC(*args, **kwargs):
-    # the argument passing here works fine
+    """
+    apportion a continuous time series file into bursts (e.g. reshape)
+
+    :usage:  issue_flags = reshapeEPIC(cont_file, burst_file, burst_length,
+                                  dim=None, edges=None, drop=None)
+
+    :param str cont_file: name of netCDF file with continuous data
+    :param str burst_file: name of file to store the reshaped data, attributes will be copied
+    :param int burst_length:  maximum number of samples in each burst
+    :param str dim: name of dimension along which we will split the data, usually 'time' or 'Rec'
+    :param list[tuple] edges: [(start0, end0), (start1, end1), ...] of edges defining the edges of each burst
+    :param str drop: set of variable names to omit from the output file
+
+    :return: dictionary of problem types and status
+    """
+
+    # TODO - global not a great idea, let's get rid of this
     global nbursts
     print('%s running on python %s' % (sys.argv[0], sys.version))
     print('Start file conversion at ', dt.datetime.now())
@@ -479,14 +482,17 @@ def reshapeEPIC(*args, **kwargs):
 # make a function to identify the indeces
 # and this is where tuples are nice
 def find_boundaries(data, edges):
-    # using a list of start and end timestamps (edges) that
-    # delineate the beginning times and ending times of burts of measurements
-    # find the indeces into the data that correspond to these edges
-    # the time base may be irregular, it does not matter
-    # data is a list object of time stamps from the data
-    # edges is a list of tuples of start and end times
-    # make the data an numpy array for access to numpy's methods
-    nparray = np.array(data)
+    """
+    using a list of start and end timestamps (edges) that delineate the beginning times and ending times
+    of burts of measurements, find the indices into the data that correspond to these edges.
+    The time base may be irregular, it does not matter.
+
+    :param list data: time stamps from the data
+    :param list[tuple] edges: start and end times
+    :return: list of indices
+    """
+
+    nparray = np.array(data) # make the data an numpy array for access to numpy's methods
     
     idx = []
     for edge in edges:
@@ -506,6 +512,8 @@ def find_first_masked_value(x):
     """
     helper function to find the first occurrence of a masked value in a numpy masked array
     returns None if no masked values are found
+    :param numpy array x:
+    :return: index
     """
     for tpl in enumerate(x):
         # print(type(tpl[1]))
@@ -518,11 +526,19 @@ def find_first_masked_value(x):
 
 def generate_expected_start_times(cdffile, dim, burst_start_offset, 
                                   burst_interval, burst_length, sample_rate):
-    # generate a regular and recurring set of start and end timestamps that
-    # delineate the beginning times and ending times of burts of measurements
-    # cdfname = name of a continuous time series data file
-    # udim = the unlimited or time dimension which we will find the indeces to reshape
-    
+    """
+    generate a regular and recurring set of start and end timestamps that
+    delineate the beginning times and ending times of burts of measurements
+
+    :param str cdffile: name of a continuous time series data file
+    :param int dim: the unlimited or time dimension which we will find the indices to reshape
+    :param int burst_start_offset: when to start to make bursts in the continuous data, seconds
+    :param int burst_interval: time between start of bursts, seconds
+    :param int burst_length: number of samples in a burst
+    :param int sample_rate: Hertz
+    :return: list of tuples of start and end times for each burst
+    """
+
     # TODO - do this from a first burst first sample time stamp
     print('the file we are looking up times in is {}'.format(cdffile))
 
@@ -578,11 +594,17 @@ def generate_expected_start_times(cdffile, dim, burst_start_offset,
 
 # TODO -- this is not working. format string is failing
 def save_indexes_to_file(cdffile, txtfile, edge_tuples):
-    # write indexes to a file with the time stamps for QA/QC
+    """
+    write indexes to a file with the time stamps for QA/QC
+
+    :param str cdffile: the continuous time series netCDF file being operated upon
+    :param str txtfile: a file to output a string listing of time stamps
+    :param list[tuple] edge_tuples: the bursts to output
+    """
     cdf = nc.Dataset(cdffile, format="NETCDF4")
 
     tunits = cdf['time'].units
-    index_file = cdffile.split('.')[0]+'indeces.txt'
+    index_file = cdffile.split('.')[0]+'indices.txt'
     with open(index_file, 'w') as outfile:
         outfile.write('Burst Indexes for {}\n'.format(cdffile))
         outfile.write('Burst, start index, end index, number of samples, start time, end time\n')

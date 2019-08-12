@@ -17,9 +17,10 @@ As the code stands now, a 3.5 GB, single ping Workhorse ADCP .pd0 file with 3 Mi
    :maxdepth: 2
    :caption: Contents:
 
+   EPICstuff
+   Nortekstuff
+   TRDIstuff
    install
-
-.. automodule:: EPICstuff
 
 
 Indices and tables
