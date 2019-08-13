@@ -1,0 +1,5 @@
+TRDI ADCP tools
+===========================
+
+.. automodule:: TRDIstuff.TRDIpd0tonetcdf
+    :members:

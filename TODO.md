@@ -1,8 +1,9 @@
 Currently in work:
 - preparing this package for pypi
-- improving docstrings
+- docstrings, trying to write legible docstrings for sphinx and docstring parsing so that the cods are only in one place, at the function definition or file comments.  The result is OK, and not perfect for either.
 - writing tests
 - bringing code up to PEP8 standards
+    - rename varibles for PEP8 standard
 
 Known issues:
 
