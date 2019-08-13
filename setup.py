@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='ADCPy',
-    version='0.0.3',
+    version='0.0.4',
     author='Marinna Martini',
     author_email='mmartini@usgs.gov',
     description='read ADCP data from TRDI and Nortek instruments',
