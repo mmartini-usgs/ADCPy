@@ -1,5 +1,8 @@
 # ADCPy - code to work with ADCP data from the raw binary using python 3.x
 
+[![Documentation Status](https://readthedocs.org/projects/adcpy/badge/?version=latest)](https://adcpy.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.org/mmartini-usgs/ADCPy.svg?branch=master)](https://travis-ci.org/mmartini-usgs/ADCPy)
+
 code to prepare large amounts of ADCP data from the raw binary for use with xarray
 
 Written by Marinna Martini, 1/12/2017
