@@ -5,21 +5,18 @@ TRDIpd0tonetcdf
 Convert full profile ADCP data ensembles currents to a netCDF4 file.
 If you have a file with wave packets data, the splitter must be run first.
 
-Command line usage:
-
+Usage:
     python TRDIpd0tonetcdf.py [path] pd0File cdfFile
 
-        path            is a path to prepend to the following
-        pd0File         is path of raw PD0 format input file with current ensembles
-        cdfFile         is path of a netcdf4 EPIC compliant output file
-
-    note that file names and paths may not include spaces
+    :param str path: is a path to prepend to the following
+    :param str pd0File: is path of raw PD0 format input file with current ensembles
+    :param str cdfFile: is path of a netcdf4 EPIC compliant output file
 
 Reference:
     RD Instruments data format documentation "Workhorse Commands and Output Data Format" June 2018
 """
 
-# TODO change ('time') instances to ('time',) to make srue they are passed as single element tuples, and test
+# TODO change ('time') instances to ('time',) to make sure they are passed as single element tuples, and test
 
 # 10/4/2018 remove valid_range as it causes too many downstream problems
 # 1/25/2017 MM got this running on old Workhorse ADCP data

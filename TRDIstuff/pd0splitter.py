@@ -18,13 +18,12 @@ Command line usage:
 
     python pd0splitter.py --help
 
-Parameters:
-    path:         is a path to prepend to the following
-    rawFile:      is path of raw PD0 format input file
-    wavesFile:    is path of waves PD0 format output file
-    currentsFile: is path of currents PD0 format output file
-    firstEnsemble:   is a integer ensemble number
-    lastEnsemble:   is a integer ensemble number
+    :param str path: is a path to prepend to the following
+    :param str rawFile: is path of raw PD0 format input file
+    :param str wavesFile: is path of waves PD0 format output file
+    :param str currentsFile: is path of currents PD0 format output file
+    :param int firstEnsemble: is a integer ensemble number
+    :param int lastEnsemble: is a integer ensemble number
 
 The rawfile is assumed to be in PD0 format.  PD0 format assumes the file is a succession of ensembles.
 Each ensemble starts with a two byte header identifying the type of data contained in the ensemble.

@@ -5,19 +5,15 @@ Norteknc2USGScdf
 Converts Nortek exported netcdf files of Signature data to raw current profile data to a netCDF4 file.
 Data are taken from the "Burst" group of "Data"
 
-Command line usage:
-
+Usage:
     python Norteknc2USGScdf.py [path] infileBName outfileName
 
-Parameters:
-    path:         is a path to prepend to the following
-    infileBName:   is path of netCDF4 input Burst file from a Nortek Signature
-    infileIName:   is path of netCDF4 input IBurst file from a Nortek Signature
-    outfileName:      is path of a netcdf4 output file
-    start:        ensemble at which to start exporting
-    end:          ensemble at which to stop exporting
-
-note that file names and paths may not include spaces
+    :param str path: is a path to prepend to the following
+    :param str infileBName: is path of netCDF4 input Burst file from a Nortek Signature
+    :param str infileIName: is path of netCDF4 input IBurst file from a Nortek Signature
+    :param str outfileName: is path of a netcdf4 output file
+    :param int start: ensemble at which to start exporting
+    :param in end: ensemble at which to stop exporting
 
 Notes:
     time and time2, the EPIC convention for netCDF, is not used here so that

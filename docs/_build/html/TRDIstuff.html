@@ -15,7 +15,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Installing ADCPy" href="install.html" />
-    <link rel="prev" title="Generic tools" href="EPICstuff.html" />
+    <link rel="prev" title="Nortek Signature tools" href="Nortekstuff.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -38,19 +38,44 @@
 <h2>TRDIpd0tonetcdf<a class="headerlink" href="#trdipd0tonetcdf" title="Permalink to this headline">¶</a></h2>
 <p>Convert full profile ADCP data ensembles currents to a netCDF4 file.
 If you have a file with wave packets data, the splitter must be run first.</p>
-<p>Usage:</p>
-<blockquote>
-<div><p>As a script
-python TRDIpd0tonetcdf.py [path] pd0File cdfFile</p>
-<blockquote>
-<div><p>path            is a path to prepend to the following
-pd0File         is path of raw PD0 format input file with current ensembles
-cdfFile         is path of a netcdf4 EPIC compliant output file</p>
-</div></blockquote>
-<p>note that file names and paths may not include spaces</p>
-</div></blockquote>
-<p>Reference:
-RD Instruments data format documentation “Workhorse Commands and Output Data Format” June 2018</p>
+<dl class="simple">
+<dt>Usage:</dt><dd><p>python TRDIpd0tonetcdf.py [path] pd0File cdfFile</p>
+<dl class="field-list simple">
+<dt class="field-odd">param str path</dt>
+<dd class="field-odd"><p>is a path to prepend to the following</p>
+</dd>
+<dt class="field-even">param str pd0File</dt>
+<dd class="field-even"><p>is path of raw PD0 format input file with current ensembles</p>
+</dd>
+<dt class="field-odd">param str cdfFile</dt>
+<dd class="field-odd"><p>is path of a netcdf4 EPIC compliant output file</p>
+</dd>
+</dl>
+</dd>
+<dt>Reference:</dt><dd><p>RD Instruments data format documentation “Workhorse Commands and Output Data Format” June 2018</p>
+</dd>
+</dl>
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.analyzepd0file">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">analyzepd0file</code><span class="sig-paren">(</span><em class="sig-param">pd0File</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.analyzepd0file" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>determine the input file size, read some ensembles, make an estimate of the number of ensembles within, return the</dt><dd><p>data from the first ensemble.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pd0File</strong> (<em>str</em>) – path and file name to raw ADC data file in pd0 format</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – output ensemble information</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>number of ensembles in file, number of bytes in each ensemble, data from the first ensemble,
+number of bytes to the start of the data</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="function">
 <dt id="TRDIstuff.TRDIpd0tonetcdf.bitstrBE">
 <code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">bitstrBE</code><span class="sig-paren">(</span><em class="sig-param">byte</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.bitstrBE" title="Permalink to this definition">¶</a></dt>
@@ -540,6 +565,67 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 </dd></dl>
 
 </div>
+<span class="target" id="module-TRDIstuff.pd0splitter"></span><div class="section" id="pd0splitter">
+<h2>pd0splitter<a class="headerlink" href="#pd0splitter" title="Permalink to this headline">¶</a></h2>
+<p>Functions to handle Acoustic Doppler Current Profiler data Teledyne RD Instruments pd0 format</p>
+<p>As a script (to split a raw PD0 file into waves and currents)</p>
+<dl>
+<dt>Command line usage:</dt><dd><p>python pd0splitter.py [path] rawFile wavesFile currentsFile</p>
+<p>python pd0splitter.py [-p path] -r rawFile -w wavesFile -c currentsFile -f firstEnsemble -l lastEnsemble</p>
+<dl class="simple">
+<dt>python pd0splitter.py [–path=path] –raw=rawFile –waves=wavesFile –currents=currentsFile –first=firstEnsemble </dt><dd><p>–last=lastEnsemble</p>
+</dd>
+</dl>
+<p>python pd0splitter.py -h</p>
+<p>python pd0splitter.py –help</p>
+<dl class="field-list simple">
+<dt class="field-odd">param str path</dt>
+<dd class="field-odd"><p>is a path to prepend to the following</p>
+</dd>
+<dt class="field-even">param str rawFile</dt>
+<dd class="field-even"><p>is path of raw PD0 format input file</p>
+</dd>
+<dt class="field-odd">param str wavesFile</dt>
+<dd class="field-odd"><p>is path of waves PD0 format output file</p>
+</dd>
+<dt class="field-even">param str currentsFile</dt>
+<dd class="field-even"><p>is path of currents PD0 format output file</p>
+</dd>
+<dt class="field-odd">param int firstEnsemble</dt>
+<dd class="field-odd"><p>is a integer ensemble number</p>
+</dd>
+<dt class="field-even">param int lastEnsemble</dt>
+<dd class="field-even"><p>is a integer ensemble number</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>The rawfile is assumed to be in PD0 format.  PD0 format assumes the file is a succession of ensembles.
+Each ensemble starts with a two byte header identifying the type of data contained in the ensemble.</p>
+<p>Following the header is a two byte length field specifying the length of the header, length field, and data combined</p>
+<p>Following the length field is raw data for the number of bytes indicated by the length field</p>
+<p>Following the raw data is a checksum field which is the two least significant bytes of the sum of the byte values
+of the header, length field, and raw data.</p>
+<p>updated to run in python 3x, Marinna Martini 1/12/2017
+adapted from pd0.py by Gregory P. Dusek <a class="reference external" href="http://trac.nccoos.org/dataproc/wiki/DPWP/docs">http://trac.nccoos.org/dataproc/wiki/DPWP/docs</a></p>
+<dl class="function">
+<dt id="TRDIstuff.pd0splitter.split">
+<code class="sig-prename descclassname">TRDIstuff.pd0splitter.</code><code class="sig-name descname">split</code><span class="sig-paren">(</span><em class="sig-param">rawFile</em>, <em class="sig-param">wavesFile</em>, <em class="sig-param">currentsFile</em>, <em class="sig-param">firstEnsemble</em>, <em class="sig-param">lastEnsemble</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.pd0splitter.split" title="Permalink to this definition">¶</a></dt>
+<dd><p>split ADCP data in pd0 format into current profiles and wave packets</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rawFile</strong> (<em>str</em>) – path and name of raw PD0 format input file</p></li>
+<li><p><strong>wavesFile</strong> (<em>str</em>) – path and name of waves PD0 format output file</p></li>
+<li><p><strong>currentsFile</strong> (<em>str</em>) – path and name of currents PD0 format output file</p></li>
+<li><p><strong>firstEnsemble</strong> (<em>int</em>) – ensemble number of the first ensemble to read</p></li>
+<li><p><strong>lastEnsemble</strong> (<em>int</em>) – ensemble number of the last ensemble to read</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
 </div>
 
 
@@ -562,8 +648,10 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="EPICstuff.html">Generic tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Nortekstuff.html">Nortek Signature tools</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">TRDI ADCP tools</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#trdipd0tonetcdf">TRDIpd0tonetcdf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pd0splitter">pd0splitter</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installing ADCPy</a></li>
@@ -573,7 +661,7 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="EPICstuff.html" title="previous chapter">Generic tools</a></li>
+      <li>Previous: <a href="Nortekstuff.html" title="previous chapter">Nortek Signature tools</a></li>
       <li>Next: <a href="install.html" title="next chapter">Installing ADCPy</a></li>
   </ul></li>
 </ul>

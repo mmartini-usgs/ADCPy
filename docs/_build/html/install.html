@@ -35,9 +35,15 @@
 <h1>Installing ADCPy<a class="headerlink" href="#installing-adcpy" title="Permalink to this headline">¶</a></h1>
 <p>If you do not already have python installed, we recommend Anaconda.  In particular we use this installation:  <a class="reference external" href="http://ioos.github.io/notebooks_demos/other_resources/">http://ioos.github.io/notebooks_demos/other_resources/</a></p>
 <p>Using git, clone ADCPy from github at:  <a class="reference external" href="https://github.com/mmartini-usgs/ADCPy">https://github.com/mmartini-usgs/ADCPy</a>.</p>
-<p><code class="docutils literal notranslate"><span class="pre">cd</span></code> to the directory containing stglib, and type:</p>
+<p><code class="docutils literal notranslate"><span class="pre">cd</span></code> to the directory containing the package, and type:</p>
 <p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span> <span class="pre">--no-deps</span></code></p>
-<p>This will not install dependencies that stglib relies on, but these are better managed through Anaconda anyway. If you get errors about missing packages, install them using <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span></code> or <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code>.</p>
+<p>This will not install dependencies. If you get errors about missing packages, install them using <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span></code> or <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code>.</p>
+<p>Note also that you will import one of the three sub-modules as follows:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">EPICstuff</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">TRDIstuff</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">Nortekstuff</span></code></p></li>
+</ul>
 </div>
 
 
@@ -60,6 +66,7 @@
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="EPICstuff.html">Generic tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Nortekstuff.html">Nortek Signature tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="TRDIstuff.html">TRDI ADCP tools</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installing ADCPy</a></li>
 </ul>
