@@ -579,39 +579,29 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 <span class="target" id="module-TRDIstuff.pd0splitter"></span><div class="section" id="pd0splitter">
 <h2>pd0splitter<a class="headerlink" href="#pd0splitter" title="Permalink to this headline">¶</a></h2>
 <p>Functions to handle Acoustic Doppler Current Profiler data Teledyne RD Instruments pd0 format</p>
-<p>As a script (to split a raw PD0 file into waves and currents)</p>
-<dl>
-<dt>Command line usage:</dt><dd><p>python pd0splitter.py [path] rawFile wavesFile currentsFile</p>
-<p>python pd0splitter.py [-p path] -r rawFile -w wavesFile -c currentsFile -f firstEnsemble -l lastEnsemble</p>
+<p>As a script (to split a raw PD0 file into waves packets and currents binary files)</p>
 <dl class="simple">
-<dt>python pd0splitter.py [–path=path] –raw=rawFile –waves=wavesFile –currents=currentsFile –first=firstEnsemble </dt><dd><p>–last=lastEnsemble</p>
-</dd>
-</dl>
-<p>python pd0splitter.py -h</p>
-<p>python pd0splitter.py –help</p>
+<dt>Usage:</dt><dd><p>python pd0splitter.py pd0file packets_file currents_file [first_ensemble] [last_ensemble]</p>
 <dl class="field-list simple">
-<dt class="field-odd">param str path</dt>
-<dd class="field-odd"><p>is a path to prepend to the following</p>
+<dt class="field-odd">param str pd0file</dt>
+<dd class="field-odd"><p>is path of raw PD0 format input file</p>
 </dd>
-<dt class="field-even">param str rawFile</dt>
-<dd class="field-even"><p>is path of raw PD0 format input file</p>
+<dt class="field-even">param str packets_file</dt>
+<dd class="field-even"><p>is path of waves PD0 format output file</p>
 </dd>
-<dt class="field-odd">param str wavesFile</dt>
-<dd class="field-odd"><p>is path of waves PD0 format output file</p>
+<dt class="field-odd">param str currents_file</dt>
+<dd class="field-odd"><p>is path of currents PD0 format output file</p>
 </dd>
-<dt class="field-even">param str currentsFile</dt>
-<dd class="field-even"><p>is path of currents PD0 format output file</p>
-</dd>
-<dt class="field-odd">param int firstEnsemble</dt>
-<dd class="field-odd"><p>is a integer ensemble number</p>
-</dd>
-<dt class="field-even">param int lastEnsemble</dt>
+<dt class="field-even">param int first_ensemble</dt>
 <dd class="field-even"><p>is a integer ensemble number</p>
 </dd>
+<dt class="field-odd">param int last_ensemble</dt>
+<dd class="field-odd"><p>is a integer ensemble number</p>
+</dd>
 </dl>
 </dd>
 </dl>
-<p>The rawfile is assumed to be in PD0 format.  PD0 format assumes the file is a succession of ensembles.
+<p>The pd0file is assumed to be in PD0 format.  PD0 format assumes the file is a succession of ensembles.
 Each ensemble starts with a two byte header identifying the type of data contained in the ensemble.</p>
 <p>Following the header is a two byte length field specifying the length of the header, length field, and data combined</p>
 <p>Following the length field is raw data for the number of bytes indicated by the length field</p>
@@ -621,16 +611,16 @@ of the header, length field, and raw data.</p>
 adapted from pd0.py by Gregory P. Dusek <a class="reference external" href="http://trac.nccoos.org/dataproc/wiki/DPWP/docs">http://trac.nccoos.org/dataproc/wiki/DPWP/docs</a></p>
 <dl class="function">
 <dt id="TRDIstuff.pd0splitter.split">
-<code class="sig-prename descclassname">TRDIstuff.pd0splitter.</code><code class="sig-name descname">split</code><span class="sig-paren">(</span><em class="sig-param">rawFile</em>, <em class="sig-param">wavesFile</em>, <em class="sig-param">currentsFile</em>, <em class="sig-param">firstEnsemble</em>, <em class="sig-param">lastEnsemble</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.pd0splitter.split" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">TRDIstuff.pd0splitter.</code><code class="sig-name descname">split</code><span class="sig-paren">(</span><em class="sig-param">pd0file</em>, <em class="sig-param">packets_file</em>, <em class="sig-param">currents_file</em>, <em class="sig-param">first_ensemble</em>, <em class="sig-param">last_ensemble</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.pd0splitter.split" title="Permalink to this definition">¶</a></dt>
 <dd><p>split ADCP data in pd0 format into current profiles and wave packets</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>rawFile</strong> (<em>str</em>) – path and name of raw PD0 format input file</p></li>
-<li><p><strong>wavesFile</strong> (<em>str</em>) – path and name of waves PD0 format output file</p></li>
-<li><p><strong>currentsFile</strong> (<em>str</em>) – path and name of currents PD0 format output file</p></li>
-<li><p><strong>firstEnsemble</strong> (<em>int</em>) – ensemble number of the first ensemble to read</p></li>
-<li><p><strong>lastEnsemble</strong> (<em>int</em>) – ensemble number of the last ensemble to read</p></li>
+<li><p><strong>pd0file</strong> (<em>str</em>) – path and name of raw PD0 format input file</p></li>
+<li><p><strong>packets_file</strong> (<em>str</em>) – path and name of waves PD0 format output file</p></li>
+<li><p><strong>currents_file</strong> (<em>str</em>) – path and name of currents PD0 format output file</p></li>
+<li><p><strong>first_ensemble</strong> (<em>int</em>) – ensemble number of the first ensemble to read</p></li>
+<li><p><strong>last_ensemble</strong> (<em>int</em>) – ensemble number of the last ensemble to read</p></li>
 </ul>
 </dd>
 </dl>

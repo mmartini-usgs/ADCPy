@@ -2011,7 +2011,6 @@ def analyzepd0file(pd0File, verbose=False):
 
 def __main():
 
-    # TODO add - and -- types of command line arguments
     print('%s running on python %s' % (sys.argv[0], sys.version))
 
     if len(sys.argv) < 2:
