@@ -43,6 +43,6 @@ print("----")
 print("Start file conversion at", dt.datetime.now())
 # when using this module this way, the start and end ensembles are required.
 # use Inf to indicate all ensembles.
-ensCount, cdfIdx, ensError = pd0.dopd0file(pd0File, cdfFile, goodens, serialnum, timetype, delta_t_to_use)
+ensCount, cdfIdx, ensError = pd0.convert_pd0_to_netcdf(pd0File, cdfFile, goodens, serialnum, timetype, delta_t_to_use)
 print("Finished file conversion at", dt.datetime.now())
 print("Ensemble error = {}".format(ensError))

@@ -59,7 +59,7 @@ if do_part_one:
     # when using this module this way, the start and end ensembles are required.
     # use Inf to indicate all ensembles.
     print('Converting from %s\n to %s\n' % (pd0File,cdfFile))
-    pd0.dopd0file(pd0File, cdfFile, goodens, serialnum, timetype)
+    pd0.convert_pd0_to_netcdf(pd0File, cdfFile, goodens, serialnum, timetype)
     endtime = dt.datetime.now()
     print("finished binary to raw cdf conversion at %s" % starttime)
     print("processing time was %s" % (endtime-starttime))

@@ -39,16 +39,26 @@
 <p>Convert full profile ADCP data ensembles currents to a netCDF4 file.
 If you have a file with wave packets data, the splitter must be run first.</p>
 <dl class="simple">
-<dt>Usage:</dt><dd><p>python TRDIpd0tonetcdf.py [path] pd0File cdfFile</p>
+<dt>Usage:</dt><dd><p>python TRDIpd0tonetcdf.py pd0File cdfFile [good_ens] [serial_number=”unknown”] [time_type=”CF”] [delta_t=None]</p>
 <dl class="field-list simple">
-<dt class="field-odd">param str path</dt>
-<dd class="field-odd"><p>is a path to prepend to the following</p>
+<dt class="field-odd">param str pd0File</dt>
+<dd class="field-odd"><p>is path of raw PD0 format input file with ensembles of full profiles</p>
 </dd>
-<dt class="field-even">param str pd0File</dt>
-<dd class="field-even"><p>is path of raw PD0 format input file with current ensembles</p>
+<dt class="field-even">param str cdfFile</dt>
+<dd class="field-even"><p>is path of a netcdf4 EPIC compliant output file</p>
 </dd>
-<dt class="field-odd">param str cdfFile</dt>
-<dd class="field-odd"><p>is path of a netcdf4 EPIC compliant output file</p>
+<dt class="field-odd">param tuple[int] good_ens</dt>
+<dd class="field-odd"><p>(start_ensemble, end_ensemble) ensemble range to convert, use -1 for all</p>
+</dd>
+<dt class="field-even">param str serial_number</dt>
+<dd class="field-even"><p>instrument serial number</p>
+</dd>
+<dt class="field-odd">param str time_type</dt>
+<dd class="field-odd"><p>specify “CF” for Climate and Forecast convention time (cfconventions.org) or “EPIC”
+<a class="reference external" href="https://www.pmel.noaa.gov/epic/index.html">https://www.pmel.noaa.gov/epic/index.html</a></p>
+</dd>
+<dt class="field-even">param str delta_t</dt>
+<dd class="field-even"><p>time between ensembles or ensemble groups</p>
 </dd>
 </dl>
 </dd>
@@ -105,18 +115,18 @@ number of bytes to the start of the data</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.dopd0file">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">dopd0file</code><span class="sig-paren">(</span><em class="sig-param">pd0File</em>, <em class="sig-param">cdfFile</em>, <em class="sig-param">goodens</em>, <em class="sig-param">serialnum</em>, <em class="sig-param">timetype</em>, <em class="sig-param">delta_t_to_use</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.dopd0file" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.convert_pd0_to_netcdf">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">convert_pd0_to_netcdf</code><span class="sig-paren">(</span><em class="sig-param">pd0File</em>, <em class="sig-param">cdfFile</em>, <em class="sig-param">good_ens</em>, <em class="sig-param">serial_number</em>, <em class="sig-param">time_type</em>, <em class="sig-param">delta_t</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.convert_pd0_to_netcdf" title="Permalink to this definition">¶</a></dt>
 <dd><p>convert from binary pd0 format to netcdf</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>pd0File</strong> (<em>str</em>) – is path of raw PD0 format input file with current ensembles</p></li>
 <li><p><strong>cdfFile</strong> (<em>str</em>) – is path of a netcdf4 EPIC compliant output file</p></li>
-<li><p><strong>goodens</strong> (<em>list</em>) – [start, end] ensembles to export.  end = -1 for all ensembles in file</p></li>
-<li><p><strong>serialnum</strong> (<em>str</em>) – serial number of the instrument</p></li>
-<li><p><strong>timetype</strong> (<em>str</em>) – “CF” for CF conventions, “EPIC” for EPIC conventions</p></li>
-<li><p><strong>delta_t_to_use</strong> (<em>str</em>) – time between ensembles, in seconds.  15 min profiles would be 900</p></li>
+<li><p><strong>good_ens</strong> (<em>list</em>) – [start, end] ensembles to export.  end = -1 for all ensembles in file</p></li>
+<li><p><strong>serial_number</strong> (<em>str</em>) – serial number of the instrument</p></li>
+<li><p><strong>time_type</strong> (<em>str</em>) – “CF” for CF conventions, “EPIC” for EPIC conventions</p></li>
+<li><p><strong>delta_t</strong> (<em>str</em>) – time between ensembles, in seconds.  15 min profiles would be 900</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -137,13 +147,13 @@ and R. Signell’s old matlab conversion code julian.m and hms2h.m</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>year</strong> (<em>int</em>) – </p></li>
-<li><p><strong>month</strong> (<em>int</em>) – </p></li>
-<li><p><strong>day</strong> (<em>int</em>) – </p></li>
-<li><p><strong>hour</strong> (<em>int</em>) – </p></li>
-<li><p><strong>mn</strong> (<em>int</em>) – </p></li>
-<li><p><strong>sec</strong> (<em>int</em>) – </p></li>
-<li><p><strong>hund</strong> (<em>int</em>) – </p></li>
+<li><p><strong>year</strong> (<em>int</em>) – year</p></li>
+<li><p><strong>month</strong> (<em>int</em>) – month</p></li>
+<li><p><strong>day</strong> (<em>int</em>) – day</p></li>
+<li><p><strong>hour</strong> (<em>int</em>) – hour</p></li>
+<li><p><strong>mn</strong> (<em>int</em>) – minute</p></li>
+<li><p><strong>sec</strong> (<em>int</em>) – second</p></li>
+<li><p><strong>hund</strong> (<em>int</em>) – hundredth of second</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -153,22 +163,15 @@ and R. Signell’s old matlab conversion code julian.m and hms2h.m</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.matrixTranspose">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">matrixTranspose</code><span class="sig-paren">(</span><em class="sig-param">matrix</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.matrixTranspose" title="Permalink to this definition">¶</a></dt>
-<dd><p>transpose the rotation matrix</p>
-<dl class="field-list simple">
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIBottomTrack">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIBottomTrack</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIBottomTrack" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_bottom_track">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_bottom_track</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_bottom_track" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the bottom track data</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
 <li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+<li><p><strong>nbeams</strong> (<em>int</em>) – number of acoustic beams</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -178,8 +181,8 @@ and R. Signell’s old matlab conversion code julian.m and hms2h.m</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDICorrelation">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDICorrelation</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDICorrelation" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_correlation">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_correlation</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_correlation" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the correlation data</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -197,8 +200,42 @@ and R. Signell’s old matlab conversion code julian.m and hms2h.m</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIFixedLeader">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIFixedLeader</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIFixedLeader" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_ensemble">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_ensemble</code><span class="sig-paren">(</span><em class="sig-param">ensbytes</em>, <em class="sig-param">verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_ensemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert the binary data for one ensemble to a dictionary of readable data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ensbytes</strong> (<em>binary</em>) – the raw binary data for the ensemble</p></li>
+<li><p><strong>verbose</strong> – print out the data as it is converted</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dictionary of the data, a string describing any errors</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_event_log">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_event_log</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_event_log" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the event log data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>event log data as a dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_fixed_leader">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_fixed_leader</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_fixed_leader" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the Fixed Leader section of data</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -214,8 +251,8 @@ and R. Signell’s old matlab conversion code julian.m and hms2h.m</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIHeader">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIHeader</code><span class="sig-paren">(</span><em class="sig-param">bstream</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIHeader" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_header">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_header</code><span class="sig-paren">(</span><em class="sig-param">bstream</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_header" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the TRDI header data for the number of data types and byte offsets to each</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -228,8 +265,8 @@ and R. Signell’s old matlab conversion code julian.m and hms2h.m</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIIntensity">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIIntensity</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIIntensity" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_intensity">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_intensity</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_intensity" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the intensity data</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -247,8 +284,8 @@ and R. Signell’s old matlab conversion code julian.m and hms2h.m</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIPercentGood">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIPercentGood</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIPercentGood" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_percent_good">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_percent_good</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_percent_good" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the Percent Good data</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -266,76 +303,26 @@ and R. Signell’s old matlab conversion code julian.m and hms2h.m</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVBeamLeader">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVBeamLeader</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVBeamLeader" title="Permalink to this definition">¶</a></dt>
-<dd><p>parse the TRDI V beam leader data</p>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_transformation_matrix">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_transformation_matrix</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_transformation_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the transformation matrix data</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
 <li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+<li><p><strong>nbeams</strong> (<em>int</em>) – number of acoustic beams</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>a dict of readable beam leader settings</p>
+<dd class="field-even"><p>transformation matrix data as a beam x 3 numpy array of ints</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVEventLog">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVEventLog</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVEventLog" title="Permalink to this definition">¶</a></dt>
-<dd><p>parse the event log data</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
-<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>event log data as a dict</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVPingSetup">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVPingSetup</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVPingSetup" title="Permalink to this definition">¶</a></dt>
-<dd><p>parse the TRDI V ping setup data</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
-<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>a dict of readable ping setup settings</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVSysConfig">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVSysConfig</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVSysConfig" title="Permalink to this definition">¶</a></dt>
-<dd><p>parse the TRDI V system configuration data</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
-<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>a dict of readable system configuration settings</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVariableLeader">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVariableLeader</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVariableLeader" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_variable_leader">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_variable_leader</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_variable_leader" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the Variable Leader section of data</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -351,8 +338,8 @@ and R. Signell’s old matlab conversion code julian.m and hms2h.m</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVelocity">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVelocity</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVelocity" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_velocity">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_velocity</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_velocity" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the velocity data, each velocity value is stored as a two byte, twos complement integer [-32768 to 32767]
 with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad velocity value</p>
 <dl class="field-list simple">
@@ -371,8 +358,25 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertCorrelation">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVertCorrelation</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertCorrelation" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_beam_leader">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_vertical_beam_leader</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_beam_leader" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the TRDI V beam leader data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dict of readable beam leader settings</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_correlation">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_vertical_correlation</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_correlation" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the vertical beam correlation data</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -389,8 +393,8 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertIntensity">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVertIntensity</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertIntensity" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_intensity">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_vertical_intensity</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_intensity" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the vertical beam intensity data</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -407,8 +411,8 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertPercentGood">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVertPercentGood</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertPercentGood" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_percent_good">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_vertical_percent_good</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_percent_good" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the vertical beam percent good data</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -425,8 +429,42 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertVelocity">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIVertVelocity</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIVertVelocity" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_ping_setup">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_vertical_ping_setup</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_ping_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the TRDI V ping setup data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dict of readable ping setup settings</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_system_configuration">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_vertical_system_configuration</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_system_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the TRDI V system configuration data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
+<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dict of readable system configuration settings</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_velocity">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_vertical_velocity</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">ncells</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_vertical_velocity" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the vertical beam velocity data</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -443,8 +481,8 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIWaveParameters">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIWaveParameters</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIWaveParameters" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_wave_parameters">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_wave_parameters</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_wave_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the wave parameters (wave statistics)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -460,8 +498,8 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIWaveSeaSwell">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIWaveSeaSwell</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIWaveSeaSwell" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_wave_sea_swell">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parse_TRDI_wave_sea_swell</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parse_TRDI_wave_sea_swell" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse the wave sea swell parameters (wave statistics)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -477,43 +515,8 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIensemble">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIensemble</code><span class="sig-paren">(</span><em class="sig-param">ensbytes</em>, <em class="sig-param">verbose</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIensemble" title="Permalink to this definition">¶</a></dt>
-<dd><p>convert the binary data for one ensemble to a dictionary of readable data</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ensbytes</strong> (<em>binary</em>) – the raw binary data for the ensemble</p></li>
-<li><p><strong>verbose</strong> – print out the data as it is converted</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>a dictionary of the data, a string describing any errors</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.parseTRDIxformMatrix">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">parseTRDIxformMatrix</code><span class="sig-paren">(</span><em class="sig-param">bstream</em>, <em class="sig-param">offset</em>, <em class="sig-param">nbeams</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.parseTRDIxformMatrix" title="Permalink to this definition">¶</a></dt>
-<dd><p>parse the transformation matrix data</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>bstream</strong> (<em>bytes</em>) – an entire ensemble</p></li>
-<li><p><strong>offset</strong> (<em>int</em>) – the location in the bytes object of the first byte of this data format</p></li>
-<li><p><strong>nbeams</strong> (<em>int</em>) – number of acoustic beams</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>transformation matrix data as a beam x 3 numpy array of ints</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.readTRDIHeader">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">readTRDIHeader</code><span class="sig-paren">(</span><em class="sig-param">infile</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.readTRDIHeader" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.read_TRDI_header">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">read_TRDI_header</code><span class="sig-paren">(</span><em class="sig-param">infile</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.read_TRDI_header" title="Permalink to this definition">¶</a></dt>
 <dd><p>read the TRDI header bytes directly from a file pointer position and test for end of file</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -526,18 +529,18 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.setupCdf">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">setupCdf</code><span class="sig-paren">(</span><em class="sig-param">fname</em>, <em class="sig-param">ensData</em>, <em class="sig-param">gens</em>, <em class="sig-param">serialnum</em>, <em class="sig-param">timetype</em>, <em class="sig-param">delta_t_to_use</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.setupCdf" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.setup_netcdf_file">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">setup_netcdf_file</code><span class="sig-paren">(</span><em class="sig-param">fname</em>, <em class="sig-param">ens_data</em>, <em class="sig-param">gens</em>, <em class="sig-param">serial_number</em>, <em class="sig-param">time_type</em>, <em class="sig-param">delta_t</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.setup_netcdf_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>create the netcdf output file, define dimensions and variables</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>fname</strong> (<em>str</em>) – path and name of netcdf file</p></li>
-<li><p><strong>ensData</strong> (<em>dict</em>) – data from the first ensemble to be read</p></li>
+<li><p><strong>ens_data</strong> (<em>dict</em>) – data from the first ensemble to be read</p></li>
 <li><p><strong>gens</strong> (<em>tuple</em>) – start and end ensemble indices</p></li>
-<li><p><strong>serialnum</strong> (<em>str</em>) – instrument serial number</p></li>
-<li><p><strong>timetype</strong> (<em>str</em>) – indicate if “EPIC” or “CF” timebase should be written for “time”</p></li>
-<li><p><strong>delta_t_to_use</strong> (<em>str</em>) – time between ensembles</p></li>
+<li><p><strong>serial_number</strong> (<em>str</em>) – instrument serial number</p></li>
+<li><p><strong>time_type</strong> (<em>str</em>) – indicate if “EPIC” or “CF” timebase should be written for “time”</p></li>
+<li><p><strong>delta_t</strong> (<em>str</em>) – time between ensembles</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -547,13 +550,21 @@ with the LSB sent first.  Units are mm/s.  A value of -32768 = 0x8000 is a bad v
 </dd></dl>
 
 <dl class="function">
-<dt id="TRDIstuff.TRDIpd0tonetcdf.writeDict2atts">
-<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">writeDict2atts</code><span class="sig-paren">(</span><em class="sig-param">cdfobj</em>, <em class="sig-param">d</em>, <em class="sig-param">tag</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.writeDict2atts" title="Permalink to this definition">¶</a></dt>
+<dt id="TRDIstuff.TRDIpd0tonetcdf.transpose_rotation_matrix">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">transpose_rotation_matrix</code><span class="sig-paren">(</span><em class="sig-param">matrix</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.transpose_rotation_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>transpose the rotation matrix
+:param matrix: rotation matrix from file
+:return: transposed matrix</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="TRDIstuff.TRDIpd0tonetcdf.write_dict_to_cdf_attributes">
+<code class="sig-prename descclassname">TRDIstuff.TRDIpd0tonetcdf.</code><code class="sig-name descname">write_dict_to_cdf_attributes</code><span class="sig-paren">(</span><em class="sig-param">netcdf_object</em>, <em class="sig-param">d</em>, <em class="sig-param">tag</em><span class="sig-paren">)</span><a class="headerlink" href="#TRDIstuff.TRDIpd0tonetcdf.write_dict_to_cdf_attributes" title="Permalink to this definition">¶</a></dt>
 <dd><p>write a dictionary to netCDF attributes</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>cdfobj</strong> – netcdf file object</p></li>
+<li><p><strong>netcdf_object</strong> – netcdf file object</p></li>
 <li><p><strong>d</strong> (<em>dict</em>) – dictionary of attribute names and values</p></li>
 <li><p><strong>tag</strong> (<em>str</em>) – an identifier to prepend to the attribute name</p></li>
 </ul>

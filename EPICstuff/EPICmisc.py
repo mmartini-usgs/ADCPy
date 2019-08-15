@@ -18,7 +18,7 @@ import math
 import os
 import sys
 # this is important in order to import my package which is not on the python path
-sys.path.append('c:\projects\python\ADCPy')
+# sys.path.append('c:\projects\python\ADCPy')
 #from TRDIpd0tonetcdf import julian
 #from TRDIpd0tonetcdf import ajd
 #from ADCPcdf2ncEPIC import EPICtime2datetime
