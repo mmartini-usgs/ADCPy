@@ -13,7 +13,7 @@ def trdipd0_convert_pd0file():
     import numpy as np
     # this is a test data file, very simple ADCP file
     # of older Workhorse ADCP data with only profiler
-    pd0_input_file = here.joinpath("..\\data\\demo1\\9991wh000.000")
+    pd0_input_file = here.joinpath("..//data//demo1//9991wh000.000")
     netcdf_output = here.joinpath("9991wh000.cdf")
     serial_number = "473"
     delta_t = "900"  # seconds, as a string
