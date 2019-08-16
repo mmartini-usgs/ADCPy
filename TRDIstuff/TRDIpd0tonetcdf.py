@@ -97,7 +97,7 @@ def convert_pd0_to_netcdf(pd0File, cdfFile, good_ens, serial_number, time_type, 
         # print(ens_data['header'])
         ens_data, ens_error = parse_TRDI_ensemble(ens, verbose)
 
-        if (ens_error == 'None') and (ensemble_count >= ens2process[0]):
+        if (ens_error is None) and (ensemble_count >= ens2process[0]):
             # write to netCDF
             if netcdf_index == 0:
                 print('--- first ensembles read at %s and TRDI #%d' % (
@@ -406,7 +406,7 @@ def parse_TRDI_ensemble(ensbytes, verbose):
     :return: a dictionary of the data, a string describing any errors
     """
     ens_data = {}
-    ens_error = 'None'
+    ens_error = None
     ens_data['Header'] = parse_TRDI_header(ensbytes)
 
     for i in range(ens_data['Header']['ndatatypes']):
@@ -1974,7 +1974,7 @@ def analyzepd0file(pd0File, verbose=False):
         ens_len = header['nbytesperens']+2
         infile.seek(fileposn)
         ens_data, ens_error = parse_TRDI_ensemble(infile.read(ens_len), verbose)
-        if ens_error != 'None':
+        if ens_error is not None:
             print('problem reading the first ensemble: ' + ens_error)
             # infile.close()
             # sys.exit(1)
