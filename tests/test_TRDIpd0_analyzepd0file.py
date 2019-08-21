@@ -18,7 +18,7 @@ def trdipd0_analyzepd0file():
     # this relative path does not work
     # TODO figure out how to make travis look in the data/demo directory for raw data to conserve space
     # pd0file = here.joinpath("..//data//demo1//9991wh000.000")
-    pd0file = "~//build//mmartini-usgs//ADCPy//data//demo1//9991wh000.000"
+    pd0file = here.joinpath("data//demo1//9991wh000.000")
     # this command will display basics about the raw binary data
     maxens, enslen, ensdata, startofdata = TRDIpd0.analyzepd0file(pd0file)
     return maxens, enslen, ensdata, startofdata
