@@ -14,12 +14,12 @@ import numpy as np
 
 attFile = "glob_att999.txt"
 settings = dict()
-# settings['timetype'] = "CF"
-settings['timetype'] = "EPIC"
+settings['timetype'] = "CF"
+# settings['timetype'] = "EPIC"
 
 if settings['timetype'] == "CF":
-    cdfFile = "py9991whCFtime.cdf"
-    ncFile = "py9991whCFtime.nc"
+    cdfFile = "py9991wh.cdf"
+    ncFile = "py9991wh.nc"
 else:
     cdfFile = "py9991whEPICtime.cdf"
     ncFile = "py9991whEPICtime.nc"

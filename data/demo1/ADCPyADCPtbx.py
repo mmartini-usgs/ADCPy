@@ -16,11 +16,11 @@ import numpy as np
 pd0File = "9991wh000.000"
 serialnum = "473"
 delta_t_to_use = "900"  # seconds, as a string
-# timetype = "CF"  # the time variable will have a CF time format
-timetype = "EPIC"  # there will be time and time2, and cf_time variables
+timetype = "CF"  # the time variable will have a CF time format
+# timetype = "EPIC"  # there will be time and time2, and cf_time variables
 
 if timetype == "CF":
-    cdfFile = "py9991whCFtime.cdf"
+    cdfFile = "py9991wh.cdf"
 else:
     cdfFile = "py9991whEPICtime.cdf"
 
@@ -46,3 +46,4 @@ print("Start file conversion at", dt.datetime.now())
 ensCount, cdfIdx, ensError = pd0.convert_pd0_to_netcdf(pd0File, cdfFile, goodens, serialnum, timetype, delta_t_to_use)
 print("Finished file conversion at", dt.datetime.now())
 print("Ensemble error = {}".format(ensError))
+print("Output file is = {}".format(cdfFile))

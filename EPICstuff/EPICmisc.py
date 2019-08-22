@@ -83,7 +83,15 @@ def cftime2EPICtime(timecount, timeunits):
     
     return time, time2
 
+
 def EPICtime2datetime(time,time2):
+    """
+    convert EPIC time and time2 to python datetime object
+
+    :param numpy array time:
+    :param numpy array time2:
+    :return: gregorian time as a list of int, datetime object
+    """
     # EPICtime2datetime(time,time2)
     # convert EPIC time and time2 to python datetime object
     
