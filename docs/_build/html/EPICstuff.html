@@ -146,6 +146,259 @@ dim=None, edges=None, drop=None)</p>
 </dd></dl>
 
 </div>
+<span class="target" id="module-EPICstuff.ADCPcdf2ncEPIC"></span><p>This code takes a raw netcdf file containing data from any 4 beam Janus
+acoustic doppler profiler, with or without a center beam, and transforms the
+data into Earth coordinates.  Data are output to netCDF using controlled
+vocabulary for the variable names, following the EPIC convention wherever
+possible.</p>
+<p>ADCPcdf2ncEPIC.doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings)</p>
+<p>cdfFile = path to a USGS raw netCDF ADCP data file
+ncFile = a netcdf file structured according to PMEL EPIC conventions
+attFile = a file containing global attributes (metadata) for the data.  See below
+settings = a dictionary of preferences for the processing
+::settings[‘good_ensembles’] = starting and ending indices of the input file. For all data use [0,np.inf]
+::settings[‘orientation’] = ‘UP’ # uplooking ADCP, for downlooking, use DOWN
+::settings[‘transducer_offset_from_bottom’] = 2.02
+::settings[‘transformation’] = ‘EARTH’ # | BEAM | INST
+::settings[‘adjust_to_UTC’] = 5 # for EST to UTC, if no adjustment, set to 0 or omit</p>
+<p>Depth dependent attributes are compute from the mean Pressure found in the raw
+data file.  So it is best to have the time series trimmed to the in water
+time or to provide the good ensemble indices for in water time</p>
+<p>note that file names and paths may not include spaces</p>
+<dl class="simple">
+<dt>Example contents of a Global Attribute file:</dt><dd><p>SciPi; J.Q. Scientist
+PROJECT; USGS Coastal Marine Geology Program
+EXPERIMENT; MVCO 2015 Stress Comparison
+DESCRIPTION; Quadpod 13.9m
+DATA_SUBTYPE; MOORED
+COORD_SYSTEM; GEOGRAPHIC + SAMPLE
+Conventions; PMEL/EPIC
+MOORING; 1057
+WATER_DEPTH; 13.9
+WATER_DEPTH_NOTE; (meters), nominal
+WATER_DEPTH_source; ship fathometer
+latitude; 41.3336633
+longitude; -70.565877
+magnetic_variation; -14.7
+Deployment_date; 17-Nov-2015
+Recovery_date; 14-Dec-2015
+DATA_CMNT;
+platform_type; USGS aluminum T14 quadpod
+DRIFTER; 0
+POS_CONST; 0
+DEPTH_CONST; 0
+Conventions; PMEL/EPIC
+institution; United States Geological Survey, Woods Hole Coastal and Marine Science Center
+institution_url; <a class="reference external" href="http://woodshole.er.usgs.gov">http://woodshole.er.usgs.gov</a></p>
+</dd>
+</dl>
+<p>Created on Tue May 16 13:33:31 2017</p>
+<p>&#64;author: mmartini</p>
+<dl class="function">
+<dt id="EPICstuff.ADCPcdf2ncEPIC.add_VAR_DESC">
+<code class="sig-prename descclassname">EPICstuff.ADCPcdf2ncEPIC.</code><code class="sig-name descname">add_VAR_DESC</code><span class="sig-paren">(</span><em class="sig-param">cdf</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.ADCPcdf2ncEPIC.add_VAR_DESC" title="Permalink to this definition">¶</a></dt>
+<dd><p>add the VAR_DESC global attribute constructed from variable names found in the file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cdf</strong> (<em>object</em>) – netCDF file object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="EPICstuff.ADCPcdf2ncEPIC.beam2inst">
+<code class="sig-prename descclassname">EPICstuff.ADCPcdf2ncEPIC.</code><code class="sig-name descname">beam2inst</code><span class="sig-paren">(</span><em class="sig-param">adcpo</em>, <em class="sig-param">reverse=False</em>, <em class="sig-param">force=False</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.ADCPcdf2ncEPIC.beam2inst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotate velocities from beam to instrument coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adcpo</strong> (<em>dict</em>) – containing the beam velocity data.</p></li>
+<li><p><strong>reverse</strong> (<em>bool</em>) – If True, this function performs the inverse rotation (inst-&gt;beam).</p></li>
+<li><p><strong>force</strong> (<em>bool</em>) – When true do not check which coordinate system the data is in prior to performing this rotation.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="EPICstuff.ADCPcdf2ncEPIC.cal_earth_rotmatrix">
+<code class="sig-prename descclassname">EPICstuff.ADCPcdf2ncEPIC.</code><code class="sig-name descname">cal_earth_rotmatrix</code><span class="sig-paren">(</span><em class="sig-param">heading=0</em>, <em class="sig-param">pitch=0</em>, <em class="sig-param">roll=0</em>, <em class="sig-param">declination=0</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.ADCPcdf2ncEPIC.cal_earth_rotmatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>this transformation matrix is from the R.D. Instruments Coordinate Transformation booklet.
+It presumes the beams are in the same position as RDI Workhorse ADCP beams, where,
+when looking down on the transducers:
+::Beam 3 is in the direction of the compass’ zero reference
+::Beam 1 is to the right
+::Beam 2 is to the left
+::Beam 4 is opposite beam 3
+::Pitch is about the beam 2-1 axis and is positive when beam 3 is raised
+::Roll is about the beam 3-4 axis and is positive when beam 2 is raised
+::Heading increases when beam 3 is rotated towards beam 1
+Nortek Signature differs in these ways:
+::TRDI beam 3 = Nortek beam 1
+::TRDI beam 1 = Nortek beam 2
+::TRDI beam 4 = Nortek beam 3
+::TRDI beam 2 = Nortek beam 4
+::Heading, pitch and roll behave the same as TRDI
+:param float heading: ADCP heading in degrees
+:param float pitch: ADCP pitch in degrees
+:param float roll: ADCP roll in degrees
+:param float declination: heading offset from true, Westerly is negative
+:return:</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="EPICstuff.ADCPcdf2ncEPIC.calc_beam_rotmatrix">
+<code class="sig-prename descclassname">EPICstuff.ADCPcdf2ncEPIC.</code><code class="sig-name descname">calc_beam_rotmatrix</code><span class="sig-paren">(</span><em class="sig-param">theta=20</em>, <em class="sig-param">convex=True</em>, <em class="sig-param">degrees=True</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.ADCPcdf2ncEPIC.calc_beam_rotmatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the rotation matrix from beam coordinates to
+instrument head coordinates.
+per dolfyn rotate.py code here: <a class="reference external" href="https://github.com/lkilcher/dolfyn">https://github.com/lkilcher/dolfyn</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>theta</strong> (<em>float</em>) – is the angle of the heads (usually 20 or 30 degrees)</p></li>
+<li><p><strong>convex</strong> (<em>int</em>) – is a flag for convex or concave head configuration.</p></li>
+<li><p><strong>degrees</strong> (<em>bool</em>) – is a flag which specifies whether theta is in degrees or radians (default: degrees=True)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="EPICstuff.ADCPcdf2ncEPIC.doEPIC_ADCPfile">
+<code class="sig-prename descclassname">EPICstuff.ADCPcdf2ncEPIC.</code><code class="sig-name descname">doEPIC_ADCPfile</code><span class="sig-paren">(</span><em class="sig-param">cdfFile</em>, <em class="sig-param">ncFile</em>, <em class="sig-param">attFile</em>, <em class="sig-param">settings</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.ADCPcdf2ncEPIC.doEPIC_ADCPfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a raw netcdf file containing data from any 4 beam Janus acoustic doppler profiler,
+with or without a center beam, and transforms the data into Earth coordinates.  Data are output to netCDF
+using controlled vocabulary for the variable names, following the EPIC convention wherever possible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cdfFile</strong> (<em>str</em>) – raw netCDF input data file name</p></li>
+<li><p><strong>ncFile</strong> (<em>str</em>) – output file name</p></li>
+<li><p><strong>attFile</strong> (<em>str</em>) – text file containing metadata</p></li>
+<li><p><strong>settings</strong> (<em>dict</em>) – settings[‘good_ensembles’] = starting and ending indices of the input file.
+For all data use [0,np.inf]
+‘orientation’: ‘UP’ # uplooking ADCP, for downlooking, use DOWN
+‘transducer_offset_from_bottom’: 2.02
+‘transformation’: ‘EARTH’ | BEAM | INST
+‘adjust_to_UTC’: 5 for EST to UTC, if no adjustment, set to 0 or omit</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="EPICstuff.ADCPcdf2ncEPIC.floor">
+<code class="sig-prename descclassname">EPICstuff.ADCPcdf2ncEPIC.</code><code class="sig-name descname">floor</code><span class="sig-paren">(</span><em class="sig-param">dec</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.ADCPcdf2ncEPIC.floor" title="Permalink to this definition">¶</a></dt>
+<dd><p>convenience function to round down
+provided to avoid loading the math package
+and because np.floor was causing unexpected behavior w.r.t ints</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dec</strong> (<em>float</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>rounded number</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="EPICstuff.ADCPcdf2ncEPIC.inst2earth">
+<code class="sig-prename descclassname">EPICstuff.ADCPcdf2ncEPIC.</code><code class="sig-name descname">inst2earth</code><span class="sig-paren">(</span><em class="sig-param">adcpo</em>, <em class="sig-param">reverse=False</em>, <em class="sig-param">fixed_orientation=False</em>, <em class="sig-param">force=False</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.ADCPcdf2ncEPIC.inst2earth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotate velocities from the instrument to earth coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adcpo</strong> (<em>dict</em>) – containing the data in instrument coordinates</p></li>
+<li><p><strong>reverse</strong> (<em>bool</em>) – If True, this function performs the inverse rotation (earth-&gt;inst).</p></li>
+<li><p><strong>fixed_orientation</strong> (<em>bool</em>) – When true, take the average orientation and apply it over the whole record.</p></li>
+<li><p><strong>force</strong> (<em>bool</em>) – When true do not check which coordinate system the data is in prior to performing this rotation.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The rotation matrix is taken from the Teledyne RDI ADCP Coordinate Transformation manual January 2008</p>
+<p>When performing the forward rotation, this function sets the ‘inst2earth:fixed’ flag to the value of
+<cite>fixed_orientation. When performing the reverse rotation, that value is ‘popped’ from the props dict and the input
+value to this function`fixed_orientation</cite> has no effect. If <cite>‘inst2earth:fixed’</cite> is not in the props dict then
+the input value <em>is</em> used.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="EPICstuff.ADCPcdf2ncEPIC.read_globalatts">
+<code class="sig-prename descclassname">EPICstuff.ADCPcdf2ncEPIC.</code><code class="sig-name descname">read_globalatts</code><span class="sig-paren">(</span><em class="sig-param">fname</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.ADCPcdf2ncEPIC.read_globalatts" title="Permalink to this definition">¶</a></dt>
+<dd><p># read_globalatts: read in file of metadata for a tripod or mooring
+#
+# reads global attributes for an experiment from a text file (fname)
+# called by all data processing programs to get uniform metadata input
+#  one argument is required- the name of the file to read- it should have
+#  this form:
+# SciPi;C. Sherwood
+# PROJECT; ONR
+# EXPERIMENT; RIPPLES DRI
+# DESCRIPTION; Stress, SSC, and Bedforms at MVCO 12-m fine/coarse transition site
+# DATA_SUBTYPE; MOORED
+# DATA_ORIGIN; USGS WHFS Sed Trans Group
+# COORD_SYSTEM; GEOGRAPHIC
+# Conventions; PMEL/EPIC
+# MOORING; 836
+# WATER_DEPTH; 10.99
+# latitude; 41.336063
+# longitude; -70.559615
+# magnetic_variation; -15
+# Deployment_date; 27-Aug-2007
+# Recovery_date;  ?</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – input file name</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dict of metadata</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="EPICstuff.ADCPcdf2ncEPIC.setupEPICnc">
+<code class="sig-prename descclassname">EPICstuff.ADCPcdf2ncEPIC.</code><code class="sig-name descname">setupEPICnc</code><span class="sig-paren">(</span><em class="sig-param">fname</em>, <em class="sig-param">rawcdf</em>, <em class="sig-param">attfile</em>, <em class="sig-param">settings</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.ADCPcdf2ncEPIC.setupEPICnc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct an empty netCDF output file to EPIC conventions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fname</strong> (<em>str</em>) – output netCDF file name</p></li>
+<li><p><strong>rawcdf</strong> (<em>str</em>) – input netCDF raw data file</p></li>
+<li><p><strong>attfile</strong> (<em>str</em>) – metadata text file</p></li>
+<li><p><strong>settings</strong> (<em>dict</em>) – ‘good_ensembles’: [] starting and ending indices of input file.  For all data use [0,np.inf]
+‘orientation’: ‘UP’ uplooking ADCP, for downlooking, use DOWN
+‘transducer_offset_from_bottom’: float in meters
+‘transformation’: ‘EARTH’  | BEAM | INST
+‘adjust_to_UTC’: time offset in hours = 5 for EST to UTC, if no adjustment, set to 0 or omit</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>netCDF file object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="EPICstuff.ADCPcdf2ncEPIC.writeDict2atts">
+<code class="sig-prename descclassname">EPICstuff.ADCPcdf2ncEPIC.</code><code class="sig-name descname">writeDict2atts</code><span class="sig-paren">(</span><em class="sig-param">cdfobj</em>, <em class="sig-param">d</em>, <em class="sig-param">tag</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.ADCPcdf2ncEPIC.writeDict2atts" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a dictionary to netCDF attributes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cdfobj</strong> (<em>object</em>) – netcdf file object</p></li>
+<li><p><strong>d</strong> (<em>dict</em>) – metadata</p></li>
+<li><p><strong>tag</strong> (<em>str</em>) – tag to add before each atrribute name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dict of metadata as written to file</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 
 
