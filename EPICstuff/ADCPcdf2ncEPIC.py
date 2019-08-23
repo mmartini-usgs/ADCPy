@@ -11,9 +11,6 @@ ADCPcdf2ncEPIC.doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings)
 cdfFile = path to a USGS raw netCDF ADCP data file
 ncFile = a netcdf file structured according to PMEL EPIC conventions
 attFile = a file containing global attributes (metadata) for the data.  See below
-timetype = 'EPIC' for EPIC time and time2 convention, 
-           'CF' for the time variable to be CF convention
-           if CF is specified, EPIC time will be included as EPIC_time and EPIC_time2
 settings = a dictionary of preferences for the processing
     settings['good_ensembles'] = starting and ending indeces of the input file.  
         For all data use [0,np.inf]
@@ -93,8 +90,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         print('No transducer_offset_from_bottom, assuming 0')
     if 'transformation' not in settings.keys():
         settings['transformation'] = "EARTH"
-    if 'timetype' not in settings.keys():
-        settings['timetype'] = "CF"
+    if 'time_type_out' not in settings.keys():
+        settings['time_type_out'] = "CF"
     if 'adjust_to_UTC' not in settings.keys():
         settings['adjust_to_UTC'] = 0
     if 'beam_velocity_multiplier' in settings.keys():
@@ -134,7 +131,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
 
     # many variables do not need processing and can just be copied to the
     # new EPIC convention
-    varlist = {'sv':'SV_80','Rec':'Rec'}
+    varlist = {'sv': 'SV_80', 'Rec': 'Rec'}
     
     for key in varlist:
         varobj = nc.variables[varlist[key]]
@@ -145,18 +142,41 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     if abs(settings['adjust_to_UTC']) > 0:
         nc.time_zone_change_applied = settings['adjust_to_UTC']
         nc.time_zone_change_applied_note = "adjust time to UTC requested by user"    
-    toffset = settings['adjust_to_UTC']*3600    
-    # raw variable name : EPIC variable name
-    # EPIC time (time, time2) is the default time convention
-    if settings['timetype'] == 'CF':
-        varlist = {'time':'time','EPIC_time':'EPIC_time','EPIC_time2':'EPIC_time2','sv':'SV_80','Rec':'Rec'}
+    toffset = settings['adjust_to_UTC']*3600
+
+    # determine what kind of time setup we have in the raw file
+    timevars = ['time', 'time2', 'EPIC_time', 'EPIC_time2', 'cf_time']
+    timevars_in_file = [item for item in timevars if item in rawvars]
+
+    if timevars_in_file == ['time', 'time2']:
+        timetype = "EPIC"
+    elif timevars_in_file ==  ['time', 'time2', 'cf_time']:
+        timetype = "EPIC_with_CF"
+    elif timevars_in_file == ['time', 'EPIC_time', 'EPIC_time2']:
+        timetype = "CF_with_EPIC"
+    elif timevars_in_file == ['time']:
+        timetype = "CF"
     else:
-        varlist = {'cf_time':'cf_time','time':'time','time2':'time2','sv':'SV_80','Rec':'Rec'}
-    
+        timetype = None
+        print("Unrecognized time arrangement, known variables found: {}".format(timevars_in_file))
+
+    print("The raw netCDF file has timetype {}".format(timetype))
+
+    # raw variable name : EPIC variable name
+    if settings['timetype'] == 'EPIC':
+        varlist = {'time': 'time', 'time2': 'time2'}
+    elif settings['timetype'] == 'CF_with_EPIC':
+        varlist = {'time': 'time', 'EPIC_time': 'EPIC_time', 'EPIC_time2': 'EPIC_time2'}
+    if settings['timetype'] == 'EPIC_with_CF':
+        varlist = {'time': 'time', 'time2': 'time2', 'cf_time': 'cf_time'}
+    else:  # only CF time, the default
+        varlist = {'time': 'time'}
+
+    # TODO let user select type of time output, right now it uses what is in the netCDF file
     for key in varlist:
+        print(key)
         varobj = nc.variables[varlist[key]]
-        # TODO: this fails if input file is EPIC and settings['timetype'] is CF, detect file and not rely on user
-        varobj[:] = rawcdf.variables[key][s:e]+toffset 
+        varobj[:] = rawcdf.variables[key][s:e]+toffset
         
     # TRDI instruments have heading, pitch, roll and temperature in hundredths of degrees
     if rawcdf.sensor_type == "TRDI":

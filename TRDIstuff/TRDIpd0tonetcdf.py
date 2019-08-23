@@ -12,8 +12,9 @@ Usage:
     :param str cdfFile: is path of a netcdf4 EPIC compliant output file
     :param tuple[int] good_ens: (start_ensemble, end_ensemble) ensemble range to convert, use -1 for all
     :param str serial_number: instrument serial number
-    :param str time_type: specify "CF" for Climate and Forecast convention time (cfconventions.org) or "EPIC"
+    :param str time_type: specify "CF" for Climate and Forecast convention time (cfconventions.org) or "EPIC",
                           https://www.pmel.noaa.gov/epic/index.html
+                          or for both use "CF_with_EPIC" or "EPIC_with_CF"
     :param str delta_t: time between ensembles or ensemble groups
 
 Reference:
@@ -91,6 +92,7 @@ def convert_pd0_to_netcdf(pd0File, cdfFile, good_ens, serial_number, time_type, 
     # go back to where this ensemble started before we checked the header
     infile.seek(bookmark)
     ens = infile.read(ens_len)
+    ens_error = None
 
     while len(ens) > 0:
         # print('-- ensemble %d length %g, file position %g' % (ensemble_count, len(ens), infile.tell()))
@@ -113,25 +115,7 @@ def convert_pd0_to_netcdf(pd0File, cdfFile, good_ens, serial_number, time_type, 
                 return
 
             # time calculations done when vleader is read
-            if time_type == 'CF':
-                varobj = cdf.variables['time']
-                elapsed = ens_data['VLeader']['dtobj']-t0  # timedelta
-                elapsed_sec = elapsed.total_seconds()
-                # TODO - suspect my EPIC_time woes may be caused here
-                # is elapsed_sec rolling over?
-                if elapsed_sec == 0:
-                    print('elapsed seconds from ensemble {} is {}'.format(ensemble_count, elapsed_sec))
-
-                varobj[netcdf_index] = elapsed_sec
-                t1, t2 = cftime2EPICtime(elapsed_sec, cf_units)
-                varobj = cdf.variables['EPIC_time']
-                # varobj[netcdf_index] = ens_data['VLeader']['EPIC_time']
-                varobj[netcdf_index] = t1
-                varobj = cdf.variables['EPIC_time2']
-                # varobj[netcdf_index] = ens_data['VLeader']['EPIC_time2']
-                varobj[netcdf_index] = t2
-
-            else:
+            if time_type == 'EPIC_with_CF':
                 varobj = cdf.variables['time']
                 varobj[netcdf_index] = ens_data['VLeader']['EPIC_time']
                 varobj = cdf.variables['time2']
@@ -140,9 +124,32 @@ def convert_pd0_to_netcdf(pd0File, cdfFile, good_ens, serial_number, time_type, 
                 elapsed = ens_data['VLeader']['dtobj']-t0  # timedelta
                 elapsed_sec = elapsed.total_seconds()
                 varobj[netcdf_index] = elapsed_sec
+            elif time_type == 'CF_with_EPIC':
+                varobj = cdf.variables['time']
+                elapsed = ens_data['VLeader']['dtobj'] - t0  # timedelta
+                elapsed_sec = elapsed.total_seconds()
+                if elapsed_sec == 0:
+                    print('elapsed seconds from ensemble {} is {}'.format(ensemble_count, elapsed_sec))
+
+                varobj[netcdf_index] = elapsed_sec
+                t1, t2 = cftime2EPICtime(elapsed_sec, cf_units)
+                varobj = cdf.variables['EPIC_time']
+                varobj[netcdf_index] = t1
+                varobj = cdf.variables['EPIC_time2']
+                varobj[netcdf_index] = t2
+            elif time_type == 'EPIC':
+                varobj = cdf.variables['time']
+                varobj[netcdf_index] = ens_data['VLeader']['EPIC_time']
+                varobj = cdf.variables['time2']
+                varobj[netcdf_index] = ens_data['VLeader']['EPIC_time2']
+            else:  # only CF time, the default
+                varobj = cdf.variables['time']
+                elapsed = ens_data['VLeader']['dtobj']-t0  # timedelta
+                elapsed_sec = elapsed.total_seconds()
+                varobj[netcdf_index] = elapsed_sec
 
             # diagnostic
-            if (ens2process[1]-ens2process[0]-1) <100:
+            if (ens2process[1]-ens2process[0]-1) < 100:
                 print('%d %15.8f %s' % (ens_data['VLeader']['Ensemble_Number'],
                                         ens_data['VLeader']['julian_day_from_julian'],
                                         ens_data['VLeader']['timestr']))
@@ -413,7 +420,7 @@ def parse_TRDI_ensemble(ensbytes, verbose):
         # go to each offset and parse depending on what we find
         offset = ens_data['Header']['offsets'][i]
         # raw, val = __parseTRDIushort(ensbytes, offset)
-        val = struct.unpack('<H',ensbytes[offset:offset+2])[0]
+        val = struct.unpack('<H', ensbytes[offset:offset+2])[0]
         if val == 0:  # \x00\x00
             if verbose:
                 print('Fixed Leader found at %g' % offset)
@@ -529,7 +536,7 @@ def setup_netcdf_file(fname, ens_data, gens, serial_number, time_type, delta_t):
     :param dict ens_data: data from the first ensemble to be read
     :param tuple gens: start and end ensemble indices
     :param str serial_number: instrument serial number
-    :param str time_type: indicate if "EPIC" or "CF" timebase should be written for "time"
+    :param str time_type: indicate if "CF", "CF_with_EPIC", "EPIC_with_CF" or "EPIC" timebase for "time"
     :param str delta_t: time between ensembles
     :return: netcdf file object, string describing the time units for CF time
     """
@@ -577,7 +584,19 @@ def setup_netcdf_file(fname, ens_data, gens, serial_number, time_type, delta_t):
     # it's not yet clear which way to go with this.  python tools like xarray 
     # and panoply demand that time be a CF defined time.
     # USGS CMG MATLAB tools need time and time2
-    if time_type == 'EPIC':
+    if time_type == 'EPIC_with_CF':
+        # we include time and time2 for EPIC compliance
+        varobj = cdf.createVariable('time', 'u4', ('time',))
+        varobj.units = "True Julian Day"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"
+        varobj = cdf.createVariable('time2', 'u4', ('time',))
+        varobj.units = "msec since 0:00 GMT"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"
+        cf_units = ""
         # we include cf_time for cf compliance and use by python packages like xarray
         # if f8, 64 bit is not used, time is clipped
         # for ADCP fast sampled, single ping data, need millisecond resolution
@@ -592,19 +611,7 @@ def setup_netcdf_file(fname, ens_data, gens, serial_number, time_type, delta_t):
                                                                  ens_data['VLeader']['Hundredths'] / 100)
         varobj.standard_name = "time"
         varobj.axis = "T"
-        # we include time and time2 for EPIC compliance
-        varobj = cdf.createVariable('time', 'u4', ('time',))
-        varobj.units = "True Julian Day"
-        varobj.epic_code = 624
-        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"
-        varobj = cdf.createVariable('time2', 'u4', ('time',))
-        varobj.units = "msec since 0:00 GMT"
-        varobj.epic_code = 624
-        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
-        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"
-        cf_units = ""
-    else:
+    elif time_type == "CF_with_EPIC":
         # cf_time for cf compliance and use by python packages like xarray
         # if f8, 64 bit is not used, time is clipped
         # for ADCP fast sampled, single ping data, need millisecond resolution
@@ -640,6 +647,39 @@ def setup_netcdf_file(fname, ens_data, gens, serial_number, time_type, delta_t):
         varobj.epic_code = 624
         varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
         varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"
+    elif time_type == "EPIC":
+        varobj = cdf.createVariable('time', 'u4', ('time',))
+        varobj.units = "True Julian Day"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"
+        varobj = cdf.createVariable('time2', 'u4', ('time',))
+        varobj.units = "msec since 0:00 GMT"
+        varobj.epic_code = 624
+        varobj.datum = "Time (UTC) in True Julian Days: 2440000 = 0000 h on May 23, 1968"
+        varobj.NOTE = "Decimal Julian day [days] = time [days] + ( time2 [msec] / 86400000 [msec/day] )"
+        cf_units = ""
+    else:  # only CF time
+        # this is best for use by python packages like xarray
+        # if f8, 64 bit is not used, time is clipped
+        # for ADCP fast sampled, single ping data, need millisecond resolution
+        varobj = cdf.createVariable('time', 'f8', ('time',))
+        # for cf convention, always assume UTC for now, and use the UNIX Epoch as the reference
+        varobj.units = "seconds since %d-%d-%d %d:%d:%f 0:00" % (ens_data['VLeader']['Year'],
+                                                                 ens_data['VLeader']['Month'],
+                                                                 ens_data['VLeader']['Day'],
+                                                                 ens_data['VLeader']['Hour'],
+                                                                 ens_data['VLeader']['Minute'],
+                                                                 ens_data['VLeader']['Second'] +
+                                                                 ens_data['VLeader']['Hundredths'] / 100)
+        cf_units = "seconds since %d-%d-%d %d:%d:%f 0:00" % (ens_data['VLeader']['Year'], ens_data['VLeader']['Month'],
+                                                             ens_data['VLeader']['Day'], ens_data['VLeader']['Hour'],
+                                                             ens_data['VLeader']['Minute'],
+                                                             ens_data['VLeader']['Second']
+                                                             + ens_data['VLeader']['Hundredths'] / 100)
+        varobj.standard_name = "time"
+        varobj.axis = "T"
+        varobj.type = "UNEVEN"
 
     varobj = cdf.createVariable('bindist', 'f4', ('depth',), fill_value=floatfill)
     # note name is one of the netcdf4 reserved attributes, use setncattr
@@ -1525,20 +1565,20 @@ def parse_TRDI_vertical_ping_setup(bstream, offset):
     if leader_id != 28673:  # \x70\x01 stored little endian
         print("expected V Series Ping Setup ID, instead found %g" % leader_id)
         return -1
-    v_ping_setup_data['Ensemble_Interval_ms'] = bstream[offset+4]+(bstream[offset+5] << 8) + \
-                                               (bstream[offset+6] << 16)+(bstream[offset+7] << 24)
+    v_ping_setup_data['Ensemble_Interval_ms'] = bstream[offset+4]+(bstream[offset+5] << 8) + (
+                                                bstream[offset+6] << 16)+(bstream[offset+7] << 24)
     v_ping_setup_data['Number_of_Pings'] = struct.unpack('<H', bstream[offset+10:offset+12])[0]
-    v_ping_setup_data['Time_Between_Pings_ms'] = bstream[offset+10]+(bstream[offset+11] << 8) + \
-                                                (bstream[offset+12] << 16)+(bstream[offset+13] << 24)
-    v_ping_setup_data['Offset_Between_Ping_Groups_ms'] = bstream[offset+14]+(bstream[offset+15] << 8) + \
-                                                        (bstream[offset+16] << 16)+(bstream[offset+17] << 24)
+    v_ping_setup_data['Time_Between_Pings_ms'] = bstream[offset+10]+(bstream[offset+11] << 8) + (
+                                                 bstream[offset+12] << 16)+(bstream[offset+13] << 24)
+    v_ping_setup_data['Offset_Between_Ping_Groups_ms'] = bstream[offset+14]+(bstream[offset+15] << 8) + (
+                                                         bstream[offset+16] << 16)+(bstream[offset+17] << 24)
     v_ping_setup_data['Ping_Sequence_Number'] = struct.unpack('<h', bstream[offset+22:offset+24])[0]
     v_ping_setup_data['Ambiguity_Velocity'] = struct.unpack('<h', bstream[offset+24:offset+26])[0]
     v_ping_setup_data['RX_Gain'] = bstream[offset+26]
     v_ping_setup_data['RX_Beam_Mask'] = bstream[offset+27]
     v_ping_setup_data['TX_Beam_Mask'] = bstream[offset+28]
-    v_ping_setup_data['Ensemble_Offset'] = bstream[offset+30]+(bstream[offset+31] << 8)+(bstream[offset+32] << 16) + \
-                                        (bstream[offset+33] << 24)
+    v_ping_setup_data['Ensemble_Offset'] = bstream[offset+30]+(bstream[offset+31] << 8)+(bstream[offset+32] << 16) + (
+                                           bstream[offset+33] << 24)
     v_ping_setup_data['Ensemble_Count'] = bstream[offset+34]+(bstream[offset+35] << 8)
     v_ping_setup_data['Deployment_Start_Century'] = bstream[offset+36]
     v_ping_setup_data['Deployment_Start_Year'] = bstream[offset+37]
@@ -1567,8 +1607,8 @@ def parse_TRDI_vertical_system_configuration(bstream, offset):
         return -1
     v_sys_config_data['Firmware_Version'] = "%02d:%02d:%02d:%02d" % (bstream[offset+2], bstream[offset+3],
                                                                      bstream[offset+4], bstream[offset+5])
-    v_sys_config_data['System_Frequency'] = bstream[offset+6]+(bstream[offset+7] << 8) + \
-                                            (bstream[offset+8] << 16)+(bstream[offset+9] << 24)
+    v_sys_config_data['System_Frequency'] = bstream[offset+6]+(bstream[offset+7] << 8) + (
+                                            bstream[offset+8] << 16)+(bstream[offset+9] << 24)
     v_sys_config_data['Pressure_Rating'] = struct.unpack('<H', bstream[offset+10:offset+12])[0]
 
     return v_sys_config_data
@@ -1665,7 +1705,7 @@ def parse_TRDI_vertical_intensity(bstream, offset, ncells):
         return -1
 
     # start with a numpy array of bad values
-    data = np.ones((ncells), dtype=int) * -32768
+    data = np.ones((ncells, ), dtype=int) * -32768
     ibyte = 2
     for icell in range(ncells):
         data[icell] = bstream[offset+ibyte]
@@ -1913,17 +1953,17 @@ def julian(year, month, day, hour, mn, sec, hund):
     return j
 
 
-def analyzepd0file(pd0File, verbose=False):
+def analyzepd0file(pd0file, verbose=False):
     """
     determine the input file size, read some ensembles, make an estimate of the number of ensembles within, return the
         data from the first ensemble.
 
-    :param str pd0File: path and file name to raw ADC data file in pd0 format
+    :param str pd0file: path and file name to raw ADC data file in pd0 format
     :param bool verbose: output ensemble information
     :return: number of ensembles in file, number of bytes in each ensemble, data from the first ensemble,
         number of bytes to the start of the data
     """
-    infile = open(pd0File, 'rb')
+    infile = open(pd0file, 'rb')
 
     while infile.tell() < 3000:
         b1 = infile.read(1)
@@ -2015,11 +2055,11 @@ def __main():
 
     if len(sys.argv) < 2:
         print("%s usage:" % sys.argv[0])
-        print("TRDIpd0tonetcdf pd0File cdfFile [good_ens] [serial_number] [time_type] [delta_t]")
+        print("TRDIpd0tonetcdf pd0file cdfFile [good_ens] [serial_number] [time_type] [delta_t]")
         sys.exit(1)
 
     try:
-        pd0File = sys.argv[1]
+        pd0file = sys.argv[1]
     except:
         print('error - pd0 input file name missing')
         sys.exit(1)
@@ -2030,7 +2070,7 @@ def __main():
         print('error - netcdf output file name missing')
         sys.exit(1)
 
-    print('Converting %s to %s' % (pd0File, cdfFile))
+    print('Converting %s to %s' % (pd0file, cdfFile))
 
     try:
         good_ens = [int(sys.argv[3]), int(sys.argv[4])]
@@ -2057,7 +2097,7 @@ def __main():
         delta_t = None
 
     print('Start file conversion at ', dt.datetime.now())
-    convert_pd0_to_netcdf(pd0File, cdfFile, good_ens, serial_number, time_type, delta_t)
+    convert_pd0_to_netcdf(pd0file, cdfFile, good_ens, serial_number, time_type, delta_t)
 
     print('Finished file conversion at ', dt.datetime.now())
 
