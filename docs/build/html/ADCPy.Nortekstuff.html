@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>adcpy.Nortekstuff package &#8212; ADCPy  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="adcpy-nortekstuff-package">
+<h1>adcpy.Nortekstuff package<a class="headerlink" href="#adcpy-nortekstuff-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-adcpy.Nortekstuff.Norteknc2USGScdf">
+<span id="adcpy-nortekstuff-norteknc2usgscdf-module"></span><h2>adcpy.Nortekstuff.Norteknc2USGScdf module<a class="headerlink" href="#module-adcpy.Nortekstuff.Norteknc2USGScdf" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="norteknc2usgscdf">
+<h3>Norteknc2USGScdf<a class="headerlink" href="#norteknc2usgscdf" title="Permalink to this headline">¶</a></h3>
+<p>Converts Nortek exported netcdf files of Signature data to raw current profile data to a netCDF4 file.
+Data are taken from the “Burst” group of “Data”</p>
+<dl>
+<dt>Usage:</dt><dd><p>python Norteknc2USGScdf.py [path] infileBName outfileName</p>
+<dl class="field-list simple">
+<dt class="field-odd">param str path</dt>
+<dd class="field-odd"><p>is a path to prepend to the following</p>
+</dd>
+<dt class="field-even">param str infileBName</dt>
+<dd class="field-even"><p>is path of netCDF4 input Burst file from a Nortek Signature</p>
+</dd>
+<dt class="field-odd">param str infileIName</dt>
+<dd class="field-odd"><p>is path of netCDF4 input IBurst file from a Nortek Signature</p>
+</dd>
+<dt class="field-even">param str outfileName</dt>
+<dd class="field-even"><p>is path of a netcdf4 output file</p>
+</dd>
+<dt class="field-odd">param int start</dt>
+<dd class="field-odd"><p>ensemble at which to start exporting</p>
+</dd>
+<dt class="field-even">param in end</dt>
+<dd class="field-even"><p>ensemble at which to stop exporting</p>
+</dd>
+</dl>
+</dd>
+<dt>Notes:</dt><dd><p>time and time2, the EPIC convention for netCDF, is not used here so that
+the resulting very large files generated can be reduced using existing 
+python too ls such as xarrays</p>
+<p>Files exported by the Contour program have differently named attributes
+and this program may be updated to handle them at a later date.</p>
+</dd>
+</dl>
+<dl class="function">
+<dt id="adcpy.Nortekstuff.Norteknc2USGScdf.dictifyatts">
+<code class="sig-prename descclassname">adcpy.Nortekstuff.Norteknc2USGScdf.</code><code class="sig-name descname">dictifyatts</code><span class="sig-paren">(</span><em class="sig-param">varptr</em>, <em class="sig-param">tag</em><span class="sig-paren">)</span><a class="headerlink" href="#adcpy.Nortekstuff.Norteknc2USGScdf.dictifyatts" title="Permalink to this definition">¶</a></dt>
+<dd><p>read netcdf attributes and return them as a dict</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>varptr</strong> – pointer to a netcdf variable object</p></li>
+<li><p><strong>tag</strong> – string to add to the beginning of the keys in the dict</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the attributes as a dict where the keys are the attribute names and the values are the attribute data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="adcpy.Nortekstuff.Norteknc2USGScdf.doNortekRawFile">
+<code class="sig-prename descclassname">adcpy.Nortekstuff.Norteknc2USGScdf.</code><code class="sig-name descname">doNortekRawFile</code><span class="sig-paren">(</span><em class="sig-param">infileBName</em>, <em class="sig-param">infileIName</em>, <em class="sig-param">outfileName</em>, <em class="sig-param">goodens</em>, <em class="sig-param">timetype='CF'</em><span class="sig-paren">)</span><a class="headerlink" href="#adcpy.Nortekstuff.Norteknc2USGScdf.doNortekRawFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts Nortek exported netcdf files of Signature data to raw current profile data to a netCDF4 file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>infileBName</strong> (<em>str</em>) – netCDF4 input Burst file from a Nortek Signature</p></li>
+<li><p><strong>infileIName</strong> (<em>str</em>) – is path of netCDF4 input IBurst file from a Nortek Signature</p></li>
+<li><p><strong>outfileName</strong> (<em>str</em>) – is path of a netcdf4 output file</p></li>
+<li><p><strong>goodens</strong> (<em>list</em><em>[</em><em>int</em><em>]</em>) – ensemble numbers to export</p></li>
+<li><p><strong>timetype</strong> (<em>str</em>) – “CF” or “EPIC” time format to use for the “time” variable</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="module-adcpy.Nortekstuff">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-adcpy.Nortekstuff" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ADCPy</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Marinna Martini.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/ADCPy.Nortekstuff.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
