@@ -57,10 +57,7 @@ Created on Tue May 16 13:33:31 2017
 import os
 import sys
 import numpy as np 
-#from math import floor
-#import netcdf4 as nc4
 from netCDF4 import Dataset
-#from netcdf4 import num2date
 import netCDF4 as netcdf
 import datetime as dt
 from datetime import datetime

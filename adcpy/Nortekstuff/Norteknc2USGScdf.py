@@ -35,7 +35,9 @@ import sys, math
 from netCDF4 import Dataset
 from netCDF4 import num2date
 import datetime as dt
-from adcpy.TRDIstuff import julian
+# noinspection PyUnresolvedReferences
+# import adcpy
+from adcpy.TRDIstuff.TRDIpd0tonetcdf import julian
 from adcpy.EPICstuff.EPICmisc import cftime2EPICtime
 
 
