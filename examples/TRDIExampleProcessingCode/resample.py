@@ -6,10 +6,9 @@ import sys
 # this is important in order to import my package which is not on the python path
 sys.path.append('c:\projects\python\ADCPy')
 import datetime as dt
-import numpy as np
 import xarray as xr
 import netCDF4 as nc
-from EPICstuff.EPICmisc import resample_cleanup
+from adcpy.EPICstuff.EPICmisc import resample_cleanup
 
 datapath = 'C:\\data\\10811_V20784\\'
 

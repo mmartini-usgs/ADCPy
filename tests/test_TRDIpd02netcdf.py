@@ -9,7 +9,7 @@ here = Path(__file__).parent
 
 @pytest.fixture
 def trdipd0_convert_pd0file():
-    import TRDIstuff.TRDIpd0tonetcdf as TRDIpd0
+    from adcpy import TRDIstuff as TRDIpd0
     import numpy as np
     # this is a test data file, very simple ADCP file
     # of older Workhorse ADCP data with only profiler

@@ -13,7 +13,7 @@ sys.path.append('c:\projects\python\ADCPy')
 import datetime as dt
 import xarray as xr
 import netCDF4 as nc
-from EPICstuff.EPICmisc import resample_cleanup
+from adcpy.EPICstuff.EPICmisc import resample_cleanup
 
 datapath = "E:\\data\\Matanzas\\WellTest2017\\Signature\\python2\\"
 

@@ -11,7 +11,7 @@ here = Path(__file__).parent
 
 @pytest.fixture
 def trdipd0_analyzepd0file():
-    import TRDIstuff.TRDIpd0tonetcdf as TRDIpd0
+    from adcpy import TRDIstuff as TRDIpd0
     # this is a test data file, very simple ADCP file
     # we assume that the travis testing will be run from the root ADCPy directory
     pd0file = here.joinpath("9991wh000.000")

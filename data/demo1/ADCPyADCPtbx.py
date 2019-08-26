@@ -9,7 +9,7 @@
 # # if ADCPy is not on your python path, do this
 # sys.path.append("c:\\projects\\python\\ADCPy")
 
-import TRDIstuff.TRDIpd0tonetcdf as pd0
+from adcpy import TRDIstuff as pd0
 import datetime as dt
 import numpy as np
 
