@@ -14,6 +14,8 @@
     <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="adcpy.TRDIstuff package" href="ADCPy.TRDIstuff.html" />
+    <link rel="prev" title="adcpy.EPICstuff package" href="ADCPy.EPICstuff.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -41,7 +43,7 @@
 <h3>Norteknc2USGScdf<a class="headerlink" href="#norteknc2usgscdf" title="Permalink to this headline">¶</a></h3>
 <p>Converts Nortek exported netcdf files of Signature data to raw current profile data to a netCDF4 file.
 Data are taken from the “Burst” group of “Data”</p>
-<dl>
+<dl class="simple">
 <dt>Usage:</dt><dd><p>python Norteknc2USGScdf.py [path] infileBName outfileName</p>
 <dl class="field-list simple">
 <dt class="field-odd">param str path</dt>
@@ -64,13 +66,13 @@ Data are taken from the “Burst” group of “Data”</p>
 </dd>
 </dl>
 </dd>
-<dt>Notes:</dt><dd><p>time and time2, the EPIC convention for netCDF, is not used here so that
-the resulting very large files generated can be reduced using existing 
+</dl>
+<p class="rubric">Notes</p>
+<p>time and time2, the EPIC convention for netCDF, is not used here so that
+the resulting very large files generated can be reduced using existing
 python too ls such as xarrays</p>
 <p>Files exported by the Contour program have differently named attributes
 and this program may be updated to handle them at a later date.</p>
-</dd>
-</dl>
 <dl class="function">
 <dt id="adcpy.Nortekstuff.Norteknc2USGScdf.dictifyatts">
 <code class="sig-prename descclassname">adcpy.Nortekstuff.Norteknc2USGScdf.</code><code class="sig-name descname">dictifyatts</code><span class="sig-paren">(</span><em class="sig-param">varptr</em>, <em class="sig-param">tag</em><span class="sig-paren">)</span><a class="headerlink" href="#adcpy.Nortekstuff.Norteknc2USGScdf.dictifyatts" title="Permalink to this definition">¶</a></dt>
@@ -129,11 +131,24 @@ and this program may be updated to handle them at a later date.</p>
 
 
 <h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ADCPy.EPICstuff.html">adcpy.EPICstuff package</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">adcpy.Nortekstuff package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-adcpy.Nortekstuff.Norteknc2USGScdf">adcpy.Nortekstuff.Norteknc2USGScdf module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-adcpy.Nortekstuff">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ADCPy.TRDIstuff.html">adcpy.TRDIstuff package</a></li>
+</ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="ADCPy.EPICstuff.html" title="previous chapter">adcpy.EPICstuff package</a></li>
+      <li>Next: <a href="ADCPy.TRDIstuff.html" title="next chapter">adcpy.TRDIstuff package</a></li>
   </ul></li>
 </ul>
 </div>

@@ -31,7 +31,7 @@ author = 'Marinna Martini'
 # ones.
 extensions = ['sphinx.ext.autodoc',
               # 'sphinx.ext.autosummary',
-              # 'sphinx.ext.napoleon',  # to use docstrings as docs
+              'sphinx.ext.napoleon',  # to use docstrings as docs
               # 'numpydoc',  # readthedocs.org build choked on this
               # 'recommonmark'  # per readthedocs.org recommendation
               ]

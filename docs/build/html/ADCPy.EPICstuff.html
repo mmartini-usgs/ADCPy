@@ -14,6 +14,8 @@
     <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="adcpy.Nortekstuff package" href="ADCPy.Nortekstuff.html" />
+    <link rel="prev" title="Welcome to ADCPy’s documentation!" href="index.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -37,52 +39,54 @@
 </div>
 <div class="section" id="module-EPICstuff.ADCPcdf2ncEPIC">
 <span id="adcpy-epicstuff-adcpcdf2ncepic-module"></span><h2>adcpy.EPICstuff.ADCPcdf2ncEPIC module<a class="headerlink" href="#module-EPICstuff.ADCPcdf2ncEPIC" title="Permalink to this headline">¶</a></h2>
-<p>This code takes a raw netcdf file containing data from any 4 beam Janus 
+<p>This code takes a raw netcdf file containing data from any 4 beam Janus
 acoustic doppler profiler, with or without a center beam, and transforms the
 data into Earth coordinates.  Data are output to netCDF using controlled
 vocabulary for the variable names, following the EPIC convention wherever
 possible.</p>
 <p>ADCPcdf2ncEPIC.doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings)</p>
-<p>cdfFile = path to a USGS raw netCDF ADCP data file
-ncFile = a netcdf file structured according to PMEL EPIC conventions
-attFile = a file containing global attributes (metadata) for the data.  See below
-settings = a dictionary of preferences for the processing
-::settings[‘good_ensembles’] = starting and ending indices of the input file. For all data use [0,np.inf]
-::settings[‘orientation’] = ‘UP’ # uplooking ADCP, for downlooking, use DOWN
-::settings[‘transducer_offset_from_bottom’] = 2.02
-::settings[‘transformation’] = ‘EARTH’ # | BEAM | INST
-::settings[‘adjust_to_UTC’] = 5 # for EST to UTC, if no adjustment, set to 0 or omit</p>
+<p>cdfFile = path to a USGS raw netCDF ADCP data file</p>
+<p>ncFile = a netcdf file structured according to PMEL EPIC conventions</p>
+<p>attFile = a file containing global attributes (metadata) for the data.  See below</p>
+<p>settings = a dictionary of preferences for the processing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;good_ensembles&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]</span> <span class="c1"># starting and ending indices of the input file. For all data use [0,np.inf]</span>
+<span class="s1">&#39;orientation&#39;</span><span class="p">:</span> <span class="s1">&#39;UP&#39;</span> <span class="c1"># uplooking ADCP, for downlooking, use DOWN</span>
+<span class="s1">&#39;transducer_offset_from_bottom&#39;</span><span class="p">:</span> <span class="mf">1.0</span> <span class="c1"># a float in meters</span>
+<span class="s1">&#39;transformation&#39;</span><span class="p">:</span> <span class="s1">&#39;EARTH&#39;</span> <span class="c1"># | BEAM | INST</span>
+<span class="s1">&#39;adjust_to_UTC&#39;</span><span class="p">:</span> <span class="mi">5</span> <span class="c1"># for EST to UTC, if no adjustment, set to 0 or omit</span>
+</pre></div>
+</div>
 <p>Depth dependent attributes are compute from the mean Pressure found in the raw
 data file.  So it is best to have the time series trimmed to the in water
 time or to provide the good ensemble indices for in water time</p>
-<p>note that file names and paths may not include spaces</p>
-<dl class="simple">
-<dt>Example contents of a Global Attribute file:</dt><dd><p>SciPi; J.Q. Scientist
-PROJECT; USGS Coastal Marine Geology Program
-EXPERIMENT; MVCO 2015 Stress Comparison
-DESCRIPTION; Quadpod 13.9m
-DATA_SUBTYPE; MOORED
-COORD_SYSTEM; GEOGRAPHIC + SAMPLE
-Conventions; PMEL/EPIC
-MOORING; 1057
-WATER_DEPTH; 13.9
-WATER_DEPTH_NOTE; (meters), nominal
-WATER_DEPTH_source; ship fathometer
-latitude; 41.3336633
-longitude; -70.565877
-magnetic_variation; -14.7
-Deployment_date; 17-Nov-2015
-Recovery_date; 14-Dec-2015
-DATA_CMNT;  
-platform_type; USGS aluminum T14 quadpod
-DRIFTER; 0
-POS_CONST; 0
-DEPTH_CONST; 0
-Conventions; PMEL/EPIC
-institution; United States Geological Survey, Woods Hole Coastal and Marine Science Center
-institution_url; <a class="reference external" href="http://woodshole.er.usgs.gov">http://woodshole.er.usgs.gov</a></p>
-</dd>
-</dl>
+<p>Note that file names and paths may not include spaces</p>
+<p>Example contents of a Global Attribute file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SciPi</span><span class="p">;</span> <span class="n">J</span><span class="o">.</span><span class="n">Q</span><span class="o">.</span> <span class="n">Scientist</span>
+<span class="n">PROJECT</span><span class="p">;</span> <span class="n">USGS</span> <span class="n">Coastal</span> <span class="n">Marine</span> <span class="n">Geology</span> <span class="n">Program</span>
+<span class="n">EXPERIMENT</span><span class="p">;</span> <span class="n">MVCO</span> <span class="mi">2015</span> <span class="n">Stress</span> <span class="n">Comparison</span>
+<span class="n">DESCRIPTION</span><span class="p">;</span> <span class="n">Quadpod</span> <span class="mf">13.9</span><span class="n">m</span>
+<span class="n">DATA_SUBTYPE</span><span class="p">;</span> <span class="n">MOORED</span>
+<span class="n">COORD_SYSTEM</span><span class="p">;</span> <span class="n">GEOGRAPHIC</span> <span class="o">+</span> <span class="n">SAMPLE</span>
+<span class="n">Conventions</span><span class="p">;</span> <span class="n">PMEL</span><span class="o">/</span><span class="n">EPIC</span>
+<span class="n">MOORING</span><span class="p">;</span> <span class="mi">1057</span>
+<span class="n">WATER_DEPTH</span><span class="p">;</span> <span class="mf">13.9</span>
+<span class="n">WATER_DEPTH_NOTE</span><span class="p">;</span> <span class="p">(</span><span class="n">meters</span><span class="p">),</span> <span class="n">nominal</span>
+<span class="n">WATER_DEPTH_source</span><span class="p">;</span> <span class="n">ship</span> <span class="n">fathometer</span>
+<span class="n">latitude</span><span class="p">;</span> <span class="mf">41.3336633</span>
+<span class="n">longitude</span><span class="p">;</span> <span class="o">-</span><span class="mf">70.565877</span>
+<span class="n">magnetic_variation</span><span class="p">;</span> <span class="o">-</span><span class="mf">14.7</span>
+<span class="n">Deployment_date</span><span class="p">;</span> <span class="mi">17</span><span class="o">-</span><span class="n">Nov</span><span class="o">-</span><span class="mi">2015</span>
+<span class="n">Recovery_date</span><span class="p">;</span> <span class="mi">14</span><span class="o">-</span><span class="n">Dec</span><span class="o">-</span><span class="mi">2015</span>
+<span class="n">DATA_CMNT</span><span class="p">;</span>
+<span class="n">platform_type</span><span class="p">;</span> <span class="n">USGS</span> <span class="n">aluminum</span> <span class="n">T14</span> <span class="n">quadpod</span>
+<span class="n">DRIFTER</span><span class="p">;</span> <span class="mi">0</span>
+<span class="n">POS_CONST</span><span class="p">;</span> <span class="mi">0</span>
+<span class="n">DEPTH_CONST</span><span class="p">;</span> <span class="mi">0</span>
+<span class="n">Conventions</span><span class="p">;</span> <span class="n">PMEL</span><span class="o">/</span><span class="n">EPIC</span>
+<span class="n">institution</span><span class="p">;</span> <span class="n">United</span> <span class="n">States</span> <span class="n">Geological</span> <span class="n">Survey</span><span class="p">,</span> <span class="n">Woods</span> <span class="n">Hole</span> <span class="n">Coastal</span> <span class="ow">and</span> <span class="n">Marine</span> <span class="n">Science</span> <span class="n">Center</span>
+<span class="n">institution_url</span><span class="p">;</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">woodshole</span><span class="o">.</span><span class="n">er</span><span class="o">.</span><span class="n">usgs</span><span class="o">.</span><span class="n">gov</span>
+</pre></div>
+</div>
 <p>Created on Tue May 16 13:33:31 2017</p>
 <p>&#64;author: mmartini</p>
 <dl class="function">
@@ -116,25 +120,37 @@ institution_url; <a class="reference external" href="http://woodshole.er.usgs.go
 <code class="sig-prename descclassname">EPICstuff.ADCPcdf2ncEPIC.</code><code class="sig-name descname">cal_earth_rotmatrix</code><span class="sig-paren">(</span><em class="sig-param">heading=0</em>, <em class="sig-param">pitch=0</em>, <em class="sig-param">roll=0</em>, <em class="sig-param">declination=0</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.ADCPcdf2ncEPIC.cal_earth_rotmatrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>this transformation matrix is from the R.D. Instruments Coordinate Transformation booklet.
 It presumes the beams are in the same position as RDI Workhorse ADCP beams, where,
-when looking down on the transducers:
-::Beam 3 is in the direction of the compass’ zero reference
-::Beam 1 is to the right
-::Beam 2 is to the left
-::Beam 4 is opposite beam 3
-::Pitch is about the beam 2-1 axis and is positive when beam 3 is raised
-::Roll is about the beam 3-4 axis and is positive when beam 2 is raised
-::Heading increases when beam 3 is rotated towards beam 1
-Nortek Signature differs in these ways:
-::TRDI beam 3 = Nortek beam 1
-::TRDI beam 1 = Nortek beam 2
-::TRDI beam 4 = Nortek beam 3
-::TRDI beam 2 = Nortek beam 4
-::Heading, pitch and roll behave the same as TRDI
-:param float heading: ADCP heading in degrees
-:param float pitch: ADCP pitch in degrees
-:param float roll: ADCP roll in degrees
-:param float declination: heading offset from true, Westerly is negative
-:return:</p>
+when looking down on the transducers:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Beam</span> <span class="mi">3</span> <span class="ow">is</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">direction</span> <span class="n">of</span> <span class="n">the</span> <span class="n">compass</span><span class="s1">&#39; zero reference</span>
+<span class="n">Beam</span> <span class="mi">1</span> <span class="ow">is</span> <span class="n">to</span> <span class="n">the</span> <span class="n">right</span>
+<span class="n">Beam</span> <span class="mi">2</span> <span class="ow">is</span> <span class="n">to</span> <span class="n">the</span> <span class="n">left</span>
+<span class="n">Beam</span> <span class="mi">4</span> <span class="ow">is</span> <span class="n">opposite</span> <span class="n">beam</span> <span class="mi">3</span>
+<span class="n">Pitch</span> <span class="ow">is</span> <span class="n">about</span> <span class="n">the</span> <span class="n">beam</span> <span class="mi">2</span><span class="o">-</span><span class="mi">1</span> <span class="n">axis</span> <span class="ow">and</span> <span class="ow">is</span> <span class="n">positive</span> <span class="n">when</span> <span class="n">beam</span> <span class="mi">3</span> <span class="ow">is</span> <span class="n">raised</span>
+<span class="n">Roll</span> <span class="ow">is</span> <span class="n">about</span> <span class="n">the</span> <span class="n">beam</span> <span class="mi">3</span><span class="o">-</span><span class="mi">4</span> <span class="n">axis</span> <span class="ow">and</span> <span class="ow">is</span> <span class="n">positive</span> <span class="n">when</span> <span class="n">beam</span> <span class="mi">2</span> <span class="ow">is</span> <span class="n">raised</span>
+<span class="n">Heading</span> <span class="n">increases</span> <span class="n">when</span> <span class="n">beam</span> <span class="mi">3</span> <span class="ow">is</span> <span class="n">rotated</span> <span class="n">towards</span> <span class="n">beam</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>Nortek Signature differs in these ways:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TRDI</span> <span class="n">beam</span> <span class="mi">3</span> <span class="o">=</span> <span class="n">Nortek</span> <span class="n">beam</span> <span class="mi">1</span>
+<span class="n">TRDI</span> <span class="n">beam</span> <span class="mi">1</span> <span class="o">=</span> <span class="n">Nortek</span> <span class="n">beam</span> <span class="mi">2</span>
+<span class="n">TRDI</span> <span class="n">beam</span> <span class="mi">4</span> <span class="o">=</span> <span class="n">Nortek</span> <span class="n">beam</span> <span class="mi">3</span>
+<span class="n">TRDI</span> <span class="n">beam</span> <span class="mi">2</span> <span class="o">=</span> <span class="n">Nortek</span> <span class="n">beam</span> <span class="mi">4</span>
+<span class="n">Heading</span><span class="p">,</span> <span class="n">pitch</span> <span class="ow">and</span> <span class="n">roll</span> <span class="n">behave</span> <span class="n">the</span> <span class="n">same</span> <span class="k">as</span> <span class="n">TRDI</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>heading</strong> (<em>float</em>) – ADCP heading in degrees</p></li>
+<li><p><strong>pitch</strong> (<em>float</em>) – ADCP pitch in degrees</p></li>
+<li><p><strong>roll</strong> (<em>float</em>) – ADCP roll in degrees</p></li>
+<li><p><strong>declination</strong> (<em>float</em>) – heading offset from true, Westerly is negative</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -166,12 +182,15 @@ using controlled vocabulary for the variable names, following the EPIC conventio
 <li><p><strong>cdfFile</strong> (<em>str</em>) – raw netCDF input data file name</p></li>
 <li><p><strong>ncFile</strong> (<em>str</em>) – output file name</p></li>
 <li><p><strong>attFile</strong> (<em>str</em>) – text file containing metadata</p></li>
-<li><p><strong>settings</strong> (<em>dict</em>) – settings[‘good_ensembles’] = starting and ending indices of the input file.
-For all data use [0,np.inf]
-‘orientation’: ‘UP’ # uplooking ADCP, for downlooking, use DOWN
-‘transducer_offset_from_bottom’: 2.02
-‘transformation’: ‘EARTH’ | BEAM | INST
-‘adjust_to_UTC’: 5 for EST to UTC, if no adjustment, set to 0 or omit</p></li>
+<li><p><strong>settings</strong> (<em>dict</em>) – <p>a dict of settings as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;good_ensembles&#39;</span><span class="p">:</span> <span class="p">[]</span> <span class="c1"># starting and ending indices of the input file. For all data use [0,np.inf]</span>
+<span class="s1">&#39;orientation&#39;</span><span class="p">:</span> <span class="s1">&#39;UP&#39;</span> <span class="c1"># uplooking ADCP, for downlooking, use DOWN</span>
+<span class="s1">&#39;transducer_offset_from_bottom&#39;</span><span class="p">:</span> <span class="mf">2.02</span> <span class="c1"># in meters</span>
+<span class="s1">&#39;transformation&#39;</span><span class="p">:</span> <span class="s1">&#39;EARTH&#39;</span> <span class="c1"># | BEAM | INST</span>
+<span class="s1">&#39;adjust_to_UTC&#39;</span><span class="p">:</span> <span class="mi">5</span> <span class="c1"># for EST to UTC, if no adjustment, set to 0 or omit</span>
+</pre></div>
+</div>
+</p></li>
 </ul>
 </dd>
 </dl>
@@ -207,6 +226,7 @@ and because np.floor was causing unexpected behavior w.r.t ints</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
 <p>The rotation matrix is taken from the Teledyne RDI ADCP Coordinate Transformation manual January 2008</p>
 <p>When performing the forward rotation, this function sets the ‘inst2earth:fixed’ flag to the value of
 <cite>fixed_orientation. When performing the reverse rotation, that value is ‘popped’ from the props dict and the input
@@ -217,27 +237,35 @@ the input value <em>is</em> used.</p>
 <dl class="function">
 <dt id="EPICstuff.ADCPcdf2ncEPIC.read_globalatts">
 <code class="sig-prename descclassname">EPICstuff.ADCPcdf2ncEPIC.</code><code class="sig-name descname">read_globalatts</code><span class="sig-paren">(</span><em class="sig-param">fname</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.ADCPcdf2ncEPIC.read_globalatts" title="Permalink to this definition">¶</a></dt>
-<dd><p># read_globalatts: read in file of metadata for a tripod or mooring
-#
-# reads global attributes for an experiment from a text file (fname)
-# called by all data processing programs to get uniform metadata input
-#  one argument is required- the name of the file to read- it should have
-#  this form:
-# SciPi;C. Sherwood
-# PROJECT; ONR
-# EXPERIMENT; RIPPLES DRI
-# DESCRIPTION; Stress, SSC, and Bedforms at MVCO 12-m fine/coarse transition site
-# DATA_SUBTYPE; MOORED
-# DATA_ORIGIN; USGS WHFS Sed Trans Group
-# COORD_SYSTEM; GEOGRAPHIC
-# Conventions; PMEL/EPIC
-# MOORING; 836
-# WATER_DEPTH; 10.99
-# latitude; 41.336063
-# longitude; -70.559615
-# magnetic_variation; -15
-# Deployment_date; 27-Aug-2007
-# Recovery_date;  ?</p>
+<dd><p>read_globalatts: read in file of metadata for a tripod or mooring</p>
+<p>reads global attributes for an experiment from a text file (fname) called by all data processing programs
+to get uniform metadata input one argument is required- the name of the file to read- it should have this form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SciPi</span><span class="p">;</span> <span class="n">J</span><span class="o">.</span><span class="n">Q</span><span class="o">.</span> <span class="n">Scientist</span>
+<span class="n">PROJECT</span><span class="p">;</span> <span class="n">USGS</span> <span class="n">Coastal</span> <span class="n">Marine</span> <span class="n">Geology</span> <span class="n">Program</span>
+<span class="n">EXPERIMENT</span><span class="p">;</span> <span class="n">MVCO</span> <span class="mi">2015</span> <span class="n">Stress</span> <span class="n">Comparison</span>
+<span class="n">DESCRIPTION</span><span class="p">;</span> <span class="n">Quadpod</span> <span class="mf">13.9</span><span class="n">m</span>
+<span class="n">DATA_SUBTYPE</span><span class="p">;</span> <span class="n">MOORED</span>
+<span class="n">COORD_SYSTEM</span><span class="p">;</span> <span class="n">GEOGRAPHIC</span> <span class="o">+</span> <span class="n">SAMPLE</span>
+<span class="n">Conventions</span><span class="p">;</span> <span class="n">PMEL</span><span class="o">/</span><span class="n">EPIC</span>
+<span class="n">MOORING</span><span class="p">;</span> <span class="mi">1057</span>
+<span class="n">WATER_DEPTH</span><span class="p">;</span> <span class="mf">13.9</span>
+<span class="n">WATER_DEPTH_NOTE</span><span class="p">;</span> <span class="p">(</span><span class="n">meters</span><span class="p">),</span> <span class="n">nominal</span>
+<span class="n">WATER_DEPTH_source</span><span class="p">;</span> <span class="n">ship</span> <span class="n">fathometer</span>
+<span class="n">latitude</span><span class="p">;</span> <span class="mf">41.3336633</span>
+<span class="n">longitude</span><span class="p">;</span> <span class="o">-</span><span class="mf">70.565877</span>
+<span class="n">magnetic_variation</span><span class="p">;</span> <span class="o">-</span><span class="mf">14.7</span>
+<span class="n">Deployment_date</span><span class="p">;</span> <span class="mi">17</span><span class="o">-</span><span class="n">Nov</span><span class="o">-</span><span class="mi">2015</span>
+<span class="n">Recovery_date</span><span class="p">;</span> <span class="mi">14</span><span class="o">-</span><span class="n">Dec</span><span class="o">-</span><span class="mi">2015</span>
+<span class="n">DATA_CMNT</span><span class="p">;</span>
+<span class="n">platform_type</span><span class="p">;</span> <span class="n">USGS</span> <span class="n">aluminum</span> <span class="n">T14</span> <span class="n">quadpod</span>
+<span class="n">DRIFTER</span><span class="p">;</span> <span class="mi">0</span>
+<span class="n">POS_CONST</span><span class="p">;</span> <span class="mi">0</span>
+<span class="n">DEPTH_CONST</span><span class="p">;</span> <span class="mi">0</span>
+<span class="n">Conventions</span><span class="p">;</span> <span class="n">PMEL</span><span class="o">/</span><span class="n">EPIC</span>
+<span class="n">institution</span><span class="p">;</span> <span class="n">United</span> <span class="n">States</span> <span class="n">Geological</span> <span class="n">Survey</span><span class="p">,</span> <span class="n">Woods</span> <span class="n">Hole</span> <span class="n">Coastal</span> <span class="ow">and</span> <span class="n">Marine</span> <span class="n">Science</span> <span class="n">Center</span>
+<span class="n">institution_url</span><span class="p">;</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">woodshole</span><span class="o">.</span><span class="n">er</span><span class="o">.</span><span class="n">usgs</span><span class="o">.</span><span class="n">gov</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – input file name</p>
@@ -258,11 +286,15 @@ the input value <em>is</em> used.</p>
 <li><p><strong>fname</strong> (<em>str</em>) – output netCDF file name</p></li>
 <li><p><strong>rawcdf</strong> (<em>str</em>) – input netCDF raw data file</p></li>
 <li><p><strong>attfile</strong> (<em>str</em>) – metadata text file</p></li>
-<li><p><strong>settings</strong> (<em>dict</em>) – ‘good_ensembles’: [] starting and ending indices of input file.  For all data use [0,np.inf]
-‘orientation’: ‘UP’ uplooking ADCP, for downlooking, use DOWN
-‘transducer_offset_from_bottom’: float in meters
-‘transformation’: ‘EARTH’  | BEAM | INST
-‘adjust_to_UTC’: time offset in hours = 5 for EST to UTC, if no adjustment, set to 0 or omit</p></li>
+<li><p><strong>settings</strong> (<em>dict</em>) – <p>settings as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;good_ensembles&#39;</span><span class="p">:</span> <span class="p">[]</span> <span class="c1"># starting and ending indices of the input file. For all data use [0,np.inf]</span>
+<span class="s1">&#39;orientation&#39;</span><span class="p">:</span> <span class="s1">&#39;UP&#39;</span> <span class="c1"># uplooking ADCP, for downlooking, use DOWN</span>
+<span class="s1">&#39;transducer_offset_from_bottom&#39;</span><span class="p">:</span> <span class="mf">2.02</span> <span class="c1"># in meters</span>
+<span class="s1">&#39;transformation&#39;</span><span class="p">:</span> <span class="s1">&#39;EARTH&#39;</span> <span class="c1"># | BEAM | INST</span>
+<span class="s1">&#39;adjust_to_UTC&#39;</span><span class="p">:</span> <span class="mi">5</span> <span class="c1"># for EST to UTC, if no adjustment, set to 0 or omit</span>
+</pre></div>
+</div>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -357,31 +389,31 @@ function will simply stick the data together in the order it is found</p></li>
 </div>
 <div class="section" id="module-EPICstuff.repopulateEPIC">
 <span id="adcpy-epicstuff-repopulateepic-module"></span><h2>adcpy.EPICstuff.repopulateEPIC module<a class="headerlink" href="#module-EPICstuff.repopulateEPIC" title="Permalink to this headline">¶</a></h2>
-<dl class="simple">
-<dt>function repopulateEPIC(burstFile, newFile, sample_rate, [start=’left’],</dt><dd><p>[drop = None])</p>
-</dd>
-</dl>
-<p>a burst shaped file output from reshapeEPIC will have two issues that need 
+<p>function repopulateEPIC(burstFile, newFile, sample_rate, [start=’left’], [drop = None])</p>
+<p>a burst shaped file output from reshapeEPIC will have two issues that need
 to be addressed before the data can be used with xarray:</p>
-<blockquote>
-<div><p>– reshape time to be one dimension
-– make sure the samples within each burst are index according to their 
-time stamps.  Within burst time stamps will not be preserved</p>
-</div></blockquote>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">--</span> <span class="n">reshape</span> <span class="n">time</span> <span class="n">to</span> <span class="n">be</span> <span class="n">one</span> <span class="n">dimension</span>
+<span class="o">--</span> <span class="n">make</span> <span class="n">sure</span> <span class="n">the</span> <span class="n">samples</span> <span class="n">within</span> <span class="n">each</span> <span class="n">burst</span> <span class="n">are</span> <span class="n">index</span> <span class="n">according</span> <span class="n">to</span> <span class="n">their</span>
+<span class="n">time</span> <span class="n">stamps</span><span class="o">.</span>  <span class="n">Within</span> <span class="n">burst</span> <span class="n">time</span> <span class="n">stamps</span> <span class="n">will</span> <span class="ow">not</span> <span class="n">be</span> <span class="n">preserved</span>
+</pre></div>
+</div>
+<p>burstFile = output from reshapeEPIC, the expected shape of the data is one of:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">time</span><span class="p">,</span> <span class="n">sample</span><span class="p">]</span>
+<span class="p">[</span><span class="n">time</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">depth</span><span class="p">]</span>
+<span class="p">[</span><span class="n">time</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>newFile = a new file with the adjusted time, this file, if it exists, will be overwritten</p>
 <dl class="simple">
-<dt>burstFile = output from reshapeEPIC, the expected shape of the data is one of</dt><dd><p>[time, sample]
-[time, sample, depth]
-[time, sample, depth, lat, lon]</p>
-</dd>
-<dt>newFile = a new file with the adjusted time, this file, if it exists, will be</dt><dd><p>overwritten</p>
-</dd>
-<dt>sample_rate = the sample rate the instrument was intended to use during </dt><dd><p>each burst, in seconds (NOT the inter-burst interval)</p>
-</dd>
-<dt>start = what the time stamp should be for each burst:</dt><dd><p>left = beginning of the burst based on the first sample time
-center = middle of the burst based on first sample and last sample times
-right = end of the burst based on the alst ssample time</p>
+<dt>sample_rate = the sample rate the instrument was intended to use during each burst, in seconds</dt><dd><p>(NOT the inter-burst interval)</p>
 </dd>
 </dl>
+<p>start = what the time stamp should be for each burst:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">left</span> <span class="o">=</span> <span class="n">beginning</span> <span class="n">of</span> <span class="n">the</span> <span class="n">burst</span> <span class="n">based</span> <span class="n">on</span> <span class="n">the</span> <span class="n">first</span> <span class="n">sample</span> <span class="n">time</span>
+<span class="n">center</span> <span class="o">=</span> <span class="n">middle</span> <span class="n">of</span> <span class="n">the</span> <span class="n">burst</span> <span class="n">based</span> <span class="n">on</span> <span class="n">first</span> <span class="n">sample</span> <span class="ow">and</span> <span class="n">last</span> <span class="n">sample</span> <span class="n">times</span>
+<span class="n">right</span> <span class="o">=</span> <span class="n">end</span> <span class="n">of</span> <span class="n">the</span> <span class="n">burst</span> <span class="n">based</span> <span class="n">on</span> <span class="n">the</span> <span class="n">last</span> <span class="n">sample</span> <span class="n">time</span>
+</pre></div>
+</div>
 <p>drop = set of variable names to omit from the output file</p>
 <p>Created on Wed Oct  3 15:21:53 2018</p>
 <p>&#64;author: mmartini</p>
@@ -396,8 +428,8 @@ right = end of the burst based on the alst ssample time</p>
 <div class="section" id="reshapeepic">
 <h3>reshapeEPIC<a class="headerlink" href="#reshapeepic" title="Permalink to this headline">¶</a></h3>
 <p>apportion a continuous time series file into bursts (e.g. reshape)</p>
-<dl>
-<dt>Notes:</dt><dd><ul class="simple">
+<p class="rubric">Notes</p>
+<ul class="simple">
 <li><p>the expected dimensions are [time, depth, lat, lon] for continuous data in EPIC</p></li>
 <li><p>we are reshaping to [time, sample, depth, lat, lon]</p></li>
 <li><p>for ADCP files, beams are expressed as variables vel1, vel2, … veln</p></li>
@@ -414,8 +446,6 @@ originally coded for MATLAB as reshapeEPIC
 <p>Created on Thu Sep 20 14:52:42 2018</p>
 <p>&#64;author: mmartini
 <a class="reference external" href="https://github.com/mmartini-usgs">https://github.com/mmartini-usgs</a></p>
-</dd>
-</dl>
 <dl class="function">
 <dt id="EPICstuff.reshapeEPIC.find_boundaries">
 <code class="sig-prename descclassname">EPICstuff.reshapeEPIC.</code><code class="sig-name descname">find_boundaries</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">edges</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.reshapeEPIC.find_boundaries" title="Permalink to this definition">¶</a></dt>
@@ -530,11 +560,27 @@ dim=None, edges=None, drop=None)</p>
 
 
 <h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">adcpy.EPICstuff package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-EPICstuff.ADCPcdf2ncEPIC">adcpy.EPICstuff.ADCPcdf2ncEPIC module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-EPICstuff.EPICmisc">adcpy.EPICstuff.EPICmisc module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-EPICstuff.repopulateEPIC">adcpy.EPICstuff.repopulateEPIC module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-EPICstuff.reshapeEPIC">adcpy.EPICstuff.reshapeEPIC module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-EPICstuff">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ADCPy.Nortekstuff.html">adcpy.Nortekstuff package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ADCPy.TRDIstuff.html">adcpy.TRDIstuff package</a></li>
+</ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to ADCPy’s documentation!</a></li>
+      <li>Next: <a href="ADCPy.Nortekstuff.html" title="next chapter">adcpy.Nortekstuff package</a></li>
   </ul></li>
 </ul>
 </div>

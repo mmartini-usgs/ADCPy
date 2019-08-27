@@ -8,22 +8,27 @@ possible.
 ADCPcdf2ncEPIC.doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings)
 
 cdfFile = path to a USGS raw netCDF ADCP data file
+
 ncFile = a netcdf file structured according to PMEL EPIC conventions
+
 attFile = a file containing global attributes (metadata) for the data.  See below
-settings = a dictionary of preferences for the processing
-::settings['good_ensembles'] = starting and ending indices of the input file. For all data use [0,np.inf]
-::settings['orientation'] = 'UP' # uplooking ADCP, for downlooking, use DOWN
-::settings['transducer_offset_from_bottom'] = 2.02
-::settings['transformation'] = 'EARTH' # | BEAM | INST
-::settings['adjust_to_UTC'] = 5 # for EST to UTC, if no adjustment, set to 0 or omit
+
+settings = a dictionary of preferences for the processing::
+
+    'good_ensembles': [0, np.inf] # starting and ending indices of the input file. For all data use [0,np.inf]
+    'orientation': 'UP' # uplooking ADCP, for downlooking, use DOWN
+    'transducer_offset_from_bottom': 1.0 # a float in meters
+    'transformation': 'EARTH' # | BEAM | INST
+    'adjust_to_UTC': 5 # for EST to UTC, if no adjustment, set to 0 or omit
     
 Depth dependent attributes are compute from the mean Pressure found in the raw
 data file.  So it is best to have the time series trimmed to the in water
 time or to provide the good ensemble indices for in water time
 
-note that file names and paths may not include spaces
+Note that file names and paths may not include spaces
 
-Example contents of a Global Attribute file:
+Example contents of a Global Attribute file::
+
     SciPi; J.Q. Scientist
     PROJECT; USGS Coastal Marine Geology Program
     EXPERIMENT; MVCO 2015 Stress Comparison
@@ -73,12 +78,13 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     :param str cdfFile:  raw netCDF input data file name
     :param str ncFile:   output file name
     :param str attFile:  text file containing metadata
-    :param dict settings: settings['good_ensembles'] = starting and ending indices of the input file.
-        For all data use [0,np.inf]
+    :param dict settings: a dict of settings as follows::
+
+        'good_ensembles': [] # starting and ending indices of the input file. For all data use [0,np.inf]
         'orientation': 'UP' # uplooking ADCP, for downlooking, use DOWN
-        'transducer_offset_from_bottom': 2.02
-        'transformation': 'EARTH' | BEAM | INST
-        'adjust_to_UTC': 5 for EST to UTC, if no adjustment, set to 0 or omit
+        'transducer_offset_from_bottom': 2.02 # in meters
+        'transformation': 'EARTH' # | BEAM | INST
+        'adjust_to_UTC': 5 # for EST to UTC, if no adjustment, set to 0 or omit
 
     """
     # check some of the settings we can't live without
@@ -459,20 +465,24 @@ def cal_earth_rotmatrix(heading=0, pitch=0, roll=0, declination=0):
     """
     this transformation matrix is from the R.D. Instruments Coordinate Transformation booklet.
     It presumes the beams are in the same position as RDI Workhorse ADCP beams, where,
-    when looking down on the transducers:
-    ::Beam 3 is in the direction of the compass' zero reference
-    ::Beam 1 is to the right
-    ::Beam 2 is to the left
-    ::Beam 4 is opposite beam 3
-    ::Pitch is about the beam 2-1 axis and is positive when beam 3 is raised
-    ::Roll is about the beam 3-4 axis and is positive when beam 2 is raised
-    ::Heading increases when beam 3 is rotated towards beam 1
-    Nortek Signature differs in these ways:
-    ::TRDI beam 3 = Nortek beam 1
-    ::TRDI beam 1 = Nortek beam 2
-    ::TRDI beam 4 = Nortek beam 3
-    ::TRDI beam 2 = Nortek beam 4
-    ::Heading, pitch and roll behave the same as TRDI
+    when looking down on the transducers::
+
+        Beam 3 is in the direction of the compass' zero reference
+        Beam 1 is to the right
+        Beam 2 is to the left
+        Beam 4 is opposite beam 3
+        Pitch is about the beam 2-1 axis and is positive when beam 3 is raised
+        Roll is about the beam 3-4 axis and is positive when beam 2 is raised
+        Heading increases when beam 3 is rotated towards beam 1
+
+    Nortek Signature differs in these ways::
+
+        TRDI beam 3 = Nortek beam 1
+        TRDI beam 1 = Nortek beam 2
+        TRDI beam 4 = Nortek beam 3
+        TRDI beam 2 = Nortek beam 4
+        Heading, pitch and roll behave the same as TRDI
+
     :param float heading: ADCP heading in degrees
     :param float pitch: ADCP pitch in degrees
     :param float roll: ADCP roll in degrees
@@ -652,11 +662,14 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     :param str fname: output netCDF file name
     :param str rawcdf: input netCDF raw data file
     :param str attfile: metadata text file
-    :param dict settings: 'good_ensembles': [] starting and ending indices of input file.  For all data use [0,np.inf]
-                          'orientation': 'UP' uplooking ADCP, for downlooking, use DOWN
-                          'transducer_offset_from_bottom': float in meters
-                          'transformation': 'EARTH'  | BEAM | INST
-                          'adjust_to_UTC': time offset in hours = 5 for EST to UTC, if no adjustment, set to 0 or omit
+    :param dict settings: settings as follows::
+
+        'good_ensembles': [] # starting and ending indices of the input file. For all data use [0,np.inf]
+        'orientation': 'UP' # uplooking ADCP, for downlooking, use DOWN
+        'transducer_offset_from_bottom': 2.02 # in meters
+        'transformation': 'EARTH' # | BEAM | INST
+        'adjust_to_UTC': 5 # for EST to UTC, if no adjustment, set to 0 or omit
+
     :return: netCDF file object
     """
     # note that 
@@ -1020,27 +1033,35 @@ def add_VAR_DESC(cdf):
     
 def read_globalatts(fname):
     """
-    # read_globalatts: read in file of metadata for a tripod or mooring
-    #
-    # reads global attributes for an experiment from a text file (fname)
-    # called by all data processing programs to get uniform metadata input
-    #  one argument is required- the name of the file to read- it should have
-    #  this form:
-    # SciPi;C. Sherwood
-    # PROJECT; ONR
-    # EXPERIMENT; RIPPLES DRI
-    # DESCRIPTION; Stress, SSC, and Bedforms at MVCO 12-m fine/coarse transition site
-    # DATA_SUBTYPE; MOORED
-    # DATA_ORIGIN; USGS WHFS Sed Trans Group
-    # COORD_SYSTEM; GEOGRAPHIC
-    # Conventions; PMEL/EPIC
-    # MOORING; 836
-    # WATER_DEPTH; 10.99
-    # latitude; 41.336063
-    # longitude; -70.559615
-    # magnetic_variation; -15
-    # Deployment_date; 27-Aug-2007
-    # Recovery_date;  ?
+    read_globalatts: read in file of metadata for a tripod or mooring
+
+    reads global attributes for an experiment from a text file (fname) called by all data processing programs
+    to get uniform metadata input one argument is required- the name of the file to read- it should have this form::
+
+        SciPi; J.Q. Scientist
+        PROJECT; USGS Coastal Marine Geology Program
+        EXPERIMENT; MVCO 2015 Stress Comparison
+        DESCRIPTION; Quadpod 13.9m
+        DATA_SUBTYPE; MOORED
+        COORD_SYSTEM; GEOGRAPHIC + SAMPLE
+        Conventions; PMEL/EPIC
+        MOORING; 1057
+        WATER_DEPTH; 13.9
+        WATER_DEPTH_NOTE; (meters), nominal
+        WATER_DEPTH_source; ship fathometer
+        latitude; 41.3336633
+        longitude; -70.565877
+        magnetic_variation; -14.7
+        Deployment_date; 17-Nov-2015
+        Recovery_date; 14-Dec-2015
+        DATA_CMNT;
+        platform_type; USGS aluminum T14 quadpod
+        DRIFTER; 0
+        POS_CONST; 0
+        DEPTH_CONST; 0
+        Conventions; PMEL/EPIC
+        institution; United States Geological Survey, Woods Hole Coastal and Marine Science Center
+        institution_url; http://woodshole.er.usgs.gov
 
     :param str fname: input file name
     :return: dict of metadata

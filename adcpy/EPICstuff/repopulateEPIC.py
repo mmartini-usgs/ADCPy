@@ -1,26 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-function repopulateEPIC(burstFile, newFile, sample_rate, [start='left'],
-                        [drop = None])
+function repopulateEPIC(burstFile, newFile, sample_rate, [start='left'], [drop = None])
 
 a burst shaped file output from reshapeEPIC will have two issues that need 
-to be addressed before the data can be used with xarray:
+to be addressed before the data can be used with xarray::
+
     -- reshape time to be one dimension
     -- make sure the samples within each burst are index according to their 
     time stamps.  Within burst time stamps will not be preserved
     
-burstFile = output from reshapeEPIC, the expected shape of the data is one of
+burstFile = output from reshapeEPIC, the expected shape of the data is one of::
+
     [time, sample]
     [time, sample, depth]
     [time, sample, depth, lat, lon]
-newFile = a new file with the adjusted time, this file, if it exists, will be
-    overwritten
-sample_rate = the sample rate the instrument was intended to use during 
-    each burst, in seconds (NOT the inter-burst interval)
-start = what the time stamp should be for each burst:
+
+newFile = a new file with the adjusted time, this file, if it exists, will be overwritten
+
+sample_rate = the sample rate the instrument was intended to use during each burst, in seconds
+    (NOT the inter-burst interval)
+
+start = what the time stamp should be for each burst::
+
     left = beginning of the burst based on the first sample time
     center = middle of the burst based on first sample and last sample times
-    right = end of the burst based on the alst ssample time
+    right = end of the burst based on the last sample time
+
 drop = set of variable names to omit from the output file    
 
 Created on Wed Oct  3 15:21:53 2018
