@@ -40,7 +40,8 @@ import math
 
 
 # noinspection PyUnboundLocalVariable
-def reshapeEPIC(*args, **kwargs):
+def reshapeEPIC(cont_file, burst_file, burst_length, dim='time', edges=None, drop=None,
+                variable_atttributes_to_omit=None, verbose=False):
     """
     apportion a continuous time series file into bursts (e.g. reshape)
 
@@ -53,46 +54,13 @@ def reshapeEPIC(*args, **kwargs):
     :param str dim: name of dimension along which we will split the data, usually 'time' or 'Rec'
     :param list[tuple] edges: [(start0, end0), (start1, end1), ...] of edges defining the edges of each burst
     :param str drop: set of variable names to omit from the output file
+    :param dict variable_atttributes_to_omit: variable attributes to omit from output file
+    :param bool verbose: get lots of feedback to STDOUT
 
     :return: dictionary of problem types and status
     """
 
-    # TODO - global not a great idea, let's get rid of this
-    global nbursts
     print('%s running on python %s' % (sys.argv[0], sys.version))
-    print('Start file conversion at ', dt.datetime.now())
-    
-#    for s in args:
-#        print(s)
-#    for k in kwargs.keys():
-#        print('{} = {}\n'.format(k,kwargs[k]))
-        
-    cont_file = args[0]
-    burst_file = args[1]
-    burst_length = args[2]        
-    if 'dim' in kwargs.keys():  
-        dim = kwargs['dim']    
-    else:
-        dim = 'time'
-    if 'edges' in kwargs.keys():  
-        edges = kwargs['edges']   
-    else:
-        # make edges based on burst_length later, 
-        # when we know the total number of samples in the file
-        edges = None
-    if 'drop' in kwargs.keys():  
-        drop = kwargs['drop']  
-    else:
-        drop = None
-    if 'verbose' in kwargs.keys():  
-        verbose = kwargs['verbose']  
-    else:
-        verbose = False
-    if 'atts2drop' in kwargs.keys():
-        atts2drop = kwargs['atts2drop']
-    else:
-        atts2drop = {}
-    
     print('Start file conversion at ', dt.datetime.now())
 
     # check for the output file's existence before we try to delete it.
@@ -102,36 +70,36 @@ def reshapeEPIC(*args, **kwargs):
     except FileNotFoundError:
         pass
 
-    contcdf = nc.Dataset(cont_file, format="NETCDF4")
-    if dim in contcdf.dimensions:
+    continuous_cdf = nc.Dataset(cont_file, format="NETCDF4")
+    if dim in continuous_cdf.dimensions:
         print('the dimension we are operating on is {}'.format(dim))
     else:
         print('{} not found in input file, aborting'.format(dim))
-        contcdf.close()
-    
+        continuous_cdf.close()
+
     # create the new file
-    burstcdf = nc.Dataset(burst_file, mode="w", clobber=True, format='NETCDF4')
+    burst_cdf = nc.Dataset(burst_file, mode="w", clobber=True, format='NETCDF4')
     # incoming data may be uneven, we need proper fill to be added
-    burstcdf.set_fill_on()
+    burst_cdf.set_fill_on()
     
     # copy the global attributes
     # first get a dict of them so that we can iterate
     gatts = {}
-    for attr in contcdf.ncattrs():
-        # print('{} = {}'.format(attr,getattr(contcdf,attr)))
-        gatts[attr] = getattr(contcdf, attr)
+    for attr in continuous_cdf.ncattrs():
+        # print('{} = {}'.format(attr,getattr(continuous_cdf, attr)))
+        gatts[attr] = getattr(continuous_cdf, attr)
         
     # add a few more important ones we will fill in later
     gatts['start_time'] = ""
     gatts['stop_time'] = ""
     gatts['DELTA_T'] = ""
-    gatts['history'] = getattr(contcdf, 'history')+'; converted to bursts by reshapeEPIC.py'
+    gatts['history'] = getattr(continuous_cdf, 'history') + '; converted to bursts by reshapeEPIC.py'
     
-    burstcdf.setncatts(gatts)
+    burst_cdf.setncatts(gatts)
 
     print('Finished copying global attributes\n')
     
-    for item in contcdf.dimensions.items():
+    for item in continuous_cdf.dimensions.items():
         print('Defining dimension {} which is {} long in continuous file'.format(item[0], len(item[1])))
         if item[0] == dim: 
             # this is the dimension along which we will reshape
@@ -139,31 +107,30 @@ def reshapeEPIC(*args, **kwargs):
                 nbursts = len(edges)
             else:
                 nbursts = math.floor(len(item[1])/burst_length)
-            burstcdf.createDimension(dim, nbursts)
+            burst_cdf.createDimension(dim, nbursts)
             print('Reshaped dimension {} created for {} bursts'.format(item[0], nbursts))
         else:
-            burstcdf.createDimension(item[0], len(item[1]))
+            burst_cdf.createDimension(item[0], len(item[1]))
             
-    burstcdf.createDimension('sample', burst_length)
+    burst_cdf.createDimension('sample', burst_length)
      
     # ---------------- set up the variables
     # order of dimensions matters.
     # per https://cmgsoft.repositoryhosting.com/trac/cmgsoft_m-cmg/wiki/EPIC_compliant
     # for a burst file dimension order needs to be time, sample, depth, [lat], [lon]
-    # TODO - check the above order and reorder dimensions if necessary
-    for cvar in contcdf.variables.items():
+    for cvar in continuous_cdf.variables.items():
         cvarobj = cvar[1]
         print('{} is data type {}'.format(cvarobj.name, cvarobj.dtype))
         try:
-            fillValue = cvarobj.getncattr('_FillValue')
+            fill_value = cvarobj.getncattr('_FillValue')
             if verbose:
-                print('\tthe fill value is {}'.format(fillValue))
+                print('\tthe fill value is {}'.format(fill_value))
         except AttributeError:
             print('\tfailed to read the fill value')
-            fillValue = False  # do not use None here!!!
+            fill_value = False  # do not use None here!!!
                 
         if verbose:
-            print('\tfillValue in burst file will be set to {} (if None, then False will be used)'.format(fillValue))
+            print('\tfillValue in burst file will be set to {} (if None, then False will be used)'.format(fill_value))
         
         if cvarobj.name not in drop:  # are we copying this variable?
             dtype = cvarobj.dtype
@@ -178,19 +145,17 @@ def reshapeEPIC(*args, **kwargs):
                         vdims_burst.append('sample')
                         print('\tappending sample in {}'.format(cvarobj.name))
     
-                varobj = burstcdf.createVariable(cvarobj.name, dtype, tuple(vdims_burst), 
-                                                 fill_value=fillValue)
+                varobj = burst_cdf.createVariable(cvarobj.name, dtype, tuple(vdims_burst), fill_value=fill_value)
             else:
                 # for a normal copy, no reshape
-                varobj = burstcdf.createVariable(cvarobj.name, dtype, cvarobj.dimensions, 
-                                                 fill_value=fillValue)
+                varobj = burst_cdf.createVariable(cvarobj.name, dtype, cvarobj.dimensions, fill_value=fill_value)
                 
             # copy the variable attributes
             # first get a dict of them so that we can iterate
             vatts = {}
             for attr in cvarobj.ncattrs():
-                # print('{} = {}'.format(attr,getattr(contcdf,attr)))
-                if attr not in atts2drop:
+                # print('{} = {}'.format(attr,getattr(continuous_cdf,attr)))
+                if attr not in variable_atttributes_to_omit:
                     vatts[attr] = getattr(cvarobj, attr)
     
             try:
@@ -199,12 +164,12 @@ def reshapeEPIC(*args, **kwargs):
                 print('AttributeError for {}'.format(cvarobj.name))
 
     # not a coordinate but a fill value of None might cause problems
-    burstcdf.createVariable('burst', 'uint16', ('time'), fill_value=False)
+    burst_cdf.createVariable('burst', 'uint16', ('time', ), fill_value=False)
     # these are coordinates and thus cannot have fill as their values
-    varobj = burstcdf.createVariable('sample', 'uint16', ('sample'), fill_value=False)
+    varobj = burst_cdf.createVariable('sample', 'uint16', ('sample', ), fill_value=False)
     varobj.units = "count"
     try:
-        burstcdf.createVariable('depth', 'float32', ('depth'), fill_value=False)
+        burst_cdf.createVariable('depth', 'float32', ('depth', ), fill_value=False)
     except:
         pass  # likely depth was already set up if this happens
         
@@ -213,52 +178,49 @@ def reshapeEPIC(*args, **kwargs):
     # --------- populate the file
     # note that we don't have to change from a define to a read mode here
     
-    # coordinate variables are small(er) and can be done at once, be sure to use
-    # generative methods
+    # coordinate variables are small(er) and can be done at once, be sure to use generative methods
     print(f'\nNow populating data for {nbursts} bursts')
-    burstcdf['burst'][:] = list(range(nbursts))
-    burstcdf['sample'][:] = list(range(burst_length))
+    burst_cdf['burst'][:] = list(range(nbursts))
+    burst_cdf['sample'][:] = list(range(burst_length))
 
-    nbins = len(burstcdf['depth'])
+    nbins = len(burst_cdf['depth'])
     try: 
-        binsize = contcdf['depth'].bin_size_m
+        binsize = continuous_cdf['depth'].bin_size_m
     except AttributeError:
         try: 
-            binsize = contcdf['depth'].bin_size
+            binsize = continuous_cdf['depth'].bin_size
         except AttributeError: 
-            # TODO - get user input here
             print('Warning:  no depth size information found, assuming 1 m')
             binsize = 1
     
     try: 
-        bin1distance = contcdf['depth'].center_first_bin_m
+        bin1distance = continuous_cdf['depth'].center_first_bin_m
     except AttributeError:
         try: 
-            bin1distance = contcdf['depth'].center_first_bin
+            bin1distance = continuous_cdf['depth'].center_first_bin
         except AttributeError: 
-            # TODO - get user input here
             print('Warning:  no depth center of first bin information found, assuming 0.5 bins ')
             bin1distance = binsize/2            
     
     ranges_m = list(map(lambda ibin: bin1distance/100+ibin*binsize/100, range(nbins)))
-    burstcdf['depth'][:] = ranges_m
+    burst_cdf['depth'][:] = ranges_m
        
     issue_flags = {}
     diagnosticvars = {}  # vars to generate diagnostic output
-    for cvar in contcdf.variables.items():
+    for cvar in continuous_cdf.variables.items():
         varname = cvar[1].name
         issue_flags[varname] = []
         if varname not in drop:
             # the variable objects in Continuous and Burst files
-            cvarobj = contcdf[varname]
-            bvarobj = burstcdf[varname]
+            cvarobj = continuous_cdf[varname]
+            bvarobj = burst_cdf[varname]
         
             vdims_cont = cvarobj.dimensions
             vshapes_cont = cvarobj.shape
             vndims_cont = len(cvarobj.dimensions)
-            vdims_burst = burstcdf[varname].dimensions
-            vshapes_burst = burstcdf[varname].shape
-            vndims_burst = len(burstcdf[varname].dimensions)
+            vdims_burst = burst_cdf[varname].dimensions
+            vshapes_burst = burst_cdf[varname].shape
+            vndims_burst = len(burst_cdf[varname].dimensions)
             if verbose:
                 print('{}\tin Continuous file is data type {} shape {}'.format(
                         varname, cvarobj.dtype, cvarobj.shape))
@@ -266,7 +228,7 @@ def reshapeEPIC(*args, **kwargs):
                         bvarobj.dtype, bvarobj.shape))
 
             try:
-                fillval_burst = burstcdf[varname].getncattr('_FillValue')
+                fillval_burst = burst_cdf[varname].getncattr('_FillValue')
             except:
                 if ('EPIC' in varname) and verbose:
                     # EPIC was ending up with odd fill values in the raw file
@@ -280,40 +242,48 @@ def reshapeEPIC(*args, **kwargs):
                     fillval_burst = None
 
             if 'sample' not in vdims_burst:
-                bvarobj[:] = contcdf[varname][:]
+                bvarobj[:] = continuous_cdf[varname][:]
             else:            
                 for iburst in range(nbursts):
-                    contcorner = np.zeros(vndims_cont)
-                    contedges = np.ones(vndims_cont)
+                    continuous_cdf_corner = np.zeros(vndims_cont)
+                    continuous_cdf_edges = np.ones(vndims_cont)
                     # look up data in the continuous file according to the user's indeces
-                    contcorner[vdims_cont.index('time')] = edges[iburst][0]
+                    continuous_cdf_corner[vdims_cont.index('time')] = edges[iburst][0]
                     ndatasamples = edges[iburst][1]-edges[iburst][0]
-                    contedges[vdims_cont.index('time')] = ndatasamples
+                    continuous_cdf_edges[vdims_cont.index('time')] = ndatasamples
                     
                     if 'depth' in vdims_cont:
-                        contedges[vdims_cont.index('depth')] = vshapes_cont[vdims_cont.index('depth')]
+                        continuous_cdf_edges[vdims_cont.index('depth')] = vshapes_cont[vdims_cont.index('depth')]
                     
                     if (iburst == 0) and verbose:
-                        print('\tconcorner = {}, contedges = {}'.format(
-                                contcorner, contedges))
+                        print('\tcontinuous_cdf_corner = {}, continuous_cdf_edges = {}'.format(
+                                continuous_cdf_corner, continuous_cdf_edges))
                           
                     # get the data, and this will be contingent on the number of dims
                     if vndims_cont == 1:
-                        data = contcdf[varname][int(contcorner[0]):int(contcorner[0])+int(contedges[0])]
+                        data = continuous_cdf[varname][int(continuous_cdf_corner[0]):int(continuous_cdf_corner[0]) +
+                                                                                     int(continuous_cdf_edges[0])]
                     elif vndims_cont == 2:
                         if varname in diagnosticvars:
-                            data = contcdf[varname]
-                        data = contcdf[varname][int(contcorner[0]):int(contcorner[0])+int(contedges[0]),
-                                                int(contcorner[1]):int(contcorner[1])+int(contedges[1])]
+                            data = continuous_cdf[varname]
+                        data = continuous_cdf[varname][
+                               int(continuous_cdf_corner[0]):int(continuous_cdf_corner[0]) +
+                                   int(continuous_cdf_edges[0]),
+                               int(continuous_cdf_corner[1]):int(continuous_cdf_corner[1]) +
+                                                             int(continuous_cdf_edges[1])]
                     elif vndims_cont == 3:
-                        data = contcdf[varname][int(contcorner[0]):int(contcorner[0])+int(contedges[0]),
-                                                int(contcorner[1]):int(contcorner[1])+int(contedges[1]),
-                                                int(contcorner[2]):int(contcorner[2])+int(contedges[2])]
+                        data = continuous_cdf[varname][
+                               int(continuous_cdf_corner[0]):int(continuous_cdf_corner[0]) +
+                                                             int(continuous_cdf_edges[0]),
+                               int(continuous_cdf_corner[1]):int(continuous_cdf_corner[1])+int(continuous_cdf_edges[1]),
+                               int(continuous_cdf_corner[2]):int(continuous_cdf_corner[2])+int(continuous_cdf_edges[2])]
                     elif vndims_cont == 4:
-                        data = contcdf[varname][int(contcorner[0]):int(contcorner[0])+int(contedges[0]),
-                                                int(contcorner[1]):int(contcorner[1])+int(contedges[1]),
-                                                int(contcorner[2]):int(contcorner[2])+int(contedges[2]),
-                                                int(contcorner[3]):int(contcorner[3])+int(contedges[3])]
+                        data = continuous_cdf[varname][
+                               int(continuous_cdf_corner[0]):int(continuous_cdf_corner[0]) +
+                                                             int(continuous_cdf_edges[0]),
+                               int(continuous_cdf_corner[1]):int(continuous_cdf_corner[1])+int(continuous_cdf_edges[1]),
+                               int(continuous_cdf_corner[2]):int(continuous_cdf_corner[2])+int(continuous_cdf_edges[2]),
+                               int(continuous_cdf_corner[3]):int(continuous_cdf_corner[3])+int(continuous_cdf_edges[3])]
                     else:
                         if iburst == 0:
                             print('did not read data')
@@ -370,7 +340,7 @@ def reshapeEPIC(*args, **kwargs):
                                                                                                                
                     if len(burstdata.shape) == 1:
                         try:
-                            burstcdf[varname][iburst] = burstdata[:]
+                            burst_cdf[varname][iburst] = burstdata[:]
                         except TypeError:
                             # TypeError: int() argument must be a string,
                             # a bytes-like object or a number, not 'NoneType'
@@ -390,7 +360,7 @@ def reshapeEPIC(*args, **kwargs):
                                 print('ValueError ')
                     elif len(burstdata.shape) == 2:
                         try:
-                            burstcdf[varname][iburst, :] = burstdata[:, :]
+                            burst_cdf[varname][iburst, :] = burstdata[:, :]
                         except TypeError:
                             # TypeError: int() argument must be a string,
                             # a bytes-like object or a number, not 'NoneType'
@@ -410,7 +380,7 @@ def reshapeEPIC(*args, **kwargs):
                                 print('ValueError ')
                     elif len(burstdata.shape) == 3:
                         try:
-                            burstcdf[varname][iburst, :, :] = burstdata[:, :, :]
+                            burst_cdf[varname][iburst, :, :] = burstdata[:, :, :]
                         except TypeError:
                             if iburst == 0:
                                 print('\t{} is data type {} and got a TypeError when writing'.format(
@@ -426,7 +396,7 @@ def reshapeEPIC(*args, **kwargs):
                                 # here we have shapes [time lat lon]
                     elif len(burstdata.shape) == 4:
                         try:
-                            burstcdf[varname][iburst, :, :, :] = burstdata[:, :, :, :]
+                            burst_cdf[varname][iburst, :, :, :] = burstdata[:, :, :, :]
                         except TypeError:
                             if iburst == 0:
                                 print('\t{} is data type {} and got a TypeError when writing'.format(
@@ -442,7 +412,7 @@ def reshapeEPIC(*args, **kwargs):
                                 # here we have shapes [time lat lon]
                     elif len(burstdata.shape) == 5:
                         try:
-                            burstcdf[varname][iburst, :, :, :] = burstdata[:, :, :, :, :]
+                            burst_cdf[varname][iburst, :, :, :] = burstdata[:, :, :, :, :]
                         except TypeError:
                             if iburst == 0:
                                 print('\t{} is data type {} and got a TypeError when writing'.format(
@@ -464,14 +434,13 @@ def reshapeEPIC(*args, **kwargs):
                 # end of for iburst in range(nbursts):
             # end of if 'sample' not in vdims_burst:
         # end of if varname not in drop:
-    # for cvar in contcdf.variables.items():
+    # for cvar in continuous_cdf.variables.items():
     
-    burstcdf.start_time = str(num2date(burstcdf['time'][0, 0], burstcdf['time'].units))
-    burstcdf.stop_time = str(num2date(burstcdf['time'][-1, 0], burstcdf['time'].units))
-    # TODO compute datetime
-    
-    burstcdf.close()
-    contcdf.close()
+    burst_cdf.start_time = str(num2date(burst_cdf['time'][0, 0], burst_cdf['time'].units))
+    burst_cdf.stop_time = str(num2date(burst_cdf['time'][-1, 0], burst_cdf['time'].units))
+
+    burst_cdf.close()
+    continuous_cdf.close()
     
     print('Finished file conversion at ', dt.datetime.now())
 
@@ -492,7 +461,7 @@ def find_boundaries(data, edges):
     :return: list of indices
     """
 
-    nparray = np.array(data) # make the data an numpy array for access to numpy's methods
+    nparray = np.array(data)  # make the data an numpy array for access to numpy's methods
     
     idx = []
     for edge in edges:
@@ -593,18 +562,19 @@ def generate_expected_start_times(cdffile, dim, burst_start_offset,
 
 
 # TODO -- this is not working. format string is failing
-def save_indexes_to_file(cdffile, txtfile, edge_tuples):
+def save_indexes_to_file(cdffile, edge_tuples, index_file=None):
     """
     write indexes to a file with the time stamps for QA/QC
 
     :param str cdffile: the continuous time series netCDF file being operated upon
-    :param str txtfile: a file to output a string listing of time stamps
     :param list[tuple] edge_tuples: the bursts to output
+    :param str index_file: a file to output a string listing of time stamps
     """
     cdf = nc.Dataset(cdffile, format="NETCDF4")
 
     tunits = cdf['time'].units
-    index_file = cdffile.split('.')[0]+'indices.txt'
+    if index_file is not None:
+        index_file = cdffile.split('.')[0]+'indices.txt'
     with open(index_file, 'w') as outfile:
         outfile.write('Burst Indexes for {}\n'.format(cdffile))
         outfile.write('Burst, start index, end index, number of samples, start time, end time\n')
@@ -626,7 +596,7 @@ def save_indexes_to_file(cdffile, txtfile, edge_tuples):
 if __name__ == "__main__":
     # then we have been run from the command line
     if len(sys.argv) < 3:
-        print("%s \nuseage:" % sys.argv[0])
+        print("%s \n usage:" % sys.argv[0])
         print("reshapeEPIC(ContFile, burst_file, burst_length, [dim2changename], [edges], [vars2omit])")
         sys.exit(1)
         
@@ -640,4 +610,3 @@ else:
     # we have been imported
     # the argument passing here works fine
     pass
-
