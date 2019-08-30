@@ -55,6 +55,7 @@ def ajd(dto):
     day_fraction = dto.hour / 24.0 + dto.minute / 1440.0 + dto.second / 86400.0
     return jdd + day_fraction - 0.5
 
+
 def cftime2EPICtime(timecount, timeunits):
     # take a CF time variable and convert to EPIC time and time2
     # timecountis the integer count of minutes (for instance) since the time stamp
@@ -376,42 +377,74 @@ def catEPIC(datafiles, outfile):
     # TODO update history
     
     ncid_out.close()
-	
-def check_FillValue_encoding(ds):
-    # restore encoding to what it needs to be for EPIC and CF compliance
-    # input
-    # ds = xarray Dataset whose variables' encoding will be examined for the correct _FillValue
-    # output 
-    # ds = Dataset with corrected encoding
-    # encoding_dict = encoding that can be used with to_netcdf
+
+
+def check_fill_value_encoding(ds):
+    """
+    restore encoding to what it needs to be for EPIC and CF compliance
+        variables' encoding will be examined for the correct _FillValue
+
+    :param ds: xarray Dataset
+    :return: xarray Dataset with corrected encoding, dict with encoding that can be used with xarray.to_netcdf
+    """
     encoding_dict = {}
-    
+
     for var in ds.variables.items():
         encoding_dict[var[0]] = ds[var[0]].encoding
-        
+
         # is it a coordinate?
         if var[0] in ds.coords:
             # coordinates do not have a _FillValue
             if '_FillValue' in var[1].encoding:
                 encoding_dict[var[0]]['_FillValue'] = False
         else:
-            # _FillValue cannot be NaN and must match the data type
-            # so just make sure it matches the data type.
+            # _FillValue cannot be NaN and must match the data type so just make sure it matches the data type.
             # xarray changes ints to floats, not sure why yet
-            if ('_FillValue' in var[1].encoding):
+            if '_FillValue' in var[1].encoding:
                 if np.isnan(var[1].encoding['_FillValue']):
                     print('NaN found in _FillValue, correcting')
-                    
-                if var[1].encoding['dtype'] in {'float32','float64'}:
+
+                if var[1].encoding['dtype'] in {'float32', 'float64'}:
                     var[1].encoding['_FillValue'] = 1E35
                     encoding_dict[var[0]]['_FillValue'] = 1E35
-                elif var[1].encoding['dtype'] in {'int32','int64'}:
+                elif var[1].encoding['dtype'] in {'int32', 'int64'}:
                     var[1].encoding['_FillValue'] = 32768
                     encoding_dict[var[0]]['_FillValue'] = 32768
-            
+
     return ds, encoding_dict
-            
-    
+
+
+def fix_missing_time(ds, deltat):
+    """
+    fix missing time values
+    change any NaT values in 'time' to a time value based on the last known good time, iterating to cover
+    larger gaps by constructing time as we go along.
+    xarray.DataArray.dropna is one way to do this, automated and convenient, and will leave an uneven time series,
+    so if you don't mind time gaps, that is a better tool.
+
+    :param ds: xarray Dataset
+    :param deltat: inter-burst time, sec, for the experiment's sampling scheme
+    :return:
+    """
+
+    # TODO This could be improved by using an index mapping method - when I know python better.
+    dsnew = ds
+    count = 0
+    tbad = dsnew['time'][:].data  # returns a numpy array of numpy.datetime64
+    tgood = tbad
+
+    # TODO - what if the first time is bad?  need to look forward, then work backward
+
+    for t in enumerate(tbad):
+        if np.isnat(t[1]):
+            count += 1
+            prev_time = tbad[t[0] - 1]
+            new_time = prev_time + np.timedelta64(900, 's')
+            tgood[t[0]] = new_time
+            print('bad time at {} will be given {}'.format(t[0], tgood[t[0]]))
+
+    return dsnew, count
+
 def __main():
     print('%s running on python %s' % (sys.argv[0], sys.version))
 	

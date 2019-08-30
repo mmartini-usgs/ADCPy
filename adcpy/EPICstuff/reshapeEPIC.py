@@ -616,6 +616,7 @@ def save_indexes_to_file(cdffile, txtfile, edge_tuples):
                                                        x[1][1]-x[1][0], t0, t1)
             except:
                 s = '{}, {}, {}, , , \n'.format(x[0], x[1][0], x[1][1])
+
             outfile.write(s)
         
     cdf.close()
