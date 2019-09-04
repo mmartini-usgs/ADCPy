@@ -1,4 +1,4 @@
-# Here we test the converting a pd0 file to netcdf format.
+# Here we test the conversion of a pd0 file to netcdf format.
 #
 # these tests are designed to follow the example here
 # http://doc.pytest.org/en/latest/fixture.html
