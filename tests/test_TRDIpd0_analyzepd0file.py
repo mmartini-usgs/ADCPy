@@ -18,7 +18,7 @@ def trdipd0_analyzepd0file():
     # pd0file = here.joinpath("9991wh000.000")
     # fun with path structure and strings.  I leave these here as a reminder.
     # pd0file = r'../data/demo1/9991wh000.000'  # this works locally only
-    pd0file = here.joinpath(r'../data/demo1/9991wh000.000')  # this works!
+    pd0file = here.joinpath(r'../data/demo1/9991wh000.000')  # this works locally and on Travis!
     # pd0file = here.joinpath("..//data//demo1//9991wh000.000") # nope
     # pd0file = here.joinpath("data//demo1//9991wh000.000") # nope
     # this command will display basics about the raw binary data
