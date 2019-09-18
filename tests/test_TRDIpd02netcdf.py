@@ -13,15 +13,9 @@ def trdipd0_convert_pd0file():
     import numpy as np
     # this is a test data file, very simple ADCP file
     # of older Workhorse ADCP data with only profiler
-    # you will use assert ensemble_count == 499 for this file
-    # pd0_input_file = here.joinpath("9991wh000.000")
-    # netcdf_output = here.joinpath("9991wh000.cdf")
-    # serial_number = "473"
-    # delta_t = "900"  # seconds, as a string
     # this is a test data file of a larger data set of Sentinel V data
-    # you will use assert ensemble_count == 8430 for this file
-    # pd0_input_file = here.joinpath(r'../data/demo2/11121whV23857profilestiny.pd0')
-    pd0_input_file = here.joinpath(r'../data/demo2/10631whV20784profilestiny.pd0')
+    # you will use assert ensemble_count == 6194 for this file
+    pd0_input_file = here.joinpath(r'../data/demo2/10631whV20784profilestiny.pd0')  # this works locally and on Travis!
     serial_number = "23857"
     delta_t = "3600"  # seconds, as a string
     netcdf_output = here.joinpath("11121whV23857profiles.cdf")
