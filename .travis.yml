@@ -32,7 +32,7 @@ install:
 
 script:
   - if [[ $TRAVIS_JOB_NAME == python-* ]]; then
-      pytest -n 2 -rxs tests
+      pytest -n 2 -rxs tests ;
     fi
 
   - if [[ $TRAVIS_JOB_NAME == 'tarball' ]]; then
@@ -40,3 +40,4 @@ script:
       check-manifest --verbose ;
       twine check dist/* ;
     fi
+
