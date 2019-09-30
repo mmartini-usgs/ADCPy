@@ -30,6 +30,6 @@ def trdipd0_convert_pd0file():
 
 def test__output(trdipd0_convert_pd0file):
     ensemble_count, netcdf_index, read_error = trdipd0_convert_pd0file
-    assert ensemble_count == 6194
+    assert ensemble_count == 12390
     assert read_error is None
 
