@@ -41,7 +41,7 @@ import math
 
 # noinspection PyUnboundLocalVariable
 def reshapeEPIC(cont_file, burst_file, burst_length, dim='time', edges=None, drop=None,
-                variable_atttributes_to_omit=None, verbose=False):
+                variable_attributes_to_omit=None, verbose=False):
     """
     apportion a continuous time series file into bursts (e.g. reshape)
 
@@ -54,7 +54,7 @@ def reshapeEPIC(cont_file, burst_file, burst_length, dim='time', edges=None, dro
     :param str dim: name of dimension along which we will split the data, usually 'time' or 'Rec'
     :param list[tuple] edges: [(start0, end0), (start1, end1), ...] of edges defining the edges of each burst
     :param str drop: set of variable names to omit from the output file
-    :param dict variable_atttributes_to_omit: variable attributes to omit from output file
+    :param dict variable_attributes_to_omit: variable attributes to omit from output file
     :param bool verbose: get lots of feedback to STDOUT
 
     :return: dictionary of problem types and status
@@ -155,7 +155,7 @@ def reshapeEPIC(cont_file, burst_file, burst_length, dim='time', edges=None, dro
             vatts = {}
             for attr in cvarobj.ncattrs():
                 # print('{} = {}'.format(attr,getattr(continuous_cdf,attr)))
-                if attr not in variable_atttributes_to_omit:
+                if attr not in variable_attributes_to_omit:
                     vatts[attr] = getattr(cvarobj, attr)
     
             try:
@@ -583,7 +583,7 @@ def save_indexes_to_file(cdffile, edge_tuples, index_file=None):
             t1 = num2date(cdf['time'][x[1][1]], tunits)
             try:
                 s = '{}, {},  {}, {}, {}, {}\n'.format(x[0], x[1][0], x[1][1],
-                                                       x[1][1]-x[1][0], t0, t1)
+                                                       x[1][1]-x[1][0]+1, t0, t1)
             except:
                 s = '{}, {}, {}, , , \n'.format(x[0], x[1][0], x[1][1])
 
