@@ -1,0 +1,25 @@
+    SciPi; C.Sherwood
+    PROJECT; USGS Coastal Marine Geology Program
+    EXPERIMENT; Sandwich Town Neck Beach
+    DESCRIPTION; Nanopod off beach
+    DATA_SUBTYPE; MOORED
+    DATA_ORIGIN; USGS WHCMSC Sediment Transport Group
+    COORD_SYSTEM; GEOGRAPHIC
+    Conventions; PMEL/EPIC
+    MOORING; 1063
+    WATER_DEPTH; 13 m
+    WATER_DEPTH_NOTE; ship fathometer 
+    latitude; 41.7731
+    longitude; -70.4758
+    magnetic_variation; -14.83
+    Deployment_date; 10-Feb-2016
+    Recovery_date; 20-May-2016
+    DATA_CMNT;  
+    platform_type; nanopod
+    DRIFTER; 0
+    POS_CONST; 0
+    DEPTH_CONST; 0
+    COORD_SYSTEM; GEOGRAPHIC
+    Conventions; PMEL/EPIC
+    institution; United States Geological Survey, Woods Hole Coastal and Marine Science Center
+    institution_url; http://woodshole.er.usgs.gov

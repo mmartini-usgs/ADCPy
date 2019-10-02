@@ -1409,9 +1409,9 @@ def parse_TRDI_variable_leader(bstream, offset):
     # v_leader_data['Pressure word byte 3'] = bitstrLE(bstream[offset+50])
     # v_leader_data['Pressure word byte 4'] = bitstrLE(bstream[offset+51])
     v_leader_data['Pressure_deca-pascals'] = bstream[offset+48]+(bstream[offset+49] << 8)+(bstream[offset+50] << 16) + \
-                                            (bstream[offset+51] << 24)
+        (bstream[offset+51] << 24)
     v_leader_data['Pressure_variance_deca-pascals'] = bstream[offset+52]+(bstream[offset+53] << 8) + \
-                                                     (bstream[offset+54] << 16)+(bstream[offset+55] << 24)
+        (bstream[offset+54] << 16)+(bstream[offset+55] << 24)
 
     v_leader_data['RTC_Century'] = bstream[offset+57]
     v_leader_data['RTC_Year'] = bstream[offset+58]
