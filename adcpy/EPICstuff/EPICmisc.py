@@ -415,7 +415,7 @@ def check_fill_value_encoding(ds):
     return ds, encoding_dict
 
 
-def fix_missing_time(ds, deltat):
+def fix_missing_time(ds, delta_t):
     """
     fix missing time values
     change any NaT values in 'time' to a time value based on the last known good time, iterating to cover
@@ -423,7 +423,7 @@ def fix_missing_time(ds, deltat):
     xarray.DataArray.dropna is one way to do this, automated and convenient, and will leave an uneven time series,
     so if you don't mind time gaps, that is a better tool.
 
-    :param ds: xarray Dataset
+    :param ds: xarray Dataset, time units are in seconds
     :param deltat: inter-burst time, sec, for the experiment's sampling scheme
     :return:
     """
@@ -440,7 +440,7 @@ def fix_missing_time(ds, deltat):
         if np.isnat(t[1]):
             count += 1
             prev_time = tbad[t[0] - 1]
-            new_time = prev_time + np.timedelta64(900, 's')
+            new_time = prev_time + np.timedelta64(delta_t, 's')
             tgood[t[0]] = new_time
             print('bad time at {} will be given {}'.format(t[0], tgood[t[0]]))
 
