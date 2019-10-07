@@ -1,33 +1,32 @@
 # -*- coding: utf-8 -*-
 """
-Conatiner for misc utilities
-Created on Fri Oct 20 13:27:04 2017
-
-catEPIC - concatenate like EPIC convention netCDF files, handle CF or EPIC time
-        - files must be presented in the proper chronological order, this
-          function will simply stick the data together in the order it is found
-
-@author: mmartini USGS Woods Hole
+Helper functions, mostly EPIC specific
 """
 
+# TODO bring up to PEP8
+# TODO split these in to EPIC and non-EPIC functionality
 from netCDF4 import Dataset
 from netCDF4 import num2date
 import datetime as dt
+from pandas import Timestamp
 import numpy as np
 import math
 import os
 import sys
-# this is important in order to import my package which is not on the python path
-# sys.path.append('c:\projects\python\ADCPy')
-#from TRDIpd0tonetcdf import julian
-#from TRDIpd0tonetcdf import ajd
-#from ADCPcdf2ncEPIC import EPICtime2datetime
+
 
 def s2hms(secs):
+    """
+    convert seconds to hours, minutes and seconds
+
+    :param int secs:
+    :return:  hours, minutes and seconds
+    """
     hour = math.floor(secs/3600)
     mn = math.floor((secs % 3600)/60)
     sec = secs % 60
     return hour, mn, sec
+
 
 def jdn(dto):
     # Given datetime object returns Julian Day Number
@@ -47,10 +46,13 @@ def jdn(dto):
 
     return jjs
 
+
 def ajd(dto):
-    #Given datetime object returns Astronomical Julian Day.
-    #Day is from midnight 00:00:00+00:00 with day fractional
-    #value added.
+    """
+    Given datetime object returns Astronomical Julian Day.
+    Day is from midnight 00:00:00+00:00 with day fractional
+    value added.
+    """
     jdd = jdn(dto)
     day_fraction = dto.hour / 24.0 + dto.minute / 1440.0 + dto.second / 86400.0
     return jdd + day_fraction - 0.5
@@ -414,7 +416,7 @@ def check_fill_value_encoding(ds):
     return ds, encoding_dict
 
 
-def fix_missing_time(ds, deltat):
+def fix_missing_time(ds, delta_t):
     """
     fix missing time values
     change any NaT values in 'time' to a time value based on the last known good time, iterating to cover
@@ -422,7 +424,7 @@ def fix_missing_time(ds, deltat):
     xarray.DataArray.dropna is one way to do this, automated and convenient, and will leave an uneven time series,
     so if you don't mind time gaps, that is a better tool.
 
-    :param ds: xarray Dataset
+    :param ds: xarray Dataset, time units are in seconds
     :param deltat: inter-burst time, sec, for the experiment's sampling scheme
     :return:
     """
@@ -439,12 +441,104 @@ def fix_missing_time(ds, deltat):
         if np.isnat(t[1]):
             count += 1
             prev_time = tbad[t[0] - 1]
-            new_time = prev_time + np.timedelta64(900, 's')
+            new_time = prev_time + np.timedelta64(delta_t, 's')
             tgood[t[0]] = new_time
             print('bad time at {} will be given {}'.format(t[0], tgood[t[0]]))
 
     return dsnew, count
 
+
+def apply_timezone(cf_units):
+    """
+    In xarray, the presence of time zone information in the units was causing decode_cf to ignore the hour,
+        minute and second information.  This function applys the time zone information and removes it from the units
+
+    :param str cf_units:
+    :return: str
+    """
+    if len(cf_units.split()) > 4:
+        # there is a time zone included
+        print(f'time zone information found in {cf_units}')
+        split_units = cf_units.split()
+        hrs, mins = split_units[4].split(':')
+        if '-' in hrs:
+            hrs = hrs[1:]
+            sign = -1
+        else:
+            sign = 1
+        dtz = dt.timedelta(0, 0, 0, 0, int(mins), int(hrs))  # this will return seconds
+        ts = Timestamp(split_units[2] + ' ' + split_units[3], tzinfo=None)
+        if sign < 0:
+            new_ts = ts - dtz
+        else:
+            new_ts = ts + dtz
+
+        if 'seconds' in cf_units:
+            new_units = '{} since {}'.format(split_units[0], new_ts)
+        else:
+            new_units = cf_units
+            print('unrecognized time units, units not changed')
+
+        print(f'new_units = {new_units}')
+
+    return new_units
+
+
+def make_encoding_dict(ds):
+    """
+    prepare encoding dictionary for writing a netCDF file later using xarray.to_netcdf
+
+    :param ds: xarray Dataset
+    :return: dict with encoding prepared for xarray.to_netcdf to EPIC/CF conventions
+    """
+    encoding_dict = {}
+
+    for item in ds.variables.items():
+        # print(item)
+        var_name = item[0]
+        var_encoding = ds[var_name].encoding
+
+        encoding_dict[var_name] = var_encoding
+
+        # print('encoding for {} is {}'.format(var_name, encoding_dict[var_name]))
+
+        # is it a coordinate?
+        if var_name in ds.coords:
+            # coordinates do not have a _FillValue
+            if '_FillValue' in encoding_dict[var_name]:
+                print(f'encoding {var_name} fill value to False')
+            else:
+                print(f'encoding {var_name} is missing fill value, now added and set to False')
+
+            encoding_dict[var_name]['_FillValue'] = False
+
+        else:
+            # _FillValue cannot be NaN and must match the data type
+            # so just make sure it matches the data type.
+            if '_FillValue' in encoding_dict[var_name]:
+                print('{} fill value is {}'.format(var_name, encoding_dict[var_name]['_FillValue']))
+                if np.isnan(encoding_dict[var_name]['_FillValue']):
+                    if 'float' in str(encoding_dict[var_name]['dtype']):
+                        encoding_dict[var_name]['_FillValue'] = 1E35
+                    elif 'int' in str(encoding_dict[var_name]['dtype']):
+                        encoding_dict[var_name]['_FillValue'] = 32768
+                    print('NaN found in _FillValue of {}, corrected to {}'.format(
+                        var_name, encoding_dict[var_name]['_FillValue']))
+                elif encoding_dict[var_name]['_FillValue'] is None:
+                    if 'float' in str(encoding_dict[var_name]['dtype']):
+                        encoding_dict[var_name]['_FillValue'] = 1E35
+                    elif 'int' in str(encoding_dict[var_name]['dtype']):
+                        encoding_dict[var_name]['_FillValue'] = 32768
+                    print('None found in _FillValue of {}, corrected to {}'.format(
+                        var_name, encoding_dict[var_name]['_FillValue']))
+                else:
+                    print('encoding found in _FillValue of {} remains {}'.format(var_name,
+                                                                                 encoding_dict[var_name]['_FillValue']))
+
+    return encoding_dict
+
+
+# TODO this is coded only for catEPIC, expand for other methods in this file
 def __main():
     print('%s running on python %s' % (sys.argv[0], sys.version))
 	
