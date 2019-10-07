@@ -8,6 +8,7 @@ Helper functions, mostly EPIC specific
 from netCDF4 import Dataset
 from netCDF4 import num2date
 import datetime as dt
+from pandas import Timestamp
 import numpy as np
 import math
 import os
@@ -445,6 +446,42 @@ def fix_missing_time(ds, delta_t):
             print('bad time at {} will be given {}'.format(t[0], tgood[t[0]]))
 
     return dsnew, count
+
+
+def apply_timezone(cf_units):
+    """
+    In xarray, the presence of time zone information in the units was causing decode_cf to ignore the hour,
+        minute and second information.  This function applys the time zone information and removes it from the units
+
+    :param str cf_units:
+    :return: str
+    """
+    if len(cf_units.split()) > 4:
+        # there is a time zone included
+        print(f'time zone information found in {cf_units}')
+        split_units = cf_units.split()
+        hrs, mins = split_units[4].split(':')
+        if '-' in hrs:
+            hrs = hrs[1:]
+            sign = -1
+        else:
+            sign = 1
+        dtz = dt.timedelta(0, 0, 0, 0, int(mins), int(hrs))  # this will return seconds
+        ts = Timestamp(split_units[2] + ' ' + split_units[3], tzinfo=None)
+        if sign < 0:
+            new_ts = ts - dtz
+        else:
+            new_ts = ts + dtz
+
+        if 'seconds' in cf_units:
+            new_units = '{} since {}'.format(split_units[0], new_ts)
+        else:
+            new_units = cf_units
+            print('unrecognized time units, units not changed')
+
+        print(f'new_units = {new_units}')
+
+    return new_units
 
 
 def make_encoding_dict(ds):
