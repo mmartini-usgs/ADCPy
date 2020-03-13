@@ -584,6 +584,10 @@ def setup_netcdf_file(fname, ens_data, gens, serial_number, time_type, delta_t):
     # it's not yet clear which way to go with this.  python tools like xarray 
     # and panoply demand that time be a CF defined time.
     # USGS CMG MATLAB tools need time and time2
+    # TODO - CF_time can come out as YYYY-M-D for dates with single digit months and days, check to see if this is ISO
+    # and fix if it is not.  This is a better way:
+    # d = datetime.datetime(2010, 7, 4, 12, 15, 58)
+    # '{:%Y-%m-%d %H:%M:%S}'.format(d)
     if time_type == 'EPIC_with_CF':
         # we include time and time2 for EPIC compliance
         varobj = cdf.createVariable('time', 'u4', ('time',))
