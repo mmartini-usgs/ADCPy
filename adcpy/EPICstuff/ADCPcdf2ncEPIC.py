@@ -90,7 +90,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     # check some of the settings we can't live without
     # set flags, then remove from the settings list if we don't want them in metadata
     if 'good_ensembles' not in settings.keys():
-        settings['good_ensembles'] = [0, np.inf] # nothing from user, do them all
+        settings['good_ensembles'] = [0, np.inf]  # nothing from user, do them all
         print('No starting and ending ensembles specfied, processing entire file')
     if 'orientation' not in settings.keys():
         settings['orientation'] = "UP"
@@ -103,21 +103,15 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         print('No transducer_offset_from_bottom, assuming 0')
     if 'transformation' not in settings.keys():
         settings['transformation'] = "EARTH"
-    if 'time_type_out' not in settings.keys():
-        settings['time_type_out'] = "CF"
     if 'adjust_to_UTC' not in settings.keys():
         settings['adjust_to_UTC'] = 0
-    # TODO implement this 'beam_velocity_multiplier'
-    if 'beam_velocity_multiplier' in settings.keys():
-        beam_vel_multiplier = settings['beam_velocity_multiplier']
-        settings.pop('beam_velocity_multiplier') 
-    else:
-        beam_vel_multiplier = 1
     # TODO implement this time_type_out selection, right now does what is in the raw netCDF
-    if 'time_type_out' in settings.keys():
-        time_type_out = settings['time_type_out']
-    else:
-        time_type_out = "CF"
+    # if 'time_type_out' not in settings.keys():
+    #    settings['time_type_out'] = "CF"
+    # if 'time_type_out' in settings.keys():
+    #    time_type_out = settings['time_type_out']
+    # else:
+    #    time_type_out = "CF"
     if 'use_pressure_for_WATER_DEPTH' in settings.keys():
         if settings['use_pressure_for_WATER_DEPTH']:
             usep4waterdepth = True
@@ -139,7 +133,8 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     nbins = len(rawcdf.dimensions['depth'])
     nens = len(rawcdf.dimensions['time'])
     ncvars = []
-    for key in nc.variables.keys(): ncvars.append(key)
+    for key in nc.variables.keys():
+        ncvars.append(key)
 
     declination = nc.magnetic_variation_at_site
 
@@ -149,7 +144,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         e = nens
     else:
         e = settings['good_ensembles'][1]
-    print('Converting from index %d to %d of %s' % (s,e,cdfFile))
+    print('Converting from index %d to %d of %s' % (s, e, cdfFile))
 
     # many variables do not need processing and can just be copied to the
     # new EPIC convention
@@ -189,7 +184,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         varlist = {'time': 'time', 'time2': 'time2'}
     elif settings['time_type_out'] == 'CF_with_EPIC':
         varlist = {'time': 'time', 'EPIC_time': 'EPIC_time', 'EPIC_time2': 'EPIC_time2'}
-    if settings['time_type_out'] == 'EPIC_with_CF':
+    elif settings['time_type_out'] == 'EPIC_with_CF':
         varlist = {'time': 'time', 'time2': 'time2', 'cf_time': 'cf_time'}
     else:  # only CF time, the default
         varlist = {'time': 'time'}
@@ -255,7 +250,6 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     if 'PressVar' in rawvars:
         nc['SDP_850'][:, 0, 0] = rawcdf.variables['PressVar'][s:e]
     
-    varobj = nc.variables['bindist']
     bindist = np.arange(len(nc['bindist']))
     bindist = bindist*nc.bin_size+nc.center_first_bin
     nc['bindist'][:] = bindist
@@ -268,7 +262,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
         timekey = 'cf_time'
     
     # this calculation uses for CF time
-    dtime = np.diff( nc[timekey][:])
+    dtime = np.diff(nc[timekey][:])
     delta_t = '%s' % int((dtime.mean().astype('float')).round())  # needs to be a string
     nc.DELTA_T = delta_t
     
@@ -360,7 +354,7 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
 
     print('averaging AGC at %s' % (dt.datetime.now()))
     # this will be a problem - it loads all into memory
-    agc = (rawcdf.variables['att1'][s:e, :] + rawcdf.variables['att2'][s:e, :] +\
+    agc = (rawcdf.variables['att1'][s:e, :] + rawcdf.variables['att2'][s:e, :] +
            rawcdf.variables['att3'][s:e, :]+rawcdf.variables['att4'][s:e, :]) / 4
     nc['AGC_1202'][:, :, 0, 0] = agc[:, :]
     
@@ -384,14 +378,13 @@ def doEPIC_ADCPfile(cdfFile, ncFile, attFile, settings):
     ncidx = 0
     if settings['transformation'].upper() == "BEAM":
         ncvarnames = ["Beam1", "Beam2", "Beam3", "Beam4"]        
-        for idx in range(s,e):
+        for idx in range(s, e):
             for beam in range(nbeams):
                 nc[ncvarnames[beam]][ncidx, :, 0, 0] = \
                     rawcdf.variables[rawvarnames[beam]][idx, :] * vconvconst
             ncidx = ncidx + 1
             
-    elif (settings['transformation'].upper() == "INST") or \
-        (settings['transformation'].upper() == "EARTH"):
+    elif (settings['transformation'].upper() == "INST") or (settings['transformation'].upper() == "EARTH"):
         ncvarnames = ["X", "Y", "Z", "Error"]
         # the dolfyn way (https://github.com/lkilcher/dolfyn)
         # load the ADCP data object - we have converted this from a class object to nested dictionaries for use here
@@ -610,7 +603,7 @@ def inst2earth(adcpo, reverse=False, fixed_orientation=False, force=False):
             raise ValueError('The input must be in inst coordinates.')
         if reverse and adcpo['props']['coord_sys'] != 'earth':
             raise ValueError('The input must be in earth coordinates.')
-    if (not reverse and 'declination' in adcpo['props'].keys() and not adcpo['props']['declination_in_heading']):
+    if not reverse and 'declination' in adcpo['props'].keys() and not adcpo['props']['declination_in_heading']:
         # Only do this if making the forward rotation.
         adcpo['heading_deg'] += adcpo['props']['declination']
         adcpo['props']['declination_in_heading'] = True
@@ -636,17 +629,18 @@ def inst2earth(adcpo, reverse=False, fixed_orientation=False, force=False):
     rotmat[2, 1, :] = sp
     rotmat[2, 2, :] = cp * cr
     # Only operate on the first 3-components, b/c the 4th is err_vel
-    ess = 'ijk,jlk->ilk'
+    # ess = 'ijk,jlk->ilk'
     cs = 'earth'
     if reverse:
         cs = 'inst'
         fixed_orientation = adcpo['props'].pop('inst2earth:fixed', fixed_orientation)
-        ess = ess.replace('ij', 'ji')
+        # ess = ess.replace('ij', 'ji')
     else:
         adcpo['props']['inst2earth:fixed'] = fixed_orientation
     if fixed_orientation:
-        ess = ess.replace('k,', ',')
+        # ess = ess.replace('k,', ',')
         rotmat = rotmat.mean(-1)
+    # todo is the einsum method better?  If so, uncomment the ess statements above
     # vels = np.einsum(ess, rotmat, adcpo['vel'][:,:3])
     vels = np.asmatrix(rotmat) * np.asmatrix(adcpo['vel'][:, :3].transpose())
     adcpo['vel'][:, :3] = vels.transpose()
@@ -660,7 +654,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     Construct an empty netCDF output file to EPIC conventions
 
     :param str fname: output netCDF file name
-    :param str rawcdf: input netCDF raw data file
+    :param Dataset rawcdf: input netCDF raw data file object
     :param str attfile: metadata text file
     :param dict settings: settings as follows::
 
@@ -691,7 +685,8 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     print('creating netCDF file %s with %d records' % (fname, nens2write))
     
     rawvars = []
-    for key in rawcdf.variables.keys(): rawvars.append(key)
+    for key in rawcdf.variables.keys():
+        rawvars.append(key)
     
     nbins = len(rawcdf.dimensions['depth'])
     
@@ -710,15 +705,17 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     gatts = read_globalatts(attfile)
     
     if 'WATER_DEPTH' not in gatts.keys():
-        gatts['WATER_DEPTH'] = 0  # nothing from user
+        # noinspection PyTypeChecker
+        gatts['WATER_DEPTH'] = 0.0  # nothing from user
         print('No WATER_DEPTH found, check depths of bins and WATER_DEPTH!')
     gatts['orientation'] = settings['orientation'].upper()
     
     if 'serial_number' not in gatts.keys():
         gatts['serial_number'] = "unknown"
-    
+
     if 'magnetic_variation' not in gatts.keys():
-        gatts['magnetic_variation_at_site'] = 0
+        # noinspection PyTypeChecker
+        gatts['magnetic_variation_at_site'] = 0.0
         print('No magnetic_variation, assuming magnetic_variation_at_site = 0')
     else:
         gatts['magnetic_variation_at_site'] = gatts['magnetic_variation']
@@ -741,7 +738,9 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         # TRDI attributes
         if any('VBeam' in item for item in rawcdf.ncattrs()):
             cdf.INST_TYPE = "TRDI Workhorse V"
-        else: cdf.INST_TYPE = "TRDI Workhorse"
+        else:
+            cdf.INST_TYPE = "TRDI Workhorse"
+
         cdf.bin_size = rawcdf.TRDI_Depth_Cell_Length_cm/100
         cdf.bin_count = rawcdf.TRDI_Number_of_Cells
         cdf.center_first_bin = rawcdf.TRDI_Bin_1_distance_cm/100
@@ -787,7 +786,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         cdf.depth_note = "downlooking bin depths = WATER_DEPTH-transducer_offset_from_bottom+bindist"
     cdf.serial_number = rawcdf.serial_number
     
-    # TODO consider using a float for time since less common integers are casuing issues
+    # TODO consider using a float for time since less common integers are causing issues
     # the problem is, CF time is a count, so integer is appropriate
     timetype = 'u2'  # u4 may be causing downstream problems with NCO
     # u2 caused rollover problems when EPIC time was stored or read:
@@ -970,9 +969,11 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         
     # repeating attributes that do not depend on height or depth calculations
     cdfvarnames = []
-    for key in cdf.variables.keys(): cdfvarnames.append(key)
+    for key in cdf.variables.keys():
+        cdfvarnames.append(key)
     omitnames = []
-    for key in cdf.dimensions.keys(): omitnames.append(key)
+    for key in cdf.dimensions.keys():
+        omitnames.append(key)
     omitnames.append("Rec")
     for varname in cdfvarnames:
         if varname not in omitnames:
@@ -1017,16 +1018,18 @@ def add_VAR_DESC(cdf):
     """
     # cdf is an netcdf file object (e.g. pointer to open netcdf file)
 
-    varkeys = cdf.variables.keys() # get the names
+    varkeys = cdf.variables.keys()  # get the names
     dimkeys = cdf.dimensions.keys()
     varnames = []
-    for key in varkeys: varnames.append(key)
+    for key in varkeys:
+        varnames.append(key)
     dimnames = []
-    for key in dimkeys: dimnames.append(key)
+    for key in dimkeys:
+        dimnames.append(key)
     buf = ""
     for varname in varnames:
         if varname not in dimnames:
-            buf = "%s:%s" % (buf,varname)
+            buf = "%s:%s" % (buf, varname)
 
     cdf.VAR_DESC = buf
     
@@ -1123,25 +1126,25 @@ def __main():
 
     if len(sys.argv) < 2:
         print("%s useage:" % sys.argv[0])
-        print("ADCPcdf2ncEPIC rawcdfname ncEPICname USGSattfile [startingensemble endingensemble]\n" )
+        print("ADCPcdf2ncEPIC rawcdfname ncEPICname USGSattfile [startingensemble endingensemble]\n")
         print("starting and ending ensemble are netcdf file indeces, NOT TRDI ensemble numbers")
         print("USGSattfile is a file containing EPIC metadata")
         sys.exit(1)
         
     try:
-        infileName = sys.argv[1]
+        infile_name = sys.argv[1]
     except:
         print('error - input file name missing')
         sys.exit(1)
         
     try:
-        outfileName = sys.argv[2]
+        outfile_name = sys.argv[2]
     except:
         print('error - output file name missing')
         sys.exit(1)
         
     try:
-        attfileName = sys.argv[3]
+        attfile_name = sys.argv[3]
     except:
         print('error - global attribute file name missing')
         sys.exit(1)
@@ -1156,22 +1159,22 @@ def __main():
         sys.exit(1)
 
     # some input testing
-    if ~os.path.isfile(infileName):
+    if ~os.path.isfile(infile_name):
         print('error - input file not found')
         sys.exit(1)
         
-    if ~os.path.isfile(attfileName):
+    if ~os.path.isfile(attfile_name):
         print('error - attribute file not found')
         sys.exit(1)
 
-    print('Converting %s to %s' % (infileName, outfileName))
+    print('Converting %s to %s' % (infile_name, outfile_name))
     
-    print('Start file conversion at ',dt.datetime.now())
+    print('Start file conversion at ', dt.datetime.now())
+
+    # noinspection PyTypeChecker
+    doEPIC_ADCPfile(infile_name, outfile_name, attfile_name, settings)
     
-    doEPIC_ADCPfile(infileName, outfileName, attfileName, settings)
-    
-    print('Finished file conversion at ',dt.datetime.now())
-    
+    print(f'Finished file conversion at {dt.datetime.now()}')
 
 
 if __name__ == "__main__":
