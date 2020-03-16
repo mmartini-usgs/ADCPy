@@ -113,7 +113,7 @@ def EPICtime2datetime(time, time2):
     gtime = []
     for idx in range(len(time)):
         # time and time2 are the julian day and milliseconds 
-        # in the day as per PMEL EPIC convention for netcdf
+        # in the day as per PMEL EPIC convention for netCDF
         jd = time[idx]+(time2[idx]/(24*3600*1000))
         secs = (jd % 1)*(24*3600)
         
@@ -124,68 +124,67 @@ def EPICtime2datetime(time, time2):
         in1 = math.floor(j/4)
         in1 = 4*in1 + 3
         j = math.floor(in1/1461)
-        d = math.floor(((in1 - 1461*j) +4)/4)
-        in1 = 5*d -3
+        d = math.floor(((in1 - 1461*j) + 4)/4)
+        in1 = 5*d - 3
         m = math.floor(in1/153)
-        d = math.floor(((in1 - 153*m) +5)/5)
-        y = y*100 +j
-        mo=m-9
-        yr=y+1
-        if m<10:
+        d = math.floor(((in1 - 153*m) + 5)/5)
+        y = y*100 + j
+        mo = m-9
+        yr = y+1
+        if m < 10:
             mo = m+3
             yr = y
         hour, mn, sec = s2hms(secs)
         ss = math.floor(sec)
         
-        hund = math.floor((sec-ss)*100)
+        hundredths = math.floor((sec-ss)*100)
 
-        gtime.append([yr, mo, d, hour, mn, ss, hund])
+        gtime.append([yr, mo, d, hour, mn, ss, hundredths])
 
         # centiseconds * 10000 = microseconds
-        dto = dt.datetime(yr, mo, d, hour, mn, ss, int(hund*10000))
+        dto = dt.datetime(yr, mo, d, hour, mn, ss, int(hundredths*10000))
         
         dtos.append(dto)
 
     return gtime, dtos
 
+
 def resample_cleanup(datafiles):
 
-    for filenum in range(len(datafiles)):
+    for file_name in datafiles:
         
-        pydata = datafiles[filenum]
-        print('Working on file %s\n' % pydata)
+        print(f'Working on file {file_name}')
         
         # re-open the dataset for numerical operations such as min and max
         # we have to make attribute changes, etc. so need to open with the netCDF package
-        pyd = Dataset(pydata, mode="r+", format='NETCDF4')
+        pyd = Dataset(file_name, mode="r+", format='NETCDF4')
         
-        dkeys = pyd.dimensions.keys()
+        dim_keys = pyd.dimensions.keys()
         
         # add minimum and maximum attributes and replace NaNs with _FillValue
-        for key in pyd.variables.keys():
-            if (key not in dkeys) & (key not in {'time','EPIC_time','EPIC_time2'}):
-                data = pyd[key][:]
-                nanidx = np.isnan(pyd[key][:])
-                mn = np.min(data[~nanidx])
-                mx = np.max(data[~nanidx])
-                print('%s min = %f, max = %f' % (key, mn, mx))
-                pyd[key].minimum = mn
-                pyd[key].maximum = mx
-                fill = pyd.variables[key].getncattr('_FillValue')
-                data[nanidx] = fill
-                pyd[key][:] = data
+        for var_key in pyd.variables.keys():
+            if (var_key not in dim_keys) & (var_key not in {'time', 'EPIC_time', 'EPIC_time2'}):
+                data = pyd[var_key][:]
+                nan_idx = np.isnan(pyd[var_key][:])
+                mn = np.min(data[~nan_idx])
+                mx = np.max(data[~nan_idx])
+                print('%s min = %f, max = %f' % (var_key, mn, mx))
+                pyd[var_key].minimum = mn
+                pyd[var_key].maximum = mx
+                fill = pyd.variables[var_key].getncattr('_FillValue')
+                data[nan_idx] = fill
+                pyd[var_key][:] = data
                
         # Add back EPIC time
         timecount = pyd['time']
         timeunits = pyd['time'].units
-        #timecal = pyd['time'].calendar
-        
-        #time, time2 = cf2EPICtime(timecount,timeunits,'proleptic_gregorian')
-        time, time2 = cftime2EPICtime(timecount,timeunits)
-        print('first time = %7d and %8d' % (time[0],time2[0]))
-        
+
+        time, time2 = cftime2EPICtime(timecount, timeunits)
+        print('first time = %7d and %8d' % (time[0], time2[0]))
+
+        # noinspection PyBroadException
         try:
-            varobj = pyd.createVariable('EPIC_time','u4',('time'))
+            varobj = pyd.createVariable('EPIC_time', 'u4', ('time'))
         except:
             print('EPIC_time exists, updating.')
             varobj = pyd['EPIC_time'] 
@@ -233,14 +232,14 @@ def resample_cleanup(datafiles):
         print('cf stop time %s' % pyd.stop_time)
         
         # add the variable descriptions
-        vardesc = ''
-        for key in pyd.variables.keys():
-            if key not in dkeys:
-                vardesc = vardesc+':'+key
+        var_desc = ''
+        for var_key in pyd.variables.keys():
+            if var_key not in dim_keys:
+                var_desc = var_desc+':'+var_key
         
-        vardesc = vardesc[1:]
-        print(vardesc)
-        pyd.VAR_DESC = vardesc
+        var_desc = var_desc[1:]
+        print(var_desc)
+        pyd.VAR_DESC = var_desc
             
         pyd.close()    
         
@@ -550,10 +549,10 @@ def make_encoding_dict(ds):
 # TODO this is coded only for catEPIC, expand for other methods in this file
 def __main():
     print('%s running on python %s' % (sys.argv[0], sys.version))
-	
+
     if len(sys.argv) < 2:
-        print("%s useage:" % sys.argv[0])
-        print("catEPIC file_list outfile\n" )
+        print("%s usage:" % sys.argv[0])
+        print("catEPIC file_list outfile\n")
         sys.exit(1)
         
     try:

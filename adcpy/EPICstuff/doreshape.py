@@ -5,17 +5,14 @@ Created on Fri Sep 21 09:40:21 2018
 
 @author: mmartini
 """
-#import sys
-#import os
-#import datetime as dt
 import netCDF4 as nc
 from netCDF4 import num2date
 import math
 import sys
 import datetime as dt
 # this is important in order to import my package which is not on the python path
-sys.path.append('c:\projects\python\ADCPy\EPICstuff')
-from reshapeEPIC import reshapeEPIC
+sys.path.append(r'c:\projects\python\ADCPy\EPICstuff')
+from EPICstuff.reshapeEPIC import reshapeEPIC
 
 # making the indeces
 #contFile = 'E:\\data\\Sandwich\\10811_V20784\\python\\10811whVsubset00nbetterfill.cdf'
@@ -55,12 +52,13 @@ def find_boundaries(data,edges):
                 e = t[0]
                 break
 
-        #print((s,e))
+        # print((s,e))
         idx.append((s,e))
     
     return idx
 
-contcdf = nc.Dataset(contFile,format="NETCDF4")
+
+contcdf = nc.Dataset(contFile, format="NETCDF4")
 
 if dim in contcdf.dimensions:
     print('the dimension we are operating on is {}'.format(dim))
@@ -69,8 +67,8 @@ else:
     contcdf.close()
     
 # get the number of bursts based ont he elapsed time
-tfirst = num2date(contcdf['time'][1],contcdf['time'].units)
-tlast = num2date(contcdf['time'][-1],contcdf['time'].units)
+tfirst = num2date(contcdf['time'][1], contcdf['time'].units)
+tlast = num2date(contcdf['time'][-1], contcdf['time'].units)
 nsec = (tlast-tfirst).total_seconds()
 nbursts = int(nsec / burst_interval)
 burst_start_times = []
@@ -92,11 +90,12 @@ burstnum = 0
 print('the last time is {} seconds from the start of the experiment'.format(contcdf['time'][-1]))
 print('looking up the boundaries')
 edges = find_boundaries(contcdf['time'][:], slices)
-for x in edges[0:5]:  print('at indeces {} to {} we found times {} to {}'.format(x[0],x[1], 
+for x in edges[0:5]:  print('at indeces {} to {} we found times {} to {}'.format(x[0], x[1],
     contcdf['time'][x[0]],contcdf['time'][x[1]]))
-# later we'll figure out how to do this as a lsit comprehension, for now it works
+# later we'll figure out how to do this as a list comprehension, for now it works
 burstlengths = list(map(lambda t: t[1]-t[0], edges))
-for x in burstlengths[0:5]:  print('bursts are {} long'.format(x))
+for x in burstlengths[0:5]:
+    print('bursts are {} long'.format(x))
     
 nburstsperfile = int(math.floor(nbursts/nfiles))
 
@@ -106,5 +105,5 @@ if not dryrun:
     print('Starting the reshape')
     reshapeEPIC(contFile, burstFile, burstlength, dim='time', edges=edges, drop=vars2omit)
     
-print('Finished script run at ',dt.datetime.now())
+print('Finished script run at ', dt.datetime.now())
 print('elapsed time is {} min'.format((dt.datetime.now()-opstart).total_seconds()/60))

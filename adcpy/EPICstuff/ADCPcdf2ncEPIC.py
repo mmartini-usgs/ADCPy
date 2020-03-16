@@ -786,7 +786,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
         cdf.depth_note = "downlooking bin depths = WATER_DEPTH-transducer_offset_from_bottom+bindist"
     cdf.serial_number = rawcdf.serial_number
     
-    # TODO consider using a float for time since less common integers are casuing issues
+    # TODO consider using a float for time since less common integers are causing issues
     # the problem is, CF time is a count, so integer is appropriate
     timetype = 'u2'  # u4 may be causing downstream problems with NCO
     # u2 caused rollover problems when EPIC time was stored or read:
