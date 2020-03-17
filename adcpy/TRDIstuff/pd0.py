@@ -64,15 +64,20 @@ import struct
 # adapted from pd0.py by Gregory P. Dusek
 # http://trac.nccoos.org/dataproc/wiki/DPWP/docs
 
-def split(rawFile,wavesFile,currentsFile):
-    """Split PD0 format data into seperate waves and currents
 
-    split()rawFile,wavesFile,currentsFile -> None
+def split(raw_file, waves_file, currents_file):
+    """
+    Split PD0 format data into seperate waves and currents files
+
+    :param binaryIO raw_file:
+    :param binaryIO waves_file:
+    :param binaryIO currents_file:
+    :return:
     """
 
     # header IDs
-    wavesId=0x797f
-    currentsId=0x7f7f
+    waves_id = 0x797F
+    currents_id = 0x7F7F
 
     # convenience function reused for header, length, and checksum
     def __nextLittleEndianUnsignedShort(file):
@@ -81,74 +86,74 @@ def split(rawFile,wavesFile,currentsFile):
         """for python 3.5, struct.unpack('<H', raw)[0] needs to return a
            byte, not an int
         """
-        return (raw, struct.unpack('<H', raw)[0])
+        return raw, struct.unpack("<H", raw)[0]
 
     # factored for readability
-    def __computeChecksum(header, length, ensemble):
+    def __computeChecksum(data, nbytes, ensemble):
         """Compute a checksum from header, length, and ensemble"""
-        cs = 0    
-        for byte in header:
+        cs = 0
+        for byte in data:
             # since the for loop returns an int to byte, use as-is
-            #value = struct.unpack('B', byte)[0]
-            #cs += value
+            # value = struct.unpack('B', byte)[0]
+            # cs += value
             cs += byte
-        for byte in length:
-            #value = struct.unpack('B', byte)[0]
-            #cs += value
+        for byte in nbytes:
+            # value = struct.unpack('B', byte)[0]
+            # cs += value
             cs += byte
         for byte in ensemble:
-            #value = struct.unpack('B', byte)[0]
-            #cs += value
+            # value = struct.unpack('B', byte)[0]
+            # cs += value
             cs += byte
-        return cs & 0xffff
+        return cs & 0xFFFF
 
     # find the first instance of a waves or currents header
-    rawData=rawFile.read()
-    firstWaves = rawData.find(struct.pack('<H',wavesId))
-    firstCurrents= rawData.find(struct.pack('<H',currentsId))
+    raw_data = raw_file.read()
+    first_waves = raw_data.find(struct.pack("<H", waves_id))
+    first_currents = raw_data.find(struct.pack("<H", currents_id))
 
     # bail if neither waves nor currents found
-    if (firstWaves < 0) and (firstCurrents < 0):
-    #    raise IOError, "Neither waves nor currents header found"
-        raise IOError('Neither waves nor currents header found')
+    if (first_waves < 0) and (first_currents < 0):
+        #    raise IOError, "Neither waves nor currents header found"
+        raise IOError("Neither waves nor currents header found")
 
     # get the starting point by throwing out unfound headers
-    # and selecting the minumum
-    firstEnsemble = min([x for x in (firstWaves,firstCurrents) if x >= 0])
+    # and selecting the minimum
+    first_ensemble = min([x for x in (first_waves, first_currents) if x >= 0])
 
-    #seeks to the first occurence of a waves or currents data
-    rawFile.seek(firstEnsemble)
+    # seeks to the first occurrence of a waves or currents data
+    raw_file.seek(first_ensemble)
 
     # loop through raw data
-    rawHeader, header = __nextLittleEndianUnsignedShort(rawFile)
+    raw_header, header = __nextLittleEndianUnsignedShort(raw_file)
 
-    while (header == wavesId) or (header == currentsId):
+    while (header == waves_id) or (header == currents_id):
         # get ensemble length
-        rawLength, length = __nextLittleEndianUnsignedShort(rawFile)
+        raw_length, length = __nextLittleEndianUnsignedShort(raw_file)
         # read up to the checksum
-        rawEnsemble = rawFile.read(length-4)
+        raw_ensemble = raw_file.read(length - 4)
         # get checksum
-        rawChecksum, checksum = __nextLittleEndianUnsignedShort(rawFile)
+        raw_checksum, checksum = __nextLittleEndianUnsignedShort(raw_file)
 
-        computedChecksum = __computeChecksum(rawHeader, rawLength, rawEnsemble)
+        computed_checksum = __computeChecksum(raw_header, raw_length, raw_ensemble)
 
-        if checksum != computedChecksum:
-            raise IOError('Checksum error')
+        if checksum != computed_checksum:
+            raise IOError("Checksum error")
 
         # append to output stream
-        if header == wavesId: 
-            wavesFile.write(rawHeader)
-            wavesFile.write(rawLength)
-            wavesFile.write(rawEnsemble)
-            wavesFile.write(rawChecksum)
-        elif header == currentsId:
-            currentsFile.write(rawHeader)
-            currentsFile.write(rawLength)
-            currentsFile.write(rawEnsemble)
-            currentsFile.write(rawChecksum)
+        if header == waves_id:
+            waves_file.write(raw_header)
+            waves_file.write(raw_length)
+            waves_file.write(raw_ensemble)
+            waves_file.write(raw_checksum)
+        elif header == currents_id:
+            currents_file.write(raw_header)
+            currents_file.write(raw_length)
+            currents_file.write(raw_ensemble)
+            currents_file.write(raw_checksum)
 
         try:
-            rawHeader, header = __nextLittleEndianUnsignedShort(rawFile)
+            raw_header, header = __nextLittleEndianUnsignedShort(raw_file)
         except struct.error:
             break
 
@@ -159,100 +164,105 @@ def test():
         import adcp.tests.runalltests as runalltests
     except:
         # possible if executed as script
-        import sys,os
-        sys.path.append(os.path.join(os.path.dirname(__file__),'tests'))
+        import sys
+        import os
+
+        sys.path.append(os.path.join(os.path.dirname(__file__), "tests"))
         import runalltests
-    runalltests.runalltests(subset='pd0')
+    runalltests.runalltests(subset="pd0")
+
 
 class __TestException(Exception):
     """Flow control for running as script"""
+
     pass
+
 
 # wrapper function
 def __test():
-   """Execute test suite from command line"""
-   test()
-   # raise __TestException, 'Wrapper function for command line testing only'
-   raise __TestException('Wrapper function for command line testing only')
+    """Execute test suite from command line"""
+    test()
+    # raise __TestException, 'Wrapper function for command line testing only'
+    raise __TestException("Wrapper function for command line testing only")
+
 
 def __main():
     """Process as script from command line"""
-    import getopt,os,sys
+    import getopt
+    import os
+    import sys
 
     # get the command line options and arguments
-    path = ''
-    rawName,wavesName,currentsName = 3*[None]
+    path = ""
+    raw_name, waves_name, currents_name = 3 * [None]
 
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:],
-                                       'htp:r:w:c:',
-                                       ['help',
-                                        'test',
-                                        'path=',
-                                        'raw=',
-                                        'waves=',
-                                        'currents='])
-        for opt,arg in opts:
-            if opt in ['-h','--help']:
-                raise getopt.GetoptError('')
-            if opt in ['-t','--test']:
+        opts, args = getopt.gnu_getopt(
+            sys.argv[1:],
+            "htp:r:w:c:",
+            ["help", "test", "path=", "raw=", "waves=", "currents="],
+        )
+        for opt, arg in opts:
+            if opt in ["-h", "--help"]:
+                raise getopt.GetoptError("")
+            if opt in ["-t", "--test"]:
                 __test()
-            elif opt in ['-p','--path']:
+            elif opt in ["-p", "--path"]:
                 path = arg
-            elif opt in ['-r','--raw']:
-                rawName = arg
-            elif opt in ['-w','--waves']:
-                wavesName = arg
-            elif opt in ['-c','--currents']:
-                currentsName = arg
+            elif opt in ["-r", "--raw"]:
+                raw_name = arg
+            elif opt in ["-w", "--waves"]:
+                waves_name = arg
+            elif opt in ["-c", "--currents"]:
+                currents_name = arg
             else:
-                raise getopt.GetoptError('')
-        if (rawName is None) or \
-           (wavesName is None) or \
-           (currentsName is None):
+                raise getopt.GetoptError("")
+        if (raw_name is None) or (waves_name is None) or (currents_name is None):
             if len(args) not in [3, 4]:
-                raise getopt.GetoptError('')
+                raise getopt.GetoptError("")
             else:
-                if (rawName is not None) or \
-                   (wavesName is not None) or \
-                   (currentsName is not None):
-                    raise getopt.GetoptError('')
+                if (
+                    (raw_name is not None)
+                    or (waves_name is not None)
+                    or (currents_name is not None)
+                ):
+                    raise getopt.GetoptError("")
                 else:
                     if len(args) == 4:
                         path = args[0]
                         del args[0]
-                    rawName = args[0]
-                    wavesName = args[1]
-                    currentsName = args[2]
+                    raw_name = args[0]
+                    waves_name = args[1]
+                    currents_name = args[2]
         elif len(args) != 0:
-            raise getopt.GetoptError('')
+            raise getopt.GetoptError("")
     except getopt.GetoptError:
-        print (__doc__)
+        print(__doc__)
         return
     except __TestException:
         return
 
     # split a raw PD0 file
-    rawName = os.path.join(path, rawName)
-    print(('Raw file path:', rawName))
-    wavesName = os.path.join(path, wavesName)
-    print(('Waves file path:', wavesName))
-    currentsName = os.path.join(path, currentsName)
-    print(('Currents file path:', currentsName))
-    rawFile = open(rawName, 'rb')
+    raw_name = os.path.join(path, raw_name)
+    print(("Raw file path:", raw_name))
+    waves_name = os.path.join(path, waves_name)
+    print(("Waves file path:", waves_name))
+    currents_name = os.path.join(path, currents_name)
+    print(("Currents file path:", currents_name))
+    raw_file = open(raw_name, "rb")
     try:
-        wavesFile = open(wavesName, 'wb')
+        waves_file = open(waves_name, "wb")
         try:
-            currentsFile = open(currentsName, 'wb')
+            currents_file = open(currents_name, "wb")
             try:
-                split(rawFile, wavesFile, currentsFile)
+                split(raw_file, waves_file, currents_file)
             finally:
-                currentsFile.close()
+                currents_file.close()
         finally:
-            wavesFile.close()
+            waves_file.close()
     finally:
-        rawFile.close()
+        raw_file.close()
+
 
 if __name__ == "__main__":
     __main()
-
