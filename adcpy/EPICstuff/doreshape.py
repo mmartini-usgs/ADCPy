@@ -14,7 +14,7 @@ import datetime as dt
 sys.path.append(r'c:\projects\python\ADCPy\EPICstuff')
 from EPICstuff.reshapeEPIC import reshapeEPIC
 
-# making the indeces
+# making the inieces
 #contFile = 'E:\\data\\Sandwich\\10811_V20784\\python\\10811whVsubset00nbetterfill.cdf'
 #burstFile = 'E:\\data\\Sandwich\\10811_V20784\\python\\junkbetterfill.cdf'
 contFile = 'E:\\data\\Sandwich\\10811_V20784\\python\\10811whVsubset00n.cdf'

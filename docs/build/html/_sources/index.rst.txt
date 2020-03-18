@@ -3,12 +3,20 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to ADCPy's documentation!
-=================================
+ADCPy package
+===========================================
 
-The purpose of this code is to prepare large amounts of ADCP data from the raw binary for use with xarray by converting it to netCDF.
+Purpose
 
-Written by Marinna Martini, 1/12/2017
+This code prepares large amounts of single ping ADCP data from the raw binary for use in python by converting it to netCDF.
+
+Motivation
+
+The code was written for the TRDI ADCP when I discovered theat TRDI's Velocity software could not easily export single ping data. While there are other packages out there, as the time of writing this code, I had yet to find one that saved the data in netCDF format (so it can be accessed with xarray and dask), could be run on linux, windows and mac, and did not load it into memory (the files I have are > 2GB)
+
+The code is written as a module of functions, rather than classes, ensemble information is stored as nested dicts, in order to be more readable and to make the structure of the raw data (particularly the TRDI instruments) understandable.
+
+Status
 
 Use at  your own risk - this is a work in progress and a python learning project.
 
@@ -25,6 +33,7 @@ At USGS Coastal and Marine Geology we use the PMEL EPIC convention for netCDF as
    ADCPy.EPICstuff
    ADCPy.Nortekstuff
    ADCPy.TRDIstuff
+   demos
 
 
 Indices and tables

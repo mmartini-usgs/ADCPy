@@ -794,7 +794,7 @@ def setupEPICnc(fname, rawcdf, attfile, settings):
     # EPIC first time stamp = 08-Oct-5378 00:01:04
     # seconds since 1970-01-01T00:00:00 UTC
     # CF first time stamp = 25-Sep-2017 15:00:00
-    # the bad EPIC time is because a u4 dataype in the cdf file
+    # the bad EPIC time is because a u4 datatype in the cdf file
     # is being sent to a u2 datatype in hte nc file.  Changing u2 to u4, etc.
     # causes other problems
     # timetype = 'u4' # u4 causes problems downstream in catEPIC with fill values

@@ -15,7 +15,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="adcpy.Nortekstuff package" href="ADCPy.Nortekstuff.html" />
-    <link rel="prev" title="Welcome to ADCPy’s documentation!" href="index.html" />
+    <link rel="prev" title="ADCPy package" href="index.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -284,7 +284,7 @@ to get uniform metadata input one argument is required- the name of the file to 
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>fname</strong> (<em>str</em>) – output netCDF file name</p></li>
-<li><p><strong>rawcdf</strong> (<em>str</em>) – input netCDF raw data file</p></li>
+<li><p><strong>rawcdf</strong> (<em>Dataset</em>) – input netCDF raw data file object</p></li>
 <li><p><strong>attfile</strong> (<em>str</em>) – metadata text file</p></li>
 <li><p><strong>settings</strong> (<em>dict</em>) – <p>settings as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;good_ensembles&#39;</span><span class="p">:</span> <span class="p">[]</span> <span class="c1"># starting and ending indices of the input file. For all data use [0,np.inf]</span>
@@ -324,16 +324,7 @@ to get uniform metadata input one argument is required- the name of the file to 
 </div>
 <div class="section" id="module-EPICstuff.EPICmisc">
 <span id="adcpy-epicstuff-epicmisc-module"></span><h2>adcpy.EPICstuff.EPICmisc module<a class="headerlink" href="#module-EPICstuff.EPICmisc" title="Permalink to this headline">¶</a></h2>
-<p>Conatiner for misc utilities
-Created on Fri Oct 20 13:27:04 2017</p>
-<dl class="simple">
-<dt>catEPIC - concatenate like EPIC convention netCDF files, handle CF or EPIC time</dt><dd><ul class="simple">
-<li><p>files must be presented in the proper chronological order, this
-function will simply stick the data together in the order it is found</p></li>
-</ul>
-</dd>
-</dl>
-<p>&#64;author: mmartini USGS Woods Hole</p>
+<p>Helper functions, mostly EPIC specific</p>
 <dl class="function">
 <dt id="EPICstuff.EPICmisc.EPICtime2datetime">
 <code class="sig-prename descclassname">EPICstuff.EPICmisc.</code><code class="sig-name descname">EPICtime2datetime</code><span class="sig-paren">(</span><em class="sig-param">time</em>, <em class="sig-param">time2</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.EPICmisc.EPICtime2datetime" title="Permalink to this definition">¶</a></dt>
@@ -354,7 +345,35 @@ function will simply stick the data together in the order it is found</p></li>
 <dl class="function">
 <dt id="EPICstuff.EPICmisc.ajd">
 <code class="sig-prename descclassname">EPICstuff.EPICmisc.</code><code class="sig-name descname">ajd</code><span class="sig-paren">(</span><em class="sig-param">dto</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.EPICmisc.ajd" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Given datetime object returns Astronomical Julian Day.
+Day is from midnight 00:00:00+00:00 with day fractional
+value added.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dto</strong> (<em>object</em>) – datetime</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>int Astronomical Julian Day</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="EPICstuff.EPICmisc.apply_timezone">
+<code class="sig-prename descclassname">EPICstuff.EPICmisc.</code><code class="sig-name descname">apply_timezone</code><span class="sig-paren">(</span><em class="sig-param">cf_units</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.EPICmisc.apply_timezone" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>In xarray, the presence of time zone information in the units was causing decode_cf to ignore the hour,</dt><dd><p>minute and second information.  This function applys the time zone information and removes it from the units</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cf_units</strong> (<em>str</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="function">
 <dt id="EPICstuff.EPICmisc.catEPIC">
@@ -367,14 +386,70 @@ function will simply stick the data together in the order it is found</p></li>
 <dd></dd></dl>
 
 <dl class="function">
-<dt id="EPICstuff.EPICmisc.check_FillValue_encoding">
-<code class="sig-prename descclassname">EPICstuff.EPICmisc.</code><code class="sig-name descname">check_FillValue_encoding</code><span class="sig-paren">(</span><em class="sig-param">ds</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.EPICmisc.check_FillValue_encoding" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="EPICstuff.EPICmisc.check_fill_value_encoding">
+<code class="sig-prename descclassname">EPICstuff.EPICmisc.</code><code class="sig-name descname">check_fill_value_encoding</code><span class="sig-paren">(</span><em class="sig-param">ds</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.EPICmisc.check_fill_value_encoding" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>restore encoding to what it needs to be for EPIC and CF compliance</dt><dd><p>variables’ encoding will be examined for the correct _FillValue</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ds</strong> – xarray Dataset</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>xarray Dataset with corrected encoding, dict with encoding that can be used with xarray.to_netcdf</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="EPICstuff.EPICmisc.fix_missing_time">
+<code class="sig-prename descclassname">EPICstuff.EPICmisc.</code><code class="sig-name descname">fix_missing_time</code><span class="sig-paren">(</span><em class="sig-param">ds</em>, <em class="sig-param">delta_t</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.EPICmisc.fix_missing_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>fix missing time values
+change any NaT values in ‘time’ to a time value based on the last known good time, iterating to cover
+larger gaps by constructing time as we go along.
+xarray.DataArray.dropna is one way to do this, automated and convenient, and will leave an uneven time series,
+so if you don’t mind time gaps, that is a better tool.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds</strong> – xarray Dataset, time units are in seconds</p></li>
+<li><p><strong>deltat</strong> – inter-burst time, sec, for the experiment’s sampling scheme</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="function">
 <dt id="EPICstuff.EPICmisc.jdn">
 <code class="sig-prename descclassname">EPICstuff.EPICmisc.</code><code class="sig-name descname">jdn</code><span class="sig-paren">(</span><em class="sig-param">dto</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.EPICmisc.jdn" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>convert datetime object to Julian Day Number</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dto</strong> (<em>object</em>) – datetime</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>int Julian Day Number</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="EPICstuff.EPICmisc.make_encoding_dict">
+<code class="sig-prename descclassname">EPICstuff.EPICmisc.</code><code class="sig-name descname">make_encoding_dict</code><span class="sig-paren">(</span><em class="sig-param">ds</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.EPICmisc.make_encoding_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare encoding dictionary for writing a netCDF file later using xarray.to_netcdf</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ds</strong> – xarray Dataset</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dict with encoding prepared for xarray.to_netcdf to EPIC/CF conventions</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="function">
 <dt id="EPICstuff.EPICmisc.resample_cleanup">
@@ -384,12 +459,23 @@ function will simply stick the data together in the order it is found</p></li>
 <dl class="function">
 <dt id="EPICstuff.EPICmisc.s2hms">
 <code class="sig-prename descclassname">EPICstuff.EPICmisc.</code><code class="sig-name descname">s2hms</code><span class="sig-paren">(</span><em class="sig-param">secs</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.EPICmisc.s2hms" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>convert seconds to hours, minutes and seconds</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>secs</strong> (<em>int</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>hours, minutes and seconds</p>
+</dd>
+</dl>
+</dd></dl>
 
 </div>
 <div class="section" id="module-EPICstuff.repopulateEPIC">
 <span id="adcpy-epicstuff-repopulateepic-module"></span><h2>adcpy.EPICstuff.repopulateEPIC module<a class="headerlink" href="#module-EPICstuff.repopulateEPIC" title="Permalink to this headline">¶</a></h2>
-<p>function repopulateEPIC(burstFile, newFile, sample_rate, [start=’left’], [drop = None])</p>
+<div class="section" id="repopulateepic">
+<h3>repopulateEPIC<a class="headerlink" href="#repopulateepic" title="Permalink to this headline">¶</a></h3>
+<p>Distribute burst data output from reshapeEPIC along the sample dimension</p>
 <p>a burst shaped file output from reshapeEPIC will have two issues that need
 to be addressed before the data can be used with xarray:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">--</span> <span class="n">reshape</span> <span class="n">time</span> <span class="n">to</span> <span class="n">be</span> <span class="n">one</span> <span class="n">dimension</span>
@@ -397,31 +483,41 @@ to be addressed before the data can be used with xarray:</p>
 <span class="n">time</span> <span class="n">stamps</span><span class="o">.</span>  <span class="n">Within</span> <span class="n">burst</span> <span class="n">time</span> <span class="n">stamps</span> <span class="n">will</span> <span class="ow">not</span> <span class="n">be</span> <span class="n">preserved</span>
 </pre></div>
 </div>
-<p>burstFile = output from reshapeEPIC, the expected shape of the data is one of:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">time</span><span class="p">,</span> <span class="n">sample</span><span class="p">]</span>
-<span class="p">[</span><span class="n">time</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">depth</span><span class="p">]</span>
-<span class="p">[</span><span class="n">time</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">]</span>
-</pre></div>
-</div>
-<p>newFile = a new file with the adjusted time, this file, if it exists, will be overwritten</p>
 <dl class="simple">
-<dt>sample_rate = the sample rate the instrument was intended to use during each burst, in seconds</dt><dd><p>(NOT the inter-burst interval)</p>
+<dt>Usage:</dt><dd><p>python repopulateEPIC.py shaped_file new_file sample_rate [start=’left’] [drop = None]</p>
+<dl class="field-list simple">
+<dt class="field-odd">param str shaped_file</dt>
+<dd class="field-odd"><p>output from reshapeEPIC, the expected shape of the data is one of::
+[time, sample]
+[time, sample, depth]
+[time, sample, depth, lat, lon]</p>
+</dd>
+<dt class="field-even">param str new_file</dt>
+<dd class="field-even"><p>a new file with the adjusted time, this file, if it exists, will be overwritten</p>
+</dd>
+<dt class="field-odd">param int sample_rate</dt>
+<dd class="field-odd"><p>the sample rate the instrument was intended to use during each burst, in seconds</p>
+</dd>
+<dt class="field-even">param str start</dt>
+<dd class="field-even"><p>what the time stamp should be for each burst::
+left = beginning of the burst based on the first sample time
+center = middle of the burst based on first sample and last sample times
+right = end of the burst based on the last sample time</p>
+</dd>
+<dt class="field-odd">param list drop</dt>
+<dd class="field-odd"><p>variable names to omit from the output file</p>
 </dd>
 </dl>
-<p>start = what the time stamp should be for each burst:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">left</span> <span class="o">=</span> <span class="n">beginning</span> <span class="n">of</span> <span class="n">the</span> <span class="n">burst</span> <span class="n">based</span> <span class="n">on</span> <span class="n">the</span> <span class="n">first</span> <span class="n">sample</span> <span class="n">time</span>
-<span class="n">center</span> <span class="o">=</span> <span class="n">middle</span> <span class="n">of</span> <span class="n">the</span> <span class="n">burst</span> <span class="n">based</span> <span class="n">on</span> <span class="n">first</span> <span class="n">sample</span> <span class="ow">and</span> <span class="n">last</span> <span class="n">sample</span> <span class="n">times</span>
-<span class="n">right</span> <span class="o">=</span> <span class="n">end</span> <span class="n">of</span> <span class="n">the</span> <span class="n">burst</span> <span class="n">based</span> <span class="n">on</span> <span class="n">the</span> <span class="n">last</span> <span class="n">sample</span> <span class="n">time</span>
-</pre></div>
-</div>
-<p>drop = set of variable names to omit from the output file</p>
-<p>Created on Wed Oct  3 15:21:53 2018</p>
-<p>&#64;author: mmartini</p>
+</dd>
+</dl>
+<p>Created on Wed Oct  3 15:21:53 2018
+&#64;author: mmartini</p>
 <dl class="function">
 <dt id="EPICstuff.repopulateEPIC.repopulateEPIC">
 <code class="sig-prename descclassname">EPICstuff.repopulateEPIC.</code><code class="sig-name descname">repopulateEPIC</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.repopulateEPIC.repopulateEPIC" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+</div>
 </div>
 <div class="section" id="module-EPICstuff.reshapeEPIC">
 <span id="adcpy-epicstuff-reshapeepic-module"></span><h2>adcpy.EPICstuff.reshapeEPIC module<a class="headerlink" href="#module-EPICstuff.reshapeEPIC" title="Permalink to this headline">¶</a></h2>
@@ -483,7 +579,7 @@ delineate the beginning times and ending times of burts of measurements</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>cdffile</strong> (<em>str</em>) – name of a continuous time series data file</p></li>
-<li><p><strong>dim</strong> (<em>int</em>) – the unlimited or time dimension which we will find the indices to reshape</p></li>
+<li><p><strong>dim</strong> (<em>str</em>) – the unlimited or time dimension which we will find the indices to reshape</p></li>
 <li><p><strong>burst_start_offset</strong> (<em>int</em>) – when to start to make bursts in the continuous data, seconds</p></li>
 <li><p><strong>burst_interval</strong> (<em>int</em>) – time between start of bursts, seconds</p></li>
 <li><p><strong>burst_length</strong> (<em>int</em>) – number of samples in a burst</p></li>
@@ -498,7 +594,7 @@ delineate the beginning times and ending times of burts of measurements</p>
 
 <dl class="function">
 <dt id="EPICstuff.reshapeEPIC.reshapeEPIC">
-<code class="sig-prename descclassname">EPICstuff.reshapeEPIC.</code><code class="sig-name descname">reshapeEPIC</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.reshapeEPIC.reshapeEPIC" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">EPICstuff.reshapeEPIC.</code><code class="sig-name descname">reshapeEPIC</code><span class="sig-paren">(</span><em class="sig-param">cont_file</em>, <em class="sig-param">burst_file</em>, <em class="sig-param">burst_length</em>, <em class="sig-param">dim='time'</em>, <em class="sig-param">edges=None</em>, <em class="sig-param">drop=None</em>, <em class="sig-param">variable_attributes_to_omit=None</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.reshapeEPIC.reshapeEPIC" title="Permalink to this definition">¶</a></dt>
 <dd><p>apportion a continuous time series file into bursts (e.g. reshape)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Usage</dt>
@@ -513,6 +609,8 @@ dim=None, edges=None, drop=None)</p>
 <li><p><strong>dim</strong> (<em>str</em>) – name of dimension along which we will split the data, usually ‘time’ or ‘Rec’</p></li>
 <li><p><strong>edges</strong> (<em>list</em><em>[</em><em>tuple</em><em>]</em>) – [(start0, end0), (start1, end1), …] of edges defining the edges of each burst</p></li>
 <li><p><strong>drop</strong> (<em>str</em>) – set of variable names to omit from the output file</p></li>
+<li><p><strong>variable_attributes_to_omit</strong> (<em>dict</em>) – variable attributes to omit from output file</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – get lots of feedback to STDOUT</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns</dt>
@@ -523,14 +621,14 @@ dim=None, edges=None, drop=None)</p>
 
 <dl class="function">
 <dt id="EPICstuff.reshapeEPIC.save_indexes_to_file">
-<code class="sig-prename descclassname">EPICstuff.reshapeEPIC.</code><code class="sig-name descname">save_indexes_to_file</code><span class="sig-paren">(</span><em class="sig-param">cdffile</em>, <em class="sig-param">txtfile</em>, <em class="sig-param">edge_tuples</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.reshapeEPIC.save_indexes_to_file" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">EPICstuff.reshapeEPIC.</code><code class="sig-name descname">save_indexes_to_file</code><span class="sig-paren">(</span><em class="sig-param">cdffile</em>, <em class="sig-param">edge_tuples</em>, <em class="sig-param">index_file=None</em><span class="sig-paren">)</span><a class="headerlink" href="#EPICstuff.reshapeEPIC.save_indexes_to_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>write indexes to a file with the time stamps for QA/QC</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>cdffile</strong> (<em>str</em>) – the continuous time series netCDF file being operated upon</p></li>
-<li><p><strong>txtfile</strong> (<em>str</em>) – a file to output a string listing of time stamps</p></li>
 <li><p><strong>edge_tuples</strong> (<em>list</em><em>[</em><em>tuple</em><em>]</em>) – the bursts to output</p></li>
+<li><p><strong>index_file</strong> (<em>str</em>) – a file to output a string listing of time stamps</p></li>
 </ul>
 </dd>
 </dl>
@@ -573,13 +671,14 @@ dim=None, edges=None, drop=None)</p>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ADCPy.Nortekstuff.html">adcpy.Nortekstuff package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ADCPy.TRDIstuff.html">adcpy.TRDIstuff package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="demos.html">Demo data for ADCPy</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="index.html" title="previous chapter">Welcome to ADCPy’s documentation!</a></li>
+      <li>Previous: <a href="index.html" title="previous chapter">ADCPy package</a></li>
       <li>Next: <a href="ADCPy.Nortekstuff.html" title="next chapter">adcpy.Nortekstuff package</a></li>
   </ul></li>
 </ul>
@@ -610,7 +709,7 @@ dim=None, edges=None, drop=None)</p>
       &copy;2019, Marinna Martini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

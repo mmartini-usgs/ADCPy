@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>Welcome to ADCPy’s documentation! &#8212; ADCPy  documentation</title>
+    <title>ADCPy package &#8212; ADCPy  documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,10 +31,14 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="welcome-to-adcpy-s-documentation">
-<h1>Welcome to ADCPy’s documentation!<a class="headerlink" href="#welcome-to-adcpy-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>The purpose of this code is to prepare large amounts of ADCP data from the raw binary for use with xarray by converting it to netCDF.</p>
-<p>Written by Marinna Martini, 1/12/2017</p>
+  <div class="section" id="adcpy-package">
+<h1>ADCPy package<a class="headerlink" href="#adcpy-package" title="Permalink to this headline">¶</a></h1>
+<p>Purpose</p>
+<p>This code prepares large amounts of single ping ADCP data from the raw binary for use in python by converting it to netCDF.</p>
+<p>Motivation</p>
+<p>The code was written for the TRDI ADCP when I discovered theat TRDI’s Velocity software could not easily export single ping data. While there are other packages out there, as the time of writing this code, I had yet to find one that saved the data in netCDF format (so it can be accessed with xarray and dask), could be run on linux, windows and mac, and did not load it into memory (the files I have are &gt; 2GB)</p>
+<p>The code is written as a module of functions, rather than classes, ensemble information is stored as nested dicts, in order to be more readable and to make the structure of the raw data (particularly the TRDI instruments) understandable.</p>
+<p>Status</p>
 <p>Use at  your own risk - this is a work in progress and a python learning project.</p>
 <p>As the code stands now, a 3.5 GB, single ping Workhorse ADCP .pd0 file with 3 Million ensembles will take 4-5 hours to convert.  I live with this, because I can just let the conversion happen overnight on such large data sets, and once my data is in netCDF, everything else is convenient and fast.  I suspect that more speed might be acheived by making use of xarray and dask to write the netCDF output, and I may do this if time allows, and I invite an enterprising soul to beat me to it.</p>
 <p>The code is written as a module of functions, rather than classes, in order to be more readable and to make the structure of the raw data (particularly the TRDI instruments) understandable.</p>
@@ -63,6 +67,10 @@
 <li class="toctree-l2"><a class="reference internal" href="ADCPy.TRDIstuff.html#module-adcpy.TRDIstuff.pd0">adcpy.TRDIstuff.pd0 module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ADCPy.TRDIstuff.html#module-adcpy.TRDIstuff.pd0splitter">adcpy.TRDIstuff.pd0splitter module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ADCPy.TRDIstuff.html#module-adcpy.TRDIstuff">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="demos.html">Demo data for ADCPy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="demos.html#demo-1">Demo 1</a></li>
 </ul>
 </li>
 </ul>
@@ -99,6 +107,7 @@
 <li class="toctree-l1"><a class="reference internal" href="ADCPy.EPICstuff.html">adcpy.EPICstuff package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ADCPy.Nortekstuff.html">adcpy.Nortekstuff package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ADCPy.TRDIstuff.html">adcpy.TRDIstuff package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="demos.html">Demo data for ADCPy</a></li>
 </ul>
 
 <div class="relations">
@@ -135,7 +144,7 @@
       &copy;2019, Marinna Martini.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
