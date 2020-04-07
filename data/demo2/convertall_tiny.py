@@ -1,7 +1,8 @@
 """
 Processing for mooring 10631 TRDI workhorse V data
 
-@author: mmartini
+Convert from raw TRDI binary format (.pd0) to raw netCDF (.cdf),
+then perform beam rotations and output in netCDF to EPIC conventions (.nc)
 """
 
 import adcpy.TRDIstuff.TRDIpd0tonetcdf as pd0

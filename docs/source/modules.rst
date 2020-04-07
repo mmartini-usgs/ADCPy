@@ -4,5 +4,5 @@ ADCPy
 .. toctree::
    :maxdepth: 4
 
-   adcpy
+   ADCPy
    setup

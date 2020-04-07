@@ -266,6 +266,7 @@ def reshapeEPIC(cont_file, burst_file, burst_length, dim='time', edges=None, dro
                     elif vndims_cont == 2:
                         if varname in diagnosticvars:
                             data = continuous_cdf[varname]
+
                         data = continuous_cdf[varname][int(continuous_cdf_corner[0]):int(continuous_cdf_corner[0]) +
                                                        int(continuous_cdf_edges[0]),
                                                        int(continuous_cdf_corner[1]):int(continuous_cdf_corner[1]) +
@@ -562,7 +563,6 @@ def generate_expected_start_times(cdffile, dim, burst_start_offset,
     return slices
 
 
-# TODO -- this is not working. format string is failing
 def save_indexes_to_file(cdffile, edge_tuples, index_file=None):
     """
     write indexes to a file with the time stamps for QA/QC
@@ -581,10 +581,10 @@ def save_indexes_to_file(cdffile, edge_tuples, index_file=None):
         outfile.write('Burst, start index, end index, number of samples, start time, end time\n')
         for x in enumerate(edge_tuples):
             t0 = num2date(cdf['time'][x[1][0]], tunits)
-            t1 = num2date(cdf['time'][x[1][1]], tunits)
+            t1 = num2date(cdf['time'][x[1][1]]-1, tunits)
             try:
                 s = '{}, {},  {}, {}, {}, {}\n'.format(x[0], x[1][0], x[1][1],
-                                                       x[1][1] - x[1][0] + 1, t0, t1)
+                                                       x[1][1] - x[1][0], t0, t1)
             except:
                 s = '{}, {}, {}, , , \n'.format(x[0], x[1][0], x[1][1])
 

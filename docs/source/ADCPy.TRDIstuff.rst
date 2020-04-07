@@ -1,6 +1,10 @@
 adcpy.TRDIstuff package
 =======================
 
+This part of ADCPy handles raw data from Teledyne RD Instruments
+Acoustic Doppler Profilers.  Raw binary data are commonly in
+a format called pd0.
+
 Submodules
 ----------
 

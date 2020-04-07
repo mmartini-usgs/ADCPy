@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Helper functions, mostly EPIC specific
 """
@@ -29,7 +28,12 @@ def s2hms(secs):
 
 
 def jdn(dto):
-    # Given datetime object returns Julian Day Number
+    """
+    convert datetime object to Julian Day Number
+
+    :param object dto: datetime
+    :return: int Julian Day Number
+    """
     year = dto.year
     month = dto.month
     day = dto.day
@@ -52,12 +56,16 @@ def ajd(dto):
     Given datetime object returns Astronomical Julian Day.
     Day is from midnight 00:00:00+00:00 with day fractional
     value added.
+
+    :param object dto: datetime
+    :return: int Astronomical Julian Day
     """
     jdd = jdn(dto)
     day_fraction = dto.hour / 24.0 + dto.minute / 1440.0 + dto.second / 86400.0
     return jdd + day_fraction - 0.5
 
 
+# noinspection SpellCheckingInspection
 def cftime2EPICtime(timecount, timeunits):
     # take a CF time variable and convert to EPIC time and time2
     # timecount is the integer count of minutes (for instance) since the time stamp
@@ -78,7 +86,10 @@ def cftime2EPICtime(timecount, timeunits):
         tj = timecount/(24*60*60*1000)
     elif buf[0] == 'microseconds':
         tj = timecount/(24*60*60*1000*1000)
-        
+    else:
+        # TODO add a warning here, we're here because no units were recognized
+        tj = timecount
+
     tj = t0j+tj
     
     time = math.floor(tj)
@@ -95,10 +106,8 @@ def EPICtime2datetime(time, time2):
     :param numpy array time2:
     :return: gregorian time as a list of int, datetime object
     """
-    # EPICtime2datetime(time,time2)
-    # convert EPIC time and time2 to python datetime object
-    
-    # TODO - there is a rollover problem with this algorithm
+
+    # TODO - is there a rollover problem with this algorithm?
     
     dtos = []
     gtime = []
