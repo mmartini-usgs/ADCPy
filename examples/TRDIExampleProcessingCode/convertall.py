@@ -70,6 +70,11 @@ if do_part_one:
 
 if do_part_two:
     settings['timetype'] = timetype
+
+    if testing:
+        # if it's only a partial raw conversion (.cdf subset) we want to rotate all of them
+        # otherwise we are likely to get an error.
+        settings['good_ensembles'] = [0, -1]
     
     start_time = dt.datetime.now()
     print("start raw cdf to EPIC conversion at %s" % start_time)
