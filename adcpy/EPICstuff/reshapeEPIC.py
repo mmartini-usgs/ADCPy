@@ -54,7 +54,7 @@ def reshapeEPIC(cont_file, burst_file, burst_length, dim='time', edges=None, dro
     :param str dim: name of dimension along which we will split the data, usually 'time' or 'Rec'
     :param list[tuple] edges: [(start0, end0), (start1, end1), ...] of edges defining the edges of each burst
     :param str drop: set of variable names to omit from the output file
-    :param dict variable_attributes_to_omit: variable attributes to omit from output file
+    :param str variable_attributes_to_omit: variable attributes to omit from output file
     :param bool verbose: get lots of feedback to STDOUT
 
     :return: dictionary of problem types and status
