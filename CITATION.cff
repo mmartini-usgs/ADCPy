@@ -3,7 +3,8 @@ message: "If you use this software, please cite it as below."
 authors:
   - family-names: Martini
     given-names: Marinna
-    orcid:  https://orcid.org/0000-0002-7757-5158 
+    orcid:  "https://orcid.org/0000-0002-7757-5158" 
 title: "ADCPy"
+version: 0.0
 date-released: 2020-11-22
-url:  https://github.com/mmartini-usgs/ADCPy
+url:  "https://github.com/mmartini-usgs/ADCPy"
